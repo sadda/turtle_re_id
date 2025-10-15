@@ -76,7 +76,7 @@ def evaluate(model, dataloader):
     device = next(model.parameters()).device
     preds, targets = [], []
     with torch.no_grad():
-        for x_batch, y_batch in dataloader:
+        for x_batch, y_batch in tqdm(dataloader):
             x_batch = x_batch.to(device)
             output = model(pixel_values=x_batch)
             _, predicted = torch.max(output, 1)
