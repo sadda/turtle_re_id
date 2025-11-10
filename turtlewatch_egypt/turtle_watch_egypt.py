@@ -8,36 +8,81 @@ replace_strings = {
     'Ż': 'Z',
     'Ł': 'L',
     'ń': 'n',
+    'à': 'a',
+    'é': 'e',
     'ě': 'e',
     'ó': 'o',
     'Ó': 'O',
+    '’': '\'',
+    '\u200e': '',  # Remove LEFT-TO-RIGHT MARK
+    '\u200f': '',  # Remove RIGHT-TO-LEFT MARK
 }        
 
 identity_replace = {
     '': np.nan,
+    'altea injured': 'altea',
     'anette': 'annette',
     'asukn8': 'asunk8',
+    'boma r': 'boma',
     'dabb3': 'dabb3 ei',
     'dabb3ei': 'dabb3 ei',
     'elph2': 'elph2 ei',
+    'female no id': 'unknown',
     'franncina': 'francina',    
     'her2': 'her2 ei',
-    'her3': 'her4 ei',
+    'her3': 'her3 ei',
+    'her3ei': 'her3 ei',
     'her4': 'her4 ei',
+    'her4ei': 'her4 ei',
+    'her5ei': 'her5 ei',
+    'her5ei l': 'her5 ei',
+    'her6ei': 'her6 ei',
     'her8': 'her8 ei',
-    'juve maxim': 'maxim',    
+    'juve maxim': 'maxim',
+    'ladilsav': 'ladislav',
+    'lanea l': 'lanea',
+    'lanea r': 'lanea',
+    'lin l': 'lin',
+    'lisa r': 'lisa',
+    'luna-7m': 'luna',
     'maas el1': 'maas ei 1',
-    'no id': 'unknown',  
+    'maasei 1': 'maas ei 1',
+    'michel l': 'michel',
+    'no id': 'unknown',
+    'no id-b': 'unknown',
+    'no id-e': 'unknown',
+    'noid-d': 'unknown',
     'noid': 'unknown',
+    'noidmale': 'unknown',
+    'noid1': 'unknown',
+    'noid2': 'unknown',
+    'no id6': 'unknown',
+    'noid 6': 'unknown',
+    'noid 24': 'unknown',
+    'no id24': 'unknown',
+    'noid 25': 'unknown',
+    'noid36': 'unknown',
+    'noid37': 'unknown',
+    'noid38': 'unknown',
+    'noid39': 'unknown',
+    'noid40': 'unknown',
+    'noid41': 'unknown',
+    'noid42': 'unknown',
+    'no idnettondoba': 'unknown',
+    'nosureidher3ei': 'unknown',
+    'ronja r': 'ronja',
     'toro': 'toro ei',
+    'unk3 didier': 'didier', 
+    'unk7 jan': 'jan',
     'unk11': 'unknown', 
     'unk12': 'unknown', 
+    'unk17': 'unknown', 
     'unk20 platon': 'platon',
     'unk25': 'unknown',
     'unk29': 'unknown',
-    'unk3 didier': 'didier', 
+    'unk31': 'unknown', 
     'unk33': 'unknown', 
-    'unk7 jan': 'jan',
+    'unk36': 'unknown', 
     'wdla1': 'wdla1 ei',
 }
 
@@ -52,6 +97,11 @@ def get_encounter_name(x):
         return x[:i]
 
 def code_to_info(x):
+    codes_morning = ['am', 'am1']
+    codes_afternoon = ['pm', 'un', 'ng', 'ni']
+    codes_nan = ['na', 'gpm']
+    codes_time = codes_morning + codes_afternoon + codes_nan
+
     x = os.path.splitext(x)[0]
     x = x.lower()
     x_split = x.split('_')
@@ -60,18 +110,25 @@ def code_to_info(x):
         orientation = x_split[1]
         qwe = x_split[2]
         date = f'{x_split[3]}-{x_split[4]}-{x_split[5]}'
-        place = x_split[6]
-        if x_split[8] == '':
+        # Formatting type
+        if x_split[6] in codes_time:
+            i_place, i_noon, i_hour = 8, 6, 7
+        elif x_split[8] in codes_time:
+            i_place, i_noon, i_hour = 6, 8, 7
+        else:
+            i_place, i_noon, i_hour = 6, 7, 8
+        place = x_split[i_place]
+        if x_split[i_hour] == '':
             hour = np.nan
         else:
-            if x_split[7] in ['am', 'am1']:
-                hour = 12 + int(x_split[8])
-            elif x_split[7] in ['pm']:
-                hour = int(x_split[8])
-            elif x_split[7] in ['na', 'gpm']:
+            if x_split[i_noon] in codes_morning:
+                hour = 12 + int(x_split[i_hour].split('.')[0])
+            elif x_split[i_noon] in codes_afternoon:
+                hour = int(x_split[i_hour])
+            elif x_split[i_noon] in codes_nan:
                 hour = np.nan
             else:
-                raise ValueError(f'Value {x_split[7]} is not correct')
+                raise ValueError(f'Value {x} is not correct')
         author = x_split[9]
     elif len(x_split) >= 5:
         identity = x_split[0].strip()
@@ -127,7 +184,7 @@ class TurtleWatchEgypt_Base(WildlifeDataset):
     def extract_code(self, i):
         df_row = self.df.iloc[i]
         identity = df_row['identity']
-        orientation = df_row['orientation']
+        orientation = df_row['label']
         qwe = '' # TODO: what is this?
         date = df_row['date']
         place = df_row['place'] if 'place' in self.df.columns else ''
@@ -202,7 +259,7 @@ class TurtleWatchEgypt_NYED(TurtleWatchEgypt_Base):
                 print(data['path_full'].iloc[i])
         data = data[~idx]
 
-        # Ignoring data without encounter
+        # Adding artificial encounters
         data['encounter_name'] = data['path_full'].apply(lambda x: get_encounter_name(x))
         idx = data['encounter_name'].isnull()
         if sum(idx) > 0:
@@ -248,8 +305,16 @@ class TurtleWatchEgypt_NYED(TurtleWatchEgypt_Base):
         data = data.rename({'path_full': 'path'}, axis=1)
         data.to_csv('metadata.csv', index=False)
 
-    def create_catalogue(self) -> pd.DataFrame:
+    def create_catalogue(self, load_segmentation=False) -> pd.DataFrame:
         df = pd.read_csv(f'{self.root}/metadata.csv')
         df['image_id'] = range(len(df))
         df.loc[df['identity'].isnull(), 'identity'] = 'unknown'
+        if load_segmentation:
+            cols = ['bbox_x', 'bbox_y', 'bbox_w', 'bbox_h']
+            segmentation = pd.read_csv(f'{self.root}/segmentation.csv')
+            df = pd.merge(df, segmentation, on='image_id', how='outer')
+            df['bbox'] = list(df[cols].to_numpy())
+            df = df.drop(cols, axis=1)
+            df = df.reset_index(drop=True)            
+        df['image_id'] = range(len(df))
         return self.finalize_catalogue(df)
