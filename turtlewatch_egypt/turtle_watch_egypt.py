@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import numpy as np
 import pandas as pd
@@ -70,6 +71,7 @@ identity_replace = {
     'noid42': 'unknown',
     'no idnettondoba': 'unknown',
     'nosureidher3ei': 'unknown',
+    'petra-3': 'petra',
     'ronja r': 'ronja',
     'toro': 'toro ei',
     'unk3 didier': 'didier', 
@@ -96,6 +98,22 @@ def get_encounter_name(x):
     else:
         return x[:i]
 
+def merge_codes(df, index):
+    xs = []
+    for name in df['file']:
+        x = code_to_info(name)[index]
+        xs.append(x)
+    return list(pd.Series(xs).dropna().unique())
+
+def get_code(xs, name='variables'):
+    if len(xs) > 1:
+        print(f'Multiple {name}: {xs}')                
+        return xs[0]
+    elif len(xs) == 1:
+        return xs[0]
+    else:
+        return np.nan
+
 def code_to_info(x):
     codes_morning = ['am', 'am1']
     codes_afternoon = ['pm', 'un', 'ng', 'ni']
@@ -108,7 +126,7 @@ def code_to_info(x):
     if len(x_split) == 10:
         identity = x_split[0].strip()
         orientation = x_split[1]
-        qwe = x_split[2]
+        code = x_split[2]
         date = f'{x_split[3]}-{x_split[4]}-{x_split[5]}'
         # Formatting type
         if x_split[6] in codes_time:
@@ -122,39 +140,42 @@ def code_to_info(x):
             hour = np.nan
         else:
             if x_split[i_noon] in codes_morning:
-                hour = 12 + int(x_split[i_hour].split('.')[0])
+                hour = int(x_split[i_hour].split('.')[0])
             elif x_split[i_noon] in codes_afternoon:
-                hour = int(x_split[i_hour])
+                hour = 12 + np.mod(int(x_split[i_hour]), 12)
             elif x_split[i_noon] in codes_nan:
                 hour = np.nan
             else:
                 raise ValueError(f'Value {x} is not correct')
         author = x_split[9]
+        for x in ['-', '(', '.']:
+            author = author.split(x)[0]
+        author = re.sub(r'\d+$', '', author).strip()
     elif len(x_split) >= 5:
         identity = x_split[0].strip()
-        orientation, qwe, date, place, hour, author = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
+        orientation, code, date, place, hour, author = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
     else:
-        identity, orientation, qwe, date, place, hour, author = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan    
+        identity, orientation, code, date, place, hour, author = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan    
     for str1, str2 in identity_replace.items():
         if identity == str1:
             identity = str2
-    return identity, orientation, qwe, date, place, hour, author
+    return identity, orientation, code, date, place, hour, author
 
-def info_to_code(identity, orientation, qwe, date, place, hour=None, author=''):
+def info_to_code(identity, orientation, code, date, place, hour=None, author=''):
     year = str(date)[:4]
     month = str(date)[5:7]
     day = str(date)[8:10]
-    if hour is None:
+    if pd.isnull(hour):
         hour1 = ''
         hour2 = ''
     else:
         if hour < 12:
             hour1 = 'AM'
-            hour2 = hour
+            hour2 = int(hour)
         else:
             hour1 = 'PM'
-            hour2 = hour - 12
-    code1 = f'{identity}_{orientation}_{qwe}_{year}_{month}_{day}_{place}_{hour1}_{hour2}'.upper()
+            hour2 = int(hour) - 12
+    code1 = f'{identity}_{orientation}_{code}_{year}_{month}_{day}_{place}_{hour1}_{hour2}'.upper()
     code2 = author.title()
     return f'{code1}_{code2}'
 
@@ -185,12 +206,12 @@ class TurtleWatchEgypt_Base(WildlifeDataset):
         df_row = self.df.iloc[i]
         identity = df_row['identity']
         orientation = df_row['label']
-        qwe = '' # TODO: what is this?
+        code = df_row['code']
         date = df_row['date']
-        place = df_row['place'] if 'place' in self.df.columns else ''
-        hour = None
-        author = df_row['author'] if 'author' in self.df.columns else ''
-        return info_to_code(identity, orientation, qwe, date, place, hour=hour, author=author)
+        place = df_row['place'] if not pd.isnull(df_row['place']) else ''
+        hour = df_row['hour']
+        author = df_row['author'] if not pd.isnull(df_row['author']) else ''
+        return info_to_code(identity, orientation, code, date, place, hour=hour, author=author)
 
 
 class TurtleWatchEgypt_AED(TurtleWatchEgypt_Base):
@@ -276,12 +297,15 @@ class TurtleWatchEgypt_NYED(TurtleWatchEgypt_Base):
         data['encounter_id'] = (data['encounter_name'] != data['encounter_name'].shift()).cumsum()
         assert data['encounter_id'].nunique() == data['encounter_name'].nunique()
 
-        # Get individuals
         for _, df_encounter in data.groupby('encounter_id'):
-            identities = []
-            for name in df_encounter['file']:
-                identities.append(code_to_info(name)[0])
-            identities = list(pd.Series(identities).dropna().unique())
+            # Extract information from code
+            identities = merge_codes(df_encounter, 0)
+            codes = merge_codes(df_encounter, 2)
+            dates = merge_codes(df_encounter, 3)
+            places = merge_codes(df_encounter, 4)
+            hours = merge_codes(df_encounter, 5)
+            authors = merge_codes(df_encounter, 6)
+            # Add individuals if empty
             if len(identities) == 0:
                 for name in df_encounter['path']:
                     for name_split1 in name.split(os.path.sep):
@@ -289,15 +313,17 @@ class TurtleWatchEgypt_NYED(TurtleWatchEgypt_Base):
                         if name_split2[0] == 'sighting' and len(name_split2) >= 3:
                             identities.append(name_split2[2])
                             print(f'Adding identity {name_split2[2]}')
-            identities = pd.Series(identities).dropna().unique()
-            if len(identities) > 1:
-                print(f'Multiple identities: {identities}')                
-                identity = identities[0]
-            elif len(identities) == 1:
-                identity = identities[0]
-            else:
-                identity = np.nan
-            data.loc[df_encounter.index, 'identity'] = identity
+                identities = pd.Series(identities).dropna().unique()
+            # Save codes
+            data.loc[df_encounter.index, 'identity'] = get_code(identities, name='identities')
+            data.loc[df_encounter.index, 'code'] = get_code(codes, name='codes')
+            data.loc[df_encounter.index, 'place'] = get_code(places, name='places')
+            data.loc[df_encounter.index, 'hour'] = get_code(hours, name='hours')
+            data.loc[df_encounter.index, 'author'] = get_code(authors, name='authors')
+            # Rewrite the information from EXIF date if available 
+            date = get_code(dates, name='dates')
+            if not pd.isnull(date):
+                data.loc[df_encounter.index, 'date'] = date
 
         # Finalize the dataframe
         data = data.reset_index(drop=True)
