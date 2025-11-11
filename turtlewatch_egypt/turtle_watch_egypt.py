@@ -122,6 +122,9 @@ def merge_codes(df, index):
     return list(pd.Series(xs).dropna().unique())
 
 def get_code(xs, name='variables'):
+    xs = list(xs)
+    if len(xs) > 1 and 'unknown' in xs:
+        xs.remove('unknown')
     if len(xs) > 1:
         print(f'Multiple {name}: {xs}')                
         return xs[0]
@@ -312,6 +315,12 @@ class TurtleWatchEgypt_NYED(TurtleWatchEgypt_Base):
         # Get encounter_id
         data['encounter_id'] = (data['encounter_name'] != data['encounter_name'].shift()).cumsum()
         assert data['encounter_id'].nunique() == data['encounter_name'].nunique()
+
+        # Preallocate columns to be able to handle strings and nans without warnings
+        data['identity'] = pd.Series([np.nan]*len(data), dtype='object')
+        data['code'] = pd.Series([np.nan]*len(data), dtype='object')
+        data['place'] = pd.Series([np.nan]*len(data), dtype='object')
+        data['author'] = pd.Series([np.nan]*len(data), dtype='object')
 
         for _, df_encounter in data.groupby('encounter_id'):
             # Extract information from code
