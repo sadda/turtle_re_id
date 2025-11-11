@@ -1,6 +1,8 @@
 import numpy as np
+import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import Optional, List, Tuple, Callable
+from turtlewatch_egypt import TurtleWatchEgypt_NYED, fix_chars
 
 def compute_predictions(
         features_query: np.ndarray,
@@ -102,3 +104,31 @@ def predictions_encounters(similarity, dataset_query, dataset_database, k=1):
 
 def top_k_accuracy(y_true, y_pred, k=1):
     return np.mean([x in y[:k] for x, y in zip(y_true, y_pred)])
+
+def merge_datasets(master_root, roots, **kwargs):
+    dfs = []
+    n_encounters = 0
+    for root in roots:
+        dataset = TurtleWatchEgypt_NYED(f'{master_root}/{root}', load_segmentation=True)
+        dataset.df['path'] = root.split('/')[-1] + '/' + dataset.df['path']
+        dataset.df['encounter_id'] = dataset.df['encounter_id'] + n_encounters
+        n_encounters += dataset.df['encounter_id'].nunique()
+        dfs.append(dataset.df)
+    df = pd.concat(dfs).reset_index(drop=True)
+    df['image_id'] = range(len(df))
+    return TurtleWatchEgypt_NYED(root=master_root, df=df, **kwargs)
+
+def strip_suffixes(x, suffixes):
+    suffixes = suffixes + [x.lower() for x in suffixes]
+    while any(x.endswith(ext) for ext in suffixes):
+        for ext in suffixes:
+            if x.endswith(ext):
+                x = x.removesuffix(ext).strip()
+                break
+    return x
+
+def load_individuals(file_name):
+    individuals = pd.read_csv(file_name)
+    individuals = individuals['Common_name'].to_numpy()
+    individuals = [fix_chars(x).lower().strip() for x in individuals]
+    return [strip_suffixes(x, [' C', ' (DEAD)']) for x in individuals]
