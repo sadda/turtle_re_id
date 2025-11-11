@@ -10,9 +10,11 @@ replace_strings = {
     'Ł': 'L',
     'ń': 'n',
     'à': 'a',
+    'è': 'e',
     'é': 'e',
     'ě': 'e',
     'ó': 'o',
+    'ö': 'o',
     'Ó': 'O',
     '’': '\'',
     '\u200e': '',  # Remove LEFT-TO-RIGHT MARK
@@ -21,8 +23,11 @@ replace_strings = {
 
 identity_replace = {
     '': np.nan,
+    'l': 'unknown',
+    'r': 'unknown',    
     'altea injured': 'altea',
     'anette': 'annette',
+    'asunk5': 'fame',
     'asukn8': 'asunk8',
     'boma r': 'boma',
     'dabb3': 'dabb3 ei',
@@ -30,10 +35,12 @@ identity_replace = {
     'dabb6ei': 'dabb6 ei',
     'dabb6 ei': 'momo', # This needs to be after all the fixes
     'elph2': 'elph2 ei',
+    'elph3 ei': 'jamal',
     'egunk8': 'tsunami',
     'egunk10': 'alice',    
     'female no id': 'unknown',
     'franncina': 'francina',    
+    'halhala1': 'halhala 1',
     'her2': 'her2 ei',
     'her2ei': 'her2 ei',
     'her3': 'her3 ei',
@@ -49,6 +56,7 @@ identity_replace = {
     'hunk6 c2': 'hunk6',
     'hunk6 c3': 'hunk6',
     'hunk6 c4': 'hunk6',
+    'hunk6 l': 'hunk6',    
     'hunk6 r': 'hunk6',
     'juve maxim': 'maxim',
     'kariman l': 'kariman',
@@ -63,43 +71,31 @@ identity_replace = {
     'maasei 1': 'maas ei 1',
     'magherita': 'margherita',
     'michel l': 'michel',
-    'no id': 'unknown',
-    'no id-b': 'unknown',
-    'no id-e': 'unknown',
-    'noid-d': 'unknown',
-    'noid': 'unknown',
-    'noidmale': 'unknown',
-    'noid1': 'unknown',
-    'noid2': 'unknown',
-    'no id6': 'unknown',
-    'noid 6': 'unknown',
-    'noid 24': 'unknown',
-    'no id24': 'unknown',
-    'noid 25': 'unknown',
-    'noid36': 'unknown',
-    'noid37': 'unknown',
-    'noid38': 'unknown',
-    'noid39': 'unknown',
-    'noid40': 'unknown',
-    'noid41': 'unknown',
-    'noid42': 'unknown',
-    'no idnettondoba': 'unknown',
     'nosureidher3ei': 'unknown',
     'petra-3': 'petra',
     'rhan': 'rhian',
     'ronja r': 'ronja',
+    'sata1ei': 'sata1 ei',
+    'tond1ei': 'tond1 ei',
+    'tond2ei': 'tond2 ei',
     'toro': 'toro ei',
+    'unk2': 'sebastian',
+    'unk2 sebastian': 'sebastian',
     'unk3 didier': 'didier', 
+    'unk5 petra': 'petra',
     'unk7 jan': 'jan',
-    'unk11': 'unknown', 
-    'unk12': 'unknown', 
-    'unk17': 'unknown', 
+    'unk10': 'lin',
+    'unk10 c-bis': 'lin',
+    'unk10 lin': 'lin',
+    'unk14 maxim': 'maxim',
+    'unk19  altea': 'altea',
+    'unk19 altea': 'altea',
     'unk20 platon': 'platon',
-    'unk25': 'unknown',
-    'unk29': 'unknown',
-    'unk31': 'unknown', 
-    'unk33': 'unknown', 
-    'unk36': 'unknown', 
+    'unk20 platon size': 'platon',
+    'unk30': 'carmen',
+    'unk30 carmen': 'carmen',
+    'unk31': 'lisa',
+    'unk31 lisa': 'lisa',
     'unkei': 'unknown',
     'wdla1': 'wdla1 ei',
 }
@@ -132,6 +128,24 @@ def get_code(xs, name='variables'):
         return xs[0]
     else:
         return np.nan
+
+def fix_chars(x):
+    # TODO: it should check on lower only
+    for str1, str2 in replace_strings.items():
+        if str1 in x:
+            x = x.replace(str1, str2)
+    return x
+
+def fix_identity(x):
+    if pd.isnull(x):
+        return x
+    x = x.lower()
+    if x.startswith('no id') or x.startswith('noid'):
+        return 'unknown'
+    for str1, str2 in identity_replace.items():
+        if x == str1:
+            x = str2
+    return x
 
 def code_to_info(x):
     codes_morning = ['am', 'am1']
@@ -175,9 +189,7 @@ def code_to_info(x):
         orientation, code, date, place, hour, author = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
     else:
         identity, orientation, code, date, place, hour, author = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan    
-    for str1, str2 in identity_replace.items():
-        if identity == str1:
-            identity = str2
+    identity = fix_identity(identity)
     return identity, orientation, code, date, place, hour, author
 
 def info_to_code(identity, orientation, code, date, place, hour=None, author=''):
@@ -202,10 +214,7 @@ def rename_non_ascii(data):
     for idx, df_row in data.iterrows():
         old_file_name = df_row['path_full']
         new_file_name = df_row['path_full']
-        # TODO: it should check on lower only
-        for str1, str2 in replace_strings.items():
-            if str1 in new_file_name:
-                new_file_name = new_file_name.replace(str1, str2)
+        new_file_name = fix_chars(new_file_name)
         if old_file_name != new_file_name:
             data.loc[idx, 'path_full'] = new_file_name
             data.loc[idx, 'file'] = os.path.basename(new_file_name)
