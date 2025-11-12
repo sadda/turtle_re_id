@@ -30,7 +30,6 @@ identity_replace = {
     'anette': 'annette',
     'asunk5': 'fame',
     'asukn8': 'asunk8',
-    'boma r': 'boma',
     'dabb3': 'dabb3 ei',
     'dabb3ei': 'dabb3 ei',
     'dabb6ei': 'momo',
@@ -51,37 +50,21 @@ identity_replace = {
     'her4': 'her4 ei',
     'her4ei': 'her4 ei',
     'her5ei': 'her5 ei',
-    'her5ei l': 'her5 ei',
     'her6ei': 'her6 ei',
     'her8': 'her8 ei',
-    'hunk6 c': 'hunk6',
-    'hunk6 c2': 'hunk6',
-    'hunk6 c3': 'hunk6',
-    'hunk6 c4': 'hunk6',
-    'hunk6 l': 'hunk6',    
-    'hunk6 r': 'hunk6',
     'img': 'unknown',
     'juve maxim': 'maxim',
-    'kariman l': 'kariman',
     'ladilsav': 'ladislav',
-    'lanea l': 'lanea',
-    'lanea r': 'lanea',
-    'lin l': 'lin',
-    'lisa r': 'lisa',
-    'luna-7m': 'luna',
     'maas': 'maas ei 1',
     'maas el1': 'maas ei 1',
     'maasei 1': 'maas ei 1',
     'magherita': 'margherita',
-    'michel l': 'michel',
     'no': 'unknown',
-    'no d': 'unknown',
     'nosureidher3ei': 'unknown',
     'petra-3': 'petra',
     'per olaf': 'per-olaf',
     'red sea scuba diving - green turtle': 'unknown',
     'rhan': 'rhian',
-    'ronja r': 'ronja',
     'sata1ei': 'sata1 ei',
     'tond1ei': 'tond1 ei',
     'tond2ei': 'tond2 ei',
@@ -92,17 +75,11 @@ identity_replace = {
     'unk5 petra': 'petra',
     'unk7 jan': 'jan',
     'unk10': 'lin',
-    'unk10 c-bis': 'lin',
-    'unk10 lin': 'lin',
-    'unk14 maxim': 'maxim',
-    'unk19  altea': 'altea',
-    'unk19 altea': 'altea',
-    'unk20 platon': 'platon',
-    'unk20 platon size': 'platon',
+    'unk14': 'maxim',
+    'unk19': 'altea',
+    'unk20': 'platon',
     'unk30': 'carmen',
-    'unk30 carmen': 'carmen',
     'unk31': 'lisa',
-    'unk31 lisa': 'lisa',
     'unkei': 'unknown',
     'wdla1': 'wdla1 ei',
 }
@@ -149,8 +126,6 @@ def fix_identity(x, individuals):
     x = x.lower()
     if x.startswith('no id') or x.startswith('noid'):
         return 'unknown'
-    if x in individuals:
-        return x
     
     ys = [
         x,
@@ -159,10 +134,11 @@ def fix_identity(x, individuals):
         x.split('-')[0],
     ]
     for y in ys:
+        if y in individuals:
+            return y
         for str1, str2 in identity_replace.items():
             if y == str1 and (str2 == 'unknown' or str2 in individuals):
-                x = str2
-                break
+                return str2
     
     return x
 
