@@ -165,7 +165,7 @@ def code_to_info(x):
     if len(x_split) == 10:
         identity = x_split[0].strip()
         orientation = x_split[1]
-        code = x_split[2]
+        leader = x_split[2]
         date = f'{x_split[3]}-{x_split[4]}-{x_split[5]}'
         # Formatting type
         if x_split[6] in codes_time:
@@ -192,13 +192,13 @@ def code_to_info(x):
         author = re.sub(r'\d+$', '', author).strip()
     elif len(x_split) >= 5:
         identity = x_split[0].strip()
-        orientation, code, date, place, hour, author = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
+        orientation, leader, date, place, hour, author = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
     else:
-        identity, orientation, code, date, place, hour, author = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan    
+        identity, orientation, leader, date, place, hour, author = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan    
     identity = fix_identity(identity)
-    return identity, orientation, code, date, place, hour, author
+    return identity, orientation, leader, date, place, hour, author
 
-def info_to_code(identity, orientation, code, date, place, hour=None, author=''):
+def info_to_code(identity, orientation, leader, date, place, hour=None, author=''):
     year = str(date)[:4]
     month = str(date)[5:7]
     day = str(date)[8:10]
@@ -212,7 +212,7 @@ def info_to_code(identity, orientation, code, date, place, hour=None, author='')
         else:
             hour1 = 'PM'
             hour2 = int(hour) - 12
-    code1 = f'{identity}_{orientation}_{code}_{year}_{month}_{day}_{place}_{hour1}_{hour2}'.upper()
+    code1 = f'{identity}_{orientation}_{leader}_{year}_{month}_{day}_{place}_{hour1}_{hour2}'.upper()
     code2 = author.title()
     return f'{code1}_{code2}'
 
@@ -240,12 +240,12 @@ class TurtleWatchEgypt_Base(WildlifeDataset):
         df_row = self.df.iloc[i]
         identity = df_row['identity']
         orientation = df_row['label']
-        code = df_row['code']
+        leader = df_row['leader']
         date = df_row['date']
         place = df_row['place'] if not pd.isnull(df_row['place']) else ''
         hour = df_row['hour']
         author = df_row['author'] if not pd.isnull(df_row['author']) else ''
-        return info_to_code(identity, orientation, code, date, place, hour=hour, author=author)
+        return info_to_code(identity, orientation, leader, date, place, hour=hour, author=author)
 
 
 class TurtleWatchEgypt_AED(TurtleWatchEgypt_Base):
@@ -333,14 +333,14 @@ class TurtleWatchEgypt_NYED(TurtleWatchEgypt_Base):
 
         # Preallocate columns to be able to handle strings and nans without warnings
         data['identity'] = pd.Series([np.nan]*len(data), dtype='object')
-        data['code'] = pd.Series([np.nan]*len(data), dtype='object')
+        data['leader'] = pd.Series([np.nan]*len(data), dtype='object')
         data['place'] = pd.Series([np.nan]*len(data), dtype='object')
         data['author'] = pd.Series([np.nan]*len(data), dtype='object')
 
         for _, df_encounter in data.groupby('encounter_id'):
             # Extract information from code
             identities = merge_codes(df_encounter, 0)
-            codes = merge_codes(df_encounter, 2)
+            leaders = merge_codes(df_encounter, 2)
             dates = merge_codes(df_encounter, 3)
             places = merge_codes(df_encounter, 4)
             hours = merge_codes(df_encounter, 5)
@@ -356,7 +356,7 @@ class TurtleWatchEgypt_NYED(TurtleWatchEgypt_Base):
                 identities = pd.Series(identities).dropna().unique()
             # Save codes
             data.loc[df_encounter.index, 'identity'] = get_code(identities, name='identities')
-            data.loc[df_encounter.index, 'code'] = get_code(codes, name='codes')
+            data.loc[df_encounter.index, 'leader'] = get_code(leaders, name='leaders')
             data.loc[df_encounter.index, 'place'] = get_code(places, name='places')
             data.loc[df_encounter.index, 'hour'] = get_code(hours, name='hours')
             data.loc[df_encounter.index, 'author'] = get_code(authors, name='authors')
