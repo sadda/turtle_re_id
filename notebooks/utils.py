@@ -117,18 +117,3 @@ def merge_datasets(master_root, roots, **kwargs):
     df = pd.concat(dfs).reset_index(drop=True)
     df['image_id'] = range(len(df))
     return TurtleWatchEgypt_NYED(root=master_root, df=df, **kwargs)
-
-def strip_suffixes(x, suffixes):
-    suffixes = suffixes + [x.lower() for x in suffixes]
-    while any(x.endswith(ext) for ext in suffixes):
-        for ext in suffixes:
-            if x.endswith(ext):
-                x = x.removesuffix(ext).strip()
-                break
-    return x
-
-def load_individuals(file_name):
-    individuals = pd.read_csv(file_name)
-    individuals = individuals['Common_name'].to_numpy()
-    individuals = [fix_chars(x).lower().strip() for x in individuals]
-    return [strip_suffixes(x, [' C', ' (DEAD)']) for x in individuals]

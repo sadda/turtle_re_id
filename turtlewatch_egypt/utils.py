@@ -3,48 +3,11 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score
-from .turtle_watch_egypt import TurtleWatchEgypt_AED
-from wildlife_datasets.datasets import SeaTurtleID2022 
 
 def read_token_from_file(filepath):
     with open(filepath, 'r') as f:
         token = f.readline().strip()
     return token
-
-def get_dataset():
-    root = '/data/wildlife_datasets/data/SeaTurtleID2022'
-
-    dataset = SeaTurtleID2022(
-        root,
-        category_name='flipper',
-        img_load='bbox',
-        load_label=True,
-    )
-    dataset = dataset.get_subset(~dataset.metadata['orientation'].isnull())
-    dataset.metadata['label'], labels_map = pd.factorize(dataset.metadata['orientation'].values)
-    dataset.col_label = 'label'
-
-    return dataset, labels_map
-
-def get_dataset_tw(labels_map):
-    root_aed = '/data/wildlife_datasets/turtle_watch/TWE_flipperprofiles_registered ind_LR'
-
-    dataset = TurtleWatchEgypt_AED(root_aed, load_label=True)
-
-    labels_map2 = {'l': 'front_left', 'r': 'front_right', np.nan: np.nan}
-    def extract_flipper(x):
-        x_split = x.split('_')
-        if len(x_split) > 0 and len(x_split[1]) == 3:
-            if x_split[1][0] == 'A' and x_split[1][2] == 'F':
-                return x_split[1][1].lower()
-        return np.nan
-
-    dataset.metadata['flipper'] = dataset.metadata['path'].apply(lambda x: labels_map2[extract_flipper(x)])
-    dataset = dataset.get_subset(~dataset.df['flipper'].isnull())
-    dataset.metadata['label'] = dataset.metadata['flipper'].apply(lambda x: np.where(x == labels_map)[0][0])
-    dataset.col_label = 'label'
-
-    return dataset
 
 def extract_features(loader, model):
     model.eval()
@@ -132,3 +95,12 @@ class DatasetWrapper:
         processed = self.processor(images=image, return_tensors="pt")
         processed = processed.pixel_values.squeeze(0)
         return processed, label
+
+def strip_suffixes(x, suffixes):
+    suffixes = suffixes + [x.lower() for x in suffixes]
+    while any(x.endswith(ext) for ext in suffixes):
+        for ext in suffixes:
+            if x.endswith(ext):
+                x = x.removesuffix(ext).strip()
+                break
+    return x

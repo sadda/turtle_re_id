@@ -4,6 +4,7 @@ import shutil
 import numpy as np
 import pandas as pd
 from wildlife_datasets.datasets import utils, WildlifeDataset
+from .utils import strip_suffixes
 
 replace_strings = {
     'Ż': 'Z',
@@ -32,8 +33,8 @@ identity_replace = {
     'boma r': 'boma',
     'dabb3': 'dabb3 ei',
     'dabb3ei': 'dabb3 ei',
-    'dabb6ei': 'dabb6 ei',
-    'dabb6 ei': 'momo', # This needs to be after all the fixes
+    'dabb6ei': 'momo',
+    'dabb6 ei': 'momo',
     'elph2': 'elph2 ei',
     'elph3 ei': 'jamal',
     'egunk8': 'tsunami',
@@ -44,9 +45,9 @@ identity_replace = {
     'halhala1': 'halhala 1',
     'her2': 'her2 ei',
     'her2ei': 'her2 ei',
-    'her3': 'her3 ei',
-    'her3ei': 'her3 ei',
-    'her3 ei': 'her4 ei', # This needs to be after all the fixes
+    'her3': 'her4 ei',
+    'her3ei': 'her4 ei',
+    'her3 ei': 'her4 ei',
     'her4': 'her4 ei',
     'her4ei': 'her4 ei',
     'her5ei': 'her5 ei',
@@ -116,10 +117,10 @@ def get_encounter_name(x):
     else:
         return x[:i]
 
-def merge_codes(df, index):
+def merge_codes(df, index, individuals):
     xs = []
     for name in df['file']:
-        x = code_to_info(name)[index]
+        x = code_to_info(name, individuals)[index]
         xs.append(x)
     return list(pd.Series(xs).dropna().unique())
 
@@ -142,18 +143,30 @@ def fix_chars(x):
             x = x.replace(str1, str2)
     return x
 
-def fix_identity(x):
+def fix_identity(x, individuals):
     if pd.isnull(x):
         return x
     x = x.lower()
     if x.startswith('no id') or x.startswith('noid'):
         return 'unknown'
-    for str1, str2 in identity_replace.items():
-        if x == str1:
-            x = str2
+    if x in individuals:
+        return x
+    
+    ys = [
+        x,
+        x.split(' ')[0],
+        ' '.join(x.split(' ')[:2]),
+        x.split('-')[0],
+    ]
+    for y in ys:
+        for str1, str2 in identity_replace.items():
+            if y == str1 and (str2 == 'unknown' or str2 in individuals):
+                x = str2
+                break
+    
     return x
 
-def code_to_info(x):
+def code_to_info(x, individuals):
     codes_morning = ['am', 'am1']
     codes_afternoon = ['pm', 'un', 'ng', 'ni']
     codes_nan = ['na', 'gpm']
@@ -195,7 +208,7 @@ def code_to_info(x):
         orientation, leader, date, place, hour, author = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
     else:
         identity, orientation, leader, date, place, hour, author = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan    
-    identity = fix_identity(identity)
+    identity = fix_identity(identity, individuals)
     return identity, orientation, leader, date, place, hour, author
 
 def info_to_code(identity, orientation, leader, date, place, hour=None, author=''):
@@ -231,10 +244,19 @@ def rename_non_ascii(data):
     # Drop possible duplicates because of renaming
     return data.drop_duplicates()
 
+def load_individuals(file_name=None):
+    if file_name is None:
+        file_name = f'{os.path.dirname(os.path.abspath(__file__))}/individuals.csv'
+    individuals = pd.read_csv(file_name)
+    individuals = individuals['Common_name'].to_numpy()
+    individuals = [fix_chars(x).lower().strip() for x in individuals]
+    return [strip_suffixes(x, [' C', ' (DEAD)']) for x in individuals]
 
 class TurtleWatchEgypt_Base(WildlifeDataset):
+    individuals = load_individuals()
+
     def extract_info(self, i):
-        return code_to_info(self.df.loc[i, 'path'].split(os.path.sep)[-1])
+        return code_to_info(self.df.loc[i, 'path'].split(os.path.sep)[-1], self.individuals)
 
     def extract_code(self, i):
         df_row = self.df.iloc[i]
@@ -268,7 +290,7 @@ class TurtleWatchEgypt_AED(TurtleWatchEgypt_Base):
         data = rename_non_ascii(data)
 
         # Get identity
-        data['identity'] = data['file'].apply(lambda x: code_to_info(x)[0])
+        data['identity'] = data['file'].apply(lambda x: code_to_info(x, cls.individuals)[0])
         data = data[~data['identity'].isnull()]
 
         # Finalize the dataframe
@@ -339,12 +361,12 @@ class TurtleWatchEgypt_NYED(TurtleWatchEgypt_Base):
 
         for _, df_encounter in data.groupby('encounter_id'):
             # Extract information from code
-            identities = merge_codes(df_encounter, 0)
-            leaders = merge_codes(df_encounter, 2)
-            dates = merge_codes(df_encounter, 3)
-            places = merge_codes(df_encounter, 4)
-            hours = merge_codes(df_encounter, 5)
-            authors = merge_codes(df_encounter, 6)
+            identities = merge_codes(df_encounter, 0, cls.individuals)
+            leaders = merge_codes(df_encounter, 2, cls.individuals)
+            dates = merge_codes(df_encounter, 3, cls.individuals)
+            places = merge_codes(df_encounter, 4, cls.individuals)
+            hours = merge_codes(df_encounter, 5, cls.individuals)
+            authors = merge_codes(df_encounter, 6, cls.individuals)
             # Add individuals if empty
             if len(identities) == 0:
                 for name in df_encounter['path']:
@@ -384,3 +406,22 @@ class TurtleWatchEgypt_NYED(TurtleWatchEgypt_Base):
             df = df.reset_index(drop=True)            
         df['image_id'] = range(len(df))
         return self.finalize_catalogue(df)
+
+class TurtleWatchEgypt_Master_Heads(TurtleWatchEgypt_Base):
+    def _extract(self):
+        data = utils.find_images(self.root)
+        suffixes = [' B', ' C', ' L', ' R', ' T', ' BR', ' BL', ' RB', ' LB']
+        identities = []
+        for x in data['file']:
+            x = os.path.splitext(x)[0]
+            x = x.split('_')[0].split('(')[0].strip()
+            while any(x.endswith(ext) for ext in suffixes):
+                for ext in suffixes + [x.lower() for x in suffixes]:
+                    if x.endswith(ext):
+                        x = x.removesuffix(ext).strip()
+                        break
+            x = fix_chars(x).lower()
+
+            identities.append(x)
+        data['identity'] = identities
+        data['path'] = data['path'] + os.path.sep + data['file']
