@@ -25,7 +25,13 @@ replace_strings = {
 identity_replace = {
     '': np.nan,
     'l': 'unknown',
-    'r': 'unknown',    
+    'r': 'unknown',
+    '4-2016 ni ei ni l': '4-2016 ni ei ni',
+    '42016 ni ei ni l': '4-2016 ni ei ni',
+    '7-2016 ni ei baby-l': '7-2016 ni ei baby',
+    '7-2016 ni ei baby-r': '7-2016 ni ei baby',
+    '72016 ni ei baby r': '7-2016 ni ei baby',
+    '72016 ni ei baby-l': '7-2016 ni ei baby',
     '11-2016 ni baby barn r': '11-2016 ni baby barn',
     '112016 ni baby barn r': '11-2016 ni baby barn',
     'altea injured': 'altea',
@@ -69,6 +75,7 @@ identity_replace = {
     'per olaf': 'per-olaf',
     'red sea scuba diving - green turtle': 'unknown',
     'rhan': 'rhian',
+    'saskia': 'saskia ch',
     'sata1ei': 'sata1 ei',
     'tondoba': 'louisa',
     'tond1ei': 'tond1 ei',
@@ -108,8 +115,9 @@ def merge_codes(df, index, individuals):
 
 def get_code(xs, name='variables'):
     xs = list(xs)
-    if len(xs) > 1 and 'unknown' in xs:
-        xs.remove('unknown')
+    for y in ['', 'unknown']:
+        if len(xs) > 1 and y in xs:
+            xs.remove(y)
     if len(xs) > 1:
         print(f'Multiple {name}: {xs}')                
         return xs[0]
