@@ -1,0 +1,11 @@
+path: /data/wildlife_datasets/_smazat/SeaTurtleID2022_YOLO/
+train: images/train
+val: images/val
+
+names:
+  0: turtle
+  1: head
+  2: flipper_fl
+  3: flipper_fr
+  4: flipper_rl
+  5: flipper_rr
