@@ -3,18 +3,21 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from ultralytics import YOLO
-from turtlewatch_egypt import TWE_NewData
+from turtlewatch_egypt import TWE_NewData, download_detector
 
 path_model = 'models/segmentation.pt'
 roots = [
+    '/data/wildlife_datasets/turtle_watch/2017 PICS + DATASHEET',
     '/data/wildlife_datasets/turtle_watch/2018 PICS + DATASHEET',
     '/data/wildlife_datasets/turtle_watch/2019 PICS + DATASHEET',
     '/data/wildlife_datasets/turtle_watch/2020 PICS + DATASHEET',
     '/data/wildlife_datasets/turtle_watch/2021 PICS + DATASHEET',
     '/data/wildlife_datasets/turtle_watch/2022 PICS + online database',
-    '/data/wildlife_datasets/turtle_watch/2023 PICS + online database',    
+    '/data/wildlife_datasets/turtle_watch/2023 PICS + online database',
     '/data/wildlife_datasets/turtle_watch/2024 PICS + online database',
+    '/data/wildlife_datasets/turtle_watch/2025 PICS + online database',    
 ]
+download_detector(path_model=path_model)
 model = YOLO(path_model)
 
 for root in roots:
