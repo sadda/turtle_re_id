@@ -7,17 +7,33 @@ from wildlife_datasets.datasets import utils, WildlifeDataset
 from .utils import strip_suffixes
 
 replace_strings = {
+    'ł': 'l',
     'Ż': 'Z',
     'Ł': 'L',
     'ń': 'n',
+    'á': 'a',
     'à': 'a',
+    'Á': 'A',
+    'ç': 'c',
+    'Č': 'C',
+    'ğ': 'g',    
     'è': 'e',
     'é': 'e',
     'ě': 'e',
+    'È': 'e',
+    'ň': 'n',
     'ó': 'o',
     'ö': 'o',
+    'Ö': 'o',
     'Ó': 'O',
+    'š': 's',
+    'Š': 'S',
+    'ř': 'r',
+    'ž': 'z',
+    'Ž': 'Z',
     '’': '\'',
+    '“': '\'',
+    '”': '\'',
     '\u200e': '',  # Remove LEFT-TO-RIGHT MARK
     '\u200f': '',  # Remove RIGHT-TO-LEFT MARK
 }        
@@ -29,8 +45,12 @@ identity_replace = {
     '42016 ni ei ni': '4-2016 ni ei ni',
     '72016 ni ei baby': '7-2016 ni ei baby',
     '112016 ni baby barn r': '11-2016 ni baby barn',
+    '1noid': 'unknown',
+    '2noid': 'unknown',
     '_amal kabir': 'amal kabir',
     'anette': 'annette',
+    'annvd': 'unknown',
+    'arf': 'unknown',
     'asunk1': 'mara',
     'asunk2': 'enea',
     'asunk5': 'fame',
@@ -74,6 +94,11 @@ identity_replace = {
     'hunk16': 'norman',
     'hunk17': 'christopher columbus',
     'img': 'unknown',
+    'inbound1434235978309711639': 'unknown',
+    'inbound2545461428103863063': 'unknown',
+    'inbound2900475970750989766': 'unknown',
+    'inbound4209230724466990989': 'unknown',
+    'injured': 'unknown',
     'juve maxim': 'maxim',
     'kriya': 'krilya',
     'ladilsav': 'ladislav',
@@ -94,7 +119,8 @@ identity_replace = {
     'tondoba': 'louisa',
     'tond1ei': 'tond1 ei',
     'tond2ei': 'tond2 ei',
-    'toro': 'toro ei',
+    'toro': 'toro1 ei',
+    'toro1': 'toro1 ei',
     'unk1': 'phealyn',
     'unk2': 'sebastian',
     'unk3': 'didier', 
@@ -148,7 +174,6 @@ def get_code(xs, name='variables'):
         return np.nan
 
 def fix_chars(x):
-    # TODO: it should check on lower only
     for str1, str2 in replace_strings.items():
         if str1 in x:
             x = x.replace(str1, str2)
@@ -157,17 +182,18 @@ def fix_chars(x):
 def fix_identity(x, individuals):
     if pd.isnull(x):
         return x
-    x = x.lower()
+    x = x.strip().lower()
     if x.startswith('no id') or x.startswith('noid'):
         return 'unknown'
     
     ys = [
         x,
-        x.split(' ')[0],
         ' '.join(x.split(' ')[:2]),
         ' '.join(x.split(' ')[:-1]),
+        x.split(' ')[0],
         x.split('-')[0],
         '-'.join(x.split('-')[:-1]),
+        '.'.join(x.split('.')[:-1]),
         x.split('_')[0],
     ]
     for y in ys:
@@ -194,21 +220,21 @@ def code_to_info(x, individuals):
         leader = x_split[2]
         date = f'{x_split[3]}-{x_split[4]}-{x_split[5]}'
         # Formatting type
-        if x_split[6] in codes_time:
+        if x_split[6].strip() in codes_time:
             i_place, i_noon, i_hour = 8, 6, 7
-        elif x_split[8] in codes_time:
+        elif x_split[8].strip() in codes_time:
             i_place, i_noon, i_hour = 6, 8, 7
         else:
             i_place, i_noon, i_hour = 6, 7, 8
         place = x_split[i_place]
-        if x_split[i_hour] == '':
+        if x_split[i_hour].strip() == '':
             hour = np.nan
         else:
-            if x_split[i_noon] in codes_morning:
+            if x_split[i_noon].strip() in codes_morning:
                 hour = int(x_split[i_hour].split('.')[0])
-            elif x_split[i_noon] in codes_afternoon:
+            elif x_split[i_noon].strip() in codes_afternoon:
                 hour = 12 + np.mod(int(x_split[i_hour]), 12)
-            elif x_split[i_noon] in codes_nan:
+            elif x_split[i_noon].strip() in codes_nan:
                 hour = np.nan
             else:
                 raise ValueError(f'Value {x} is not correct')
@@ -252,7 +278,7 @@ def rename_non_ascii(data):
             data.loc[idx, 'file'] = os.path.basename(new_file_name)
             data.loc[idx, 'path'] = os.path.dirname(new_file_name)
             os.makedirs(os.path.dirname(new_file_name), exist_ok=True)
-            shutil.copy(old_file_name, new_file_name)
+            shutil.move(old_file_name, new_file_name)
 
     # Drop possible duplicates because of renaming
     return data.drop_duplicates()
@@ -283,17 +309,13 @@ class TWE_Base(WildlifeDataset):
         return info_to_code(identity, orientation, leader, date, place, hour=hour, author=author)
 
 
-class TWE_MasterFlippers(TWE_Base):
-    # TODO: add metadata
-
+class TWE_Master(TWE_Base):
     @classmethod
     def _download(cls):
-        # TODO: add download
         pass
 
     @classmethod
     def _extract(cls):
-        # TODO: this should be somewhere else probably
         data = utils.find_images('.')
 
         # Get full file names
@@ -303,8 +325,7 @@ class TWE_MasterFlippers(TWE_Base):
         data = rename_non_ascii(data)
 
         # Get identity
-        data['identity'] = data['file'].apply(lambda x: code_to_info(x, cls.individuals)[0])
-        data = data[~data['identity'].isnull()]
+        data['identity'] = data['file'].apply(lambda x: fix_identity(x.lower(), cls.individuals))
 
         # Finalize the dataframe
         data = data.sort_values('file').reset_index(drop=True)
@@ -319,11 +340,8 @@ class TWE_MasterFlippers(TWE_Base):
     
 
 class TWE_NewData(TWE_Base):
-    # TODO: add metadata
-
     @classmethod
     def _download(cls):
-        # TODO: add download
         pass
 
     @classmethod
@@ -419,22 +437,3 @@ class TWE_NewData(TWE_Base):
             df = df.reset_index(drop=True)            
         df['image_id'] = range(len(df))
         return self.finalize_catalogue(df)
-
-class TWE_MasterHeads(TWE_Base):
-    def _extract(self):
-        data = utils.find_images(self.root)
-        suffixes = [' B', ' C', ' L', ' R', ' T', ' BR', ' BL', ' RB', ' LB']
-        identities = []
-        for x in data['file']:
-            x = os.path.splitext(x)[0]
-            x = x.split('_')[0].split('(')[0].strip()
-            while any(x.endswith(ext) for ext in suffixes):
-                for ext in suffixes + [x.lower() for x in suffixes]:
-                    if x.endswith(ext):
-                        x = x.removesuffix(ext).strip()
-                        break
-            x = fix_chars(x).lower()
-
-            identities.append(x)
-        data['identity'] = identities
-        data['path'] = data['path'] + os.path.sep + data['file']
