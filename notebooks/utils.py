@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import Optional, List, Tuple, Callable
-from turtlewatch_egypt import TurtleWatchEgypt_NYED, fix_chars
+from turtlewatch_egypt import TWE_NewData
 
 def compute_predictions(
         features_query: np.ndarray,
@@ -109,11 +109,11 @@ def merge_datasets(master_root, roots, **kwargs):
     dfs = []
     n_encounters = 0
     for root in roots:
-        dataset = TurtleWatchEgypt_NYED(f'{master_root}/{root}', load_segmentation=True)
+        dataset = TWE_NewData(f'{master_root}/{root}', load_segmentation=True)
         dataset.df['path'] = root.split('/')[-1] + '/' + dataset.df['path']
         dataset.df['encounter_id'] = dataset.df['encounter_id'] + n_encounters
         n_encounters += dataset.df['encounter_id'].nunique()
         dfs.append(dataset.df)
     df = pd.concat(dfs).reset_index(drop=True)
     df['image_id'] = range(len(df))
-    return TurtleWatchEgypt_NYED(root=master_root, df=df, **kwargs)
+    return TWE_NewData(root=master_root, df=df, **kwargs)

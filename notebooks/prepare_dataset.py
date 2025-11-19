@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from ultralytics import YOLO
-from turtlewatch_egypt import TurtleWatchEgypt_NYED
+from turtlewatch_egypt import TWE_NewData
 
 path_model = 'models/segmentation.pt'
 roots = [
@@ -18,8 +18,8 @@ roots = [
 model = YOLO(path_model)
 
 for root in roots:
-    TurtleWatchEgypt_NYED.get_data(root, force=True)
-    dataset = TurtleWatchEgypt_NYED(root)    
+    TWE_NewData.get_data(root, force=True)
+    dataset = TWE_NewData(root)    
 
     image_ids = np.empty(0, dtype=int)
     bboxes = np.empty((0,4))

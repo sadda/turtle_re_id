@@ -264,7 +264,7 @@ def load_individuals(file_name=None):
     individuals = [fix_chars(x).lower().strip() for x in individuals]
     return [strip_suffixes(x, [' C', ' (DEAD)']) for x in individuals]
 
-class TurtleWatchEgypt_Base(WildlifeDataset):
+class TWE_Base(WildlifeDataset):
     individuals = load_individuals()
 
     def extract_info(self, i):
@@ -282,7 +282,7 @@ class TurtleWatchEgypt_Base(WildlifeDataset):
         return info_to_code(identity, orientation, leader, date, place, hour=hour, author=author)
 
 
-class TurtleWatchEgypt_AED(TurtleWatchEgypt_Base):
+class TWE_MasterFlippers(TWE_Base):
     # TODO: add metadata
 
     @classmethod
@@ -317,7 +317,7 @@ class TurtleWatchEgypt_AED(TurtleWatchEgypt_Base):
         return self.finalize_catalogue(df)
     
 
-class TurtleWatchEgypt_NYED(TurtleWatchEgypt_Base):
+class TWE_NewData(TWE_Base):
     # TODO: add metadata
 
     @classmethod
@@ -419,7 +419,7 @@ class TurtleWatchEgypt_NYED(TurtleWatchEgypt_Base):
         df['image_id'] = range(len(df))
         return self.finalize_catalogue(df)
 
-class TurtleWatchEgypt_Master_Heads(TurtleWatchEgypt_Base):
+class TWE_MasterHeads(TWE_Base):
     def _extract(self):
         data = utils.find_images(self.root)
         suffixes = [' B', ' C', ' L', ' R', ' T', ' BR', ' BL', ' RB', ' LB']
