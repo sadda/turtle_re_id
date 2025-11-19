@@ -63,6 +63,7 @@ identity_replace = {
     'her5ei': 'her5 ei',
     'her6ei': 'her6 ei',
     'her8': 'her8 ei',
+    'her9 ei': 'luna',
     'her hunk1': 'hunk1',
     'her hunk2': 'ansofie',
     'her hunk6': 'hunk6',
