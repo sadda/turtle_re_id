@@ -327,6 +327,14 @@ class TWE_Master(TWE_Base):
         # Get identity
         data['identity'] = data['file'].apply(lambda x: fix_identity(x.lower(), cls.individuals))
 
+        # Get orientation
+        orientation = data['file'].apply(lambda x: code_to_info(os.path.basename(x), cls.individuals)[1])
+        idx = orientation.isnull()
+        orientation[idx] = data.loc[idx, 'file'].apply(lambda x: os.path.basename(x).split('.')[-2][-2:])
+        orientation = orientation.apply(lambda x: x.strip().lower())
+        orientation = orientation.apply(lambda x: x if x in ['l', 'r', 'b', 'c', 't', 'alf', 'arf'] else np.nan)
+        data['orientation'] = orientation
+
         # Finalize the dataframe
         data = data.sort_values('file').reset_index(drop=True)
         data = data.drop(['path', 'file'], axis=1)
