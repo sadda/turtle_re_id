@@ -214,7 +214,7 @@ def code_to_info(x, individuals):
     x = os.path.splitext(x)[0]
     x = x.lower()
     x_split = x.split('_')
-    if len(x_split) == 10:
+    if len(x_split) >= 10:
         identity = x_split[0].strip()
         orientation = x_split[1]
         leader = x_split[2]
@@ -332,7 +332,7 @@ class TWE_Master(TWE_Base):
         idx = orientation.isnull()
         orientation[idx] = data.loc[idx, 'file'].apply(lambda x: os.path.basename(x).split('.')[-2][-2:])
         orientation = orientation.apply(lambda x: x.strip().lower())
-        orientation = orientation.apply(lambda x: x if x in ['l', 'r', 'b', 'c', 't', 'alf', 'arf'] else np.nan)
+        orientation = orientation.apply(lambda x: x if x in ['l', 'r', 'b', 'c', 't', 'alf', 'arf', 'rlf', 'rrf'] else np.nan)
         data['orientation'] = orientation
 
         # Finalize the dataframe
@@ -437,10 +437,17 @@ class TWE_NewData(TWE_Base):
         df['image_id'] = range(len(df))
         df.loc[df['identity'].isnull(), 'identity'] = 'unknown'
         if load_segmentation:
+            conversion = {
+                'flipper_fl': 'alf',
+                'flipper_fr': 'arf',
+                'flipper_rl': 'rlf',
+                'flipper_rr': 'rrf',
+            }
             cols = ['bbox_x', 'bbox_y', 'bbox_w', 'bbox_h']
             segmentation = pd.read_csv(f'{self.root}/segmentation.csv')
             df = pd.merge(df, segmentation, on='image_id', how='outer')
             df['bbox'] = list(df[cols].to_numpy())
+            df['orientation'] = df['label'].apply(lambda x: conversion.get(x, np.nan))
             df = df.drop(cols, axis=1)
             df = df.reset_index(drop=True)            
         df['image_id'] = range(len(df))
