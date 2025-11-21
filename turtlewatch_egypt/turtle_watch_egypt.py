@@ -251,9 +251,10 @@ def code_to_info(x, individuals):
     return identity, orientation, leader, date, place, hour, author
 
 def info_to_code(identity, orientation, leader, date, place, hour=None, author=''):
-    year = str(date)[:4]
-    month = str(date)[5:7]
-    day = str(date)[8:10]
+    date_split = str(date).split('-')
+    year = date_split[0]
+    month = date_split[1]
+    day = date_split[2]
     if pd.isnull(hour):
         hour1 = ''
         hour2 = ''
@@ -328,6 +329,7 @@ class TWE_Master(TWE_Base):
         data['identity'] = data['file'].apply(lambda x: fix_identity(x.lower(), cls.individuals))
 
         # Get orientation
+        data['date'] = data['file'].apply(lambda x: code_to_info(os.path.basename(x), cls.individuals)[3])
         orientation = data['file'].apply(lambda x: code_to_info(os.path.basename(x), cls.individuals)[1])
         idx = orientation.isnull()
         orientation[idx] = data.loc[idx, 'file'].apply(lambda x: os.path.basename(x).split('.')[-2][-2:])
