@@ -1,11 +1,6 @@
-import os
-import numpy as np
-import pandas as pd
-from tqdm import tqdm
-from ultralytics import YOLO
-from turtlewatch_egypt import TWE_NewData, download_detector
+from animal_re_id.models import run_detection, turtle_detector
+from animal_re_id.turtlewatch_egypt import TWE_NewData
 
-path_model = 'models/segmentation.pt'
 roots = [
     '/data/wildlife_datasets/turtle_watch/2017 PICS + DATASHEET',
     '/data/wildlife_datasets/turtle_watch/2018 PICS + DATASHEET',
@@ -17,42 +12,11 @@ roots = [
     '/data/wildlife_datasets/turtle_watch/2024 PICS + online database',
     '/data/wildlife_datasets/turtle_watch/2025 PICS + online database',    
 ]
-download_detector(path_model=path_model)
-model = YOLO(path_model)
+model = turtle_detector()
 
 for root in roots:
     TWE_NewData.get_data(root, force=True)
     dataset = TWE_NewData(root)    
-
-    image_ids = np.empty(0, dtype=int)
-    bboxes = np.empty((0,4))
-    scores = np.empty(0, dtype=float)
-    labels = np.empty(0, dtype=int)
-    for i, (_, df_row) in enumerate(tqdm(dataset.df.iterrows(), total=len(dataset))):
-        file_name = os.path.join(root, df_row['path'])        
-        try:
-            result = model.predict(source=file_name, verbose=False, save=False, show=False)[0]
-        except:
-            continue
-
-        for box in result.boxes:
-            cls = box.cls[0].cpu().item()
-            conf = box.conf[0].cpu().item()
-            bbox = box.xywh[0].cpu().numpy()
-
-            image_ids = np.concatenate((image_ids, [df_row['image_id']]))
-            bboxes = np.concatenate((bboxes, box.xyxy.cpu().numpy()))
-            scores = np.concatenate((scores, box.conf.cpu().numpy()))
-            labels = np.concatenate((labels, box.cls.cpu().numpy()))
-
-    segmentation = pd.DataFrame({
-        'image_id': image_ids,
-        'bbox_x': bboxes[:,0],
-        'bbox_y': bboxes[:,1],
-        'bbox_w': bboxes[:,2]-bboxes[:,0],
-        'bbox_h': bboxes[:,3]-bboxes[:,1],
-        'score': scores,
-        'label': [result.names[x] for x in labels]
-    })
+    segmentation = run_detection(dataset, model)
     segmentation['image_id'] = segmentation['image_id'].astype(int)
     segmentation.to_csv(f'{root}/segmentation.csv', index=False)
