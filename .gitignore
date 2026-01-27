@@ -1,6 +1,5 @@
 runs/
 mmdetection/
-models/
 venv*/
 tokens/
 
