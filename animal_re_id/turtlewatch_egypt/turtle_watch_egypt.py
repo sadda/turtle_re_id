@@ -205,6 +205,12 @@ def fix_identity(x, individuals):
     
     return x
 
+def is_int(x):
+    try:
+        return int(x) == float(x)
+    except (TypeError, ValueError):
+        return False
+
 def code_to_info(x, individuals):
     codes_morning = ['am', 'am1']
     codes_afternoon = ['pm', 'un', 'ng', 'ni']
@@ -214,11 +220,20 @@ def code_to_info(x, individuals):
     x = os.path.splitext(x)[0]
     x = x.lower()
     x_split = x.split('_')
-    if len(x_split) >= 10:
+    if len(x_split) == 10:
         identity = x_split[0].strip()
         orientation = x_split[1]
         leader = x_split[2]
-        date = f'{x_split[3]}-{x_split[4]}-{x_split[5]}'
+        date_year = x_split[3]
+        date_month = x_split[4]
+        date_day = x_split[5]
+        date = np.nan
+        if is_int(date_year) and is_int(date_month) and is_int(date_day):
+            date_year = int(date_year)
+            date_month = int(date_month)
+            date_day = int(date_day)
+            if int(date_year) >= 2000 and (1 <= int(date_month) <= 12) and (1 <= int(date_day) <= 31):
+                date = f'{date_year:04d}-{date_month:02d}-{date_day:02d}'
         # Formatting type
         if x_split[6].strip() in codes_time:
             i_place, i_noon, i_hour = 8, 6, 7
