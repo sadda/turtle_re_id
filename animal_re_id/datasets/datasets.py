@@ -1,0 +1,117 @@
+import numpy as np
+from wildlife_datasets import datasets as wd_datasets
+
+
+class Dataset:
+    def __init__(self, matching_parts, same_identity="delete", ignore_unknown=True):
+        self.matching_parts = matching_parts
+        self.ignore_unknown = ignore_unknown
+        for matching_part in self.matching_parts.keys():
+            if same_identity == "delete":
+                arr = self.matching_parts[matching_part]['cols_equal']
+                if 'identity' not in arr:
+                    arr.append('identity')
+            elif same_identity == "only":
+                arr = self.matching_parts[matching_part]['cols_unequal']
+                if 'identity' not in arr:
+                    arr.append('identity')
+            elif same_identity == "keep":
+                pass
+            else:
+                raise ValueError("same_identity must be delete, only or keep.")        
+    
+    def _get_datasets(self, *args, **kwargs):
+        raise NotImplementedError("Must be implemented by subclasses.")
+
+    def _get_ignore_pairs(self, df, cols_equal, cols_unequal):
+        ignore_pairs = []
+
+        # Ignores same values in cols_equal
+        for col in cols_equal:
+            s = df[col]
+            if self.ignore_unknown and col == 'identity':
+                s = s[s != 'unknown']
+            
+            groups = s.groupby(s).groups
+            for idx in groups.values():
+                idx = idx.to_numpy()
+                i, j = np.meshgrid(idx, idx, indexing='ij')
+                ignore_pairs.extend(zip(i.ravel(), j.ravel()))
+
+        # Ignores different values in cols_unequal
+        for col in cols_unequal:
+            s = df[col]
+            if self.ignore_unknown and col == 'identity':
+                s = s[s != 'unknown']
+
+            values = s.to_numpy()
+            idx = s.index.to_numpy()
+
+            mask = values[:, None] != values[None, :]
+            i, j = np.where(mask)
+            ignore_pairs.extend(zip(idx[i], idx[j]))
+
+        return ignore_pairs
+
+    def load_datasets(self):
+        datasets = self._get_datasets()
+        ignore_pairs = {}
+        for matching_part, dataset in datasets.items():
+            cols_equal = self.matching_parts[matching_part]['cols_equal']
+            cols_unequal = self.matching_parts[matching_part]['cols_unequal']
+            ignore_pairs[matching_part] = self._get_ignore_pairs(dataset.metadata, cols_equal, cols_unequal)
+        return datasets, ignore_pairs
+
+
+class Dataset_Ultralytics(Dataset):
+    def __init__(self, matching_parts, score_min=0.8, **kwargs):
+        self.score_min = score_min
+        super().__init__(matching_parts, **kwargs)
+
+    def _get_datasets(self):
+        datasets = {}
+        for matching_part in self.matching_parts:
+            labels = self.matching_parts[matching_part]['labels']
+            idx1 = self.dataset_full.metadata['score'] >= self.score_min
+            idx2 = self.dataset_full.metadata['label'].isin(labels)
+            datasets[matching_part] = self.dataset_full.get_subset(idx1 & idx2)
+        return datasets
+
+
+class TurtlesOfSMSRC(Dataset_Ultralytics):
+    def __init__(self, root, **kwargs):
+        matching_parts = {
+            'heads': {'labels': ['head'], 'cols_equal': [], 'cols_unequal': []},
+            'front flippers': {'labels': ['flipper_fl', 'flipper_fr'], 'cols_equal': [], 'cols_unequal': ['label']},
+            'rear flippers': {'labels': ['flipper_rl', 'flipper_rr'], 'cols_equal': [], 'cols_unequal': ['label']}
+        }
+        self.dataset_full = wd_datasets.TurtlesOfSMSRC(root, img_load='bbox', load_segmentation=True, load_label=True)
+        super().__init__(matching_parts, **kwargs)
+
+
+class SeaTurtleID2022(Dataset):
+    def __init__(self, root, **kwargs):
+        matching_parts = {
+            'heads': {'cols_equal': [], 'cols_unequal': []},
+            'front flippers': {'cols_equal': [], 'cols_unequal': ['orientation']},
+            'rear flippers': {'cols_equal': [], 'cols_unequal': ['orientation']}
+        }
+        self.dataset_heads = wd_datasets.SeaTurtleID2022(root, category_name='head', img_load='bbox', load_label=True)
+        self.dataset_flippers = wd_datasets.SeaTurtleID2022(root, category_name='flipper', img_load='bbox', load_label=True)
+        self.dataset_flippers.metadata['orientation'] = self.dataset_flippers.metadata['orientation'].replace({
+            'front_left': 'flipper_fl',
+            'front_right': 'flipper_fr',
+            'rear_left': 'flipper_rl',
+            'rear_right': 'flipper_rr',
+        })
+        super().__init__(matching_parts, **kwargs)
+
+    def _get_datasets(self):
+        idx_front = self.dataset_flippers.metadata['orientation'].isin(['flipper_fl', 'flipper_fr'])
+        idx_rear = self.dataset_flippers.metadata['orientation'].isin(['flipper_rl', 'flipper_rr'])
+
+        datasets = {}
+        datasets['heads'] = self.dataset_heads
+        datasets['front flippers'] = self.dataset_flippers.get_subset(idx_front)
+        datasets['rear flippers'] = self.dataset_flippers.get_subset(idx_rear)
+        return datasets
