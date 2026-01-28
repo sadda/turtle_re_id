@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from typing import List
 from wildlife_datasets import datasets as wd_datasets
 
@@ -105,8 +106,14 @@ class SeaTurtleID2022(Dataset):
             'rear_left': 'flipper_rl',
             'rear_right': 'flipper_rr',
         })
+        self.add_year(self.dataset_heads)
+        self.add_year(self.dataset_flippers)
         super().__init__(matching_parts, is_database, **kwargs)
 
+    def add_year(self, dataset):
+        dates = pd.to_datetime(dataset.metadata['date'])
+        dataset.metadata['year'] = dates.apply(lambda x: x.year)
+    
     def load_datasets(self):
         idx_front = self.dataset_flippers.metadata['orientation'].isin(['flipper_fl', 'flipper_fr'])
         idx_rear = self.dataset_flippers.metadata['orientation'].isin(['flipper_rl', 'flipper_rr'])
