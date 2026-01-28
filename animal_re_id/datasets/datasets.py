@@ -8,30 +8,13 @@ class Dataset:
             self,
             matching_parts: List[str],
             is_database: bool,
-            same_identity: str = "delete",
             ignore_unknown: bool = True
             ):
         
         self.matching_parts = matching_parts
         self.is_database = is_database
         self.ignore_unknown = ignore_unknown
-        for matching_part in self.matching_parts.keys():
-            if same_identity == "delete":
-                arr = self.matching_parts[matching_part]['cols_equal']
-                if 'identity' not in arr:
-                    arr.append('identity')
-            elif same_identity == "only":
-                arr = self.matching_parts[matching_part]['cols_unequal']
-                if 'identity' not in arr:
-                    arr.append('identity')
-            elif same_identity == "keep":
-                pass
-            else:
-                raise ValueError("same_identity must be delete, only or keep.")        
     
-    def _get_datasets(self, *args, **kwargs):
-        raise NotImplementedError("Must be implemented by subclasses.")
-
     def _get_ignore_pairs(self, df, cols_equal, cols_unequal):
         ignore_pairs = []
 
@@ -62,8 +45,10 @@ class Dataset:
 
         return ignore_pairs
 
-    def load_datasets(self):
-        self.datasets = self._get_datasets()
+    def load_datasets(self, *args, **kwargs):
+        raise NotImplementedError("Must be implemented by subclasses.")
+
+    def load_ignore_pairs(self):
         if self.is_database:
             self.ignore_pairs = {matching_part: None for matching_part in self.datasets}
         else:
@@ -79,22 +64,21 @@ class Dataset_Ultralytics(Dataset):
         self.score_min = score_min
         super().__init__(matching_parts, is_database, **kwargs)
 
-    def _get_datasets(self):
-        datasets = {}
+    def load_datasets(self):
+        self.datasets = {}
         for matching_part in self.matching_parts:
             labels = self.matching_parts[matching_part]['labels']
             idx1 = self.dataset_full.metadata['score'] >= self.score_min
             idx2 = self.dataset_full.metadata['label'].isin(labels)
-            datasets[matching_part] = self.dataset_full.get_subset(idx1 & idx2)
-        return datasets
+            self.datasets[matching_part] = self.dataset_full.get_subset(idx1 & idx2)
 
 
 class TurtlesOfSMSRC(Dataset_Ultralytics):
     def __init__(self, root, is_database, **kwargs):
         matching_parts = {
-            'heads': {'labels': ['head'], 'cols_equal': [], 'cols_unequal': []},
-            'front flippers': {'labels': ['flipper_fl', 'flipper_fr'], 'cols_equal': [], 'cols_unequal': ['label']},
-            'rear flippers': {'labels': ['flipper_rl', 'flipper_rr'], 'cols_equal': [], 'cols_unequal': ['label']}
+            'heads': {'labels': ['head'], 'cols_equal': ['identity'], 'cols_unequal': []},
+            'front flippers': {'labels': ['flipper_fl', 'flipper_fr'], 'cols_equal': ['identity'], 'cols_unequal': ['label']},
+            'rear flippers': {'labels': ['flipper_rl', 'flipper_rr'], 'cols_equal': ['identity'], 'cols_unequal': ['label']}
         }
         self.dataset_full = wd_datasets.TurtlesOfSMSRC(root, img_load='bbox', load_segmentation=True, load_label=True)
         super().__init__(matching_parts, is_database, **kwargs)
@@ -103,9 +87,9 @@ class TurtlesOfSMSRC(Dataset_Ultralytics):
 class SeaTurtleID2022(Dataset):
     def __init__(self, root, is_database, **kwargs):
         matching_parts = {
-            'heads': {'cols_equal': [], 'cols_unequal': []},
-            'front flippers': {'cols_equal': [], 'cols_unequal': ['orientation']},
-            'rear flippers': {'cols_equal': [], 'cols_unequal': ['orientation']}
+            'heads': {'cols_equal': ['identity'], 'cols_unequal': []},
+            'front flippers': {'cols_equal': ['identity'], 'cols_unequal': ['orientation']},
+            'rear flippers': {'cols_equal': ['identity'], 'cols_unequal': ['orientation']}
         }
         self.dataset_heads = wd_datasets.SeaTurtleID2022(root, category_name='head', img_load='bbox', load_label=True)
         self.dataset_flippers = wd_datasets.SeaTurtleID2022(root, category_name='flipper', img_load='bbox', load_label=True)
@@ -117,12 +101,11 @@ class SeaTurtleID2022(Dataset):
         })
         super().__init__(matching_parts, is_database, **kwargs)
 
-    def _get_datasets(self):
+    def load_datasets(self):
         idx_front = self.dataset_flippers.metadata['orientation'].isin(['flipper_fl', 'flipper_fr'])
         idx_rear = self.dataset_flippers.metadata['orientation'].isin(['flipper_rl', 'flipper_rr'])
 
-        datasets = {}
-        datasets['heads'] = self.dataset_heads
-        datasets['front flippers'] = self.dataset_flippers.get_subset(idx_front)
-        datasets['rear flippers'] = self.dataset_flippers.get_subset(idx_rear)
-        return datasets
+        self.datasets = {}
+        self.datasets['heads'] = self.dataset_heads
+        self.datasets['front flippers'] = self.dataset_flippers.get_subset(idx_front)
+        self.datasets['rear flippers'] = self.dataset_flippers.get_subset(idx_rear)
