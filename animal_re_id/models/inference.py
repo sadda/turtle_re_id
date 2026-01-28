@@ -9,3 +9,11 @@ def compute_similarity(query, database, ignore_pairs, priority, pipelines, Bs, n
         similarity = similarity.astype(np.float64)
         similarities[name] = similarity
     return similarities
+
+def top_indices(similarity, ignore_lower_diagonal=False):
+        if ignore_lower_diagonal:
+            similarity[np.tril_indices_from(similarity)] = -np.inf
+        flat_arr = similarity.flatten()
+        top_flat_indices = np.argsort(-flat_arr)
+        return np.unravel_index(top_flat_indices, similarity.shape)
+
