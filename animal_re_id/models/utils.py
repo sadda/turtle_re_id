@@ -27,3 +27,9 @@ def gather_df(
         'similarity_orig': similarity[i_sort, j_sort],
     })
     return result
+
+def plot_match(dataset, result):
+    idx = result[['index1', 'index2']].to_numpy().astype(int)
+    identities = result[['identity1', 'identity2']].to_numpy()
+    header_cols = [f'{identities[0]}_{identities[1]}', result['similarity']]
+    dataset.plot_grid(idx=idx, n_cols=2, header_cols=header_cols, rotate=False)
