@@ -65,6 +65,11 @@ class Dataset:
                 cols_unequal = self.matching_parts[matching_part]['cols_unequal']
                 self.ignore_pairs[matching_part] = self._get_ignore_pairs(dataset.metadata, cols_equal, cols_unequal)
 
+    def set_unknown_identity(self):
+        for dataset in self.datasets.values():
+            dataset.metadata["identity_orig"] = dataset.metadata["identity"].copy()
+            dataset.metadata["identity"] = "unknown"
+
 
 class Dataset_Ultralytics(Dataset):
     def __init__(self, matching_parts, is_database, score_min=0.8, **kwargs):
