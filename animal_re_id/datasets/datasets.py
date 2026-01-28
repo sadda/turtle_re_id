@@ -99,9 +99,9 @@ class TurtlesOfSMSRC(Dataset_Ultralytics):
 class SeaTurtleID2022(Dataset):
     def __init__(self, root, is_database, **kwargs):
         matching_parts = {
-            'heads': {'cols_equal': ['identity'], 'cols_unequal': []},
-            'front flippers': {'cols_equal': ['identity'], 'cols_unequal': ['orientation']},
-            'rear flippers': {'cols_equal': ['identity'], 'cols_unequal': ['orientation']}
+            'heads': {'cols_equal': ['identity', 'encounter_id'], 'cols_unequal': []},
+            'front flippers': {'cols_equal': ['identity', 'encounter_id'], 'cols_unequal': ['orientation']},
+            'rear flippers': {'cols_equal': ['identity', 'encounter_id'], 'cols_unequal': ['orientation']}
         }
         self.dataset_heads = wd_datasets.SeaTurtleID2022(root, category_name='head', img_load='bbox', load_label=True)
         self.dataset_flippers = wd_datasets.SeaTurtleID2022(root, category_name='flipper', img_load='bbox', load_label=True)
@@ -111,14 +111,16 @@ class SeaTurtleID2022(Dataset):
             'rear_left': 'flipper_rl',
             'rear_right': 'flipper_rr',
         })
-        self.add_year(self.dataset_heads)
-        self.add_year(self.dataset_flippers)
+        self.add_info(self.dataset_heads)
+        self.add_info(self.dataset_flippers)
         super().__init__(matching_parts, is_database, **kwargs)
 
-    def add_year(self, dataset):
-        dates = pd.to_datetime(dataset.metadata['date'])
-        dataset.metadata['year'] = dates.apply(lambda x: x.year)
-    
+    def add_info(self, dataset):
+        df = dataset.metadata
+        dates = pd.to_datetime(df['date'])
+        df['year'] = dates.apply(lambda x: x.year)
+        df['encounter_id'] = df['identity'] + '_' + df['date']
+
     def load_datasets(self):
         idx_front = self.dataset_flippers.metadata['orientation'].isin(['flipper_fl', 'flipper_fr'])
         idx_rear = self.dataset_flippers.metadata['orientation'].isin(['flipper_rl', 'flipper_rr'])
