@@ -45,6 +45,12 @@ class Dataset:
 
         return ignore_pairs
 
+    def get_datasets_subset(self, col, min_value, max_value):
+        for matching_part, dataset in self.datasets.items():
+            s = dataset.metadata[col]
+            mask = (s >= min_value) & (s <= max_value)            
+            self.datasets[matching_part] = dataset.get_subset(mask)
+
     def load_datasets(self, *args, **kwargs):
         raise NotImplementedError("Must be implemented by subclasses.")
 
