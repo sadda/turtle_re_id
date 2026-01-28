@@ -1,10 +1,19 @@
 import numpy as np
+from typing import List
 from wildlife_datasets import datasets as wd_datasets
 
 
 class Dataset:
-    def __init__(self, matching_parts, same_identity="delete", ignore_unknown=True):
+    def __init__(
+            self,
+            matching_parts: List[str],
+            is_database: bool,
+            same_identity: str = "delete",
+            ignore_unknown: bool = True
+            ):
+        
         self.matching_parts = matching_parts
+        self.is_database = is_database
         self.ignore_unknown = ignore_unknown
         for matching_part in self.matching_parts.keys():
             if same_identity == "delete":
@@ -54,19 +63,21 @@ class Dataset:
         return ignore_pairs
 
     def load_datasets(self):
-        datasets = self._get_datasets()
-        ignore_pairs = {}
-        for matching_part, dataset in datasets.items():
-            cols_equal = self.matching_parts[matching_part]['cols_equal']
-            cols_unequal = self.matching_parts[matching_part]['cols_unequal']
-            ignore_pairs[matching_part] = self._get_ignore_pairs(dataset.metadata, cols_equal, cols_unequal)
-        return datasets, ignore_pairs
+        self.datasets = self._get_datasets()
+        if self.is_database:
+            self.ignore_pairs = {matching_part: None for matching_part in self.datasets}
+        else:
+            self.ignore_pairs = {}
+            for matching_part, dataset in self.datasets.items():
+                cols_equal = self.matching_parts[matching_part]['cols_equal']
+                cols_unequal = self.matching_parts[matching_part]['cols_unequal']
+                self.ignore_pairs[matching_part] = self._get_ignore_pairs(dataset.metadata, cols_equal, cols_unequal)
 
 
 class Dataset_Ultralytics(Dataset):
-    def __init__(self, matching_parts, score_min=0.8, **kwargs):
+    def __init__(self, matching_parts, is_database, score_min=0.8, **kwargs):
         self.score_min = score_min
-        super().__init__(matching_parts, **kwargs)
+        super().__init__(matching_parts, is_database, **kwargs)
 
     def _get_datasets(self):
         datasets = {}
@@ -79,18 +90,18 @@ class Dataset_Ultralytics(Dataset):
 
 
 class TurtlesOfSMSRC(Dataset_Ultralytics):
-    def __init__(self, root, **kwargs):
+    def __init__(self, root, is_database, **kwargs):
         matching_parts = {
             'heads': {'labels': ['head'], 'cols_equal': [], 'cols_unequal': []},
             'front flippers': {'labels': ['flipper_fl', 'flipper_fr'], 'cols_equal': [], 'cols_unequal': ['label']},
             'rear flippers': {'labels': ['flipper_rl', 'flipper_rr'], 'cols_equal': [], 'cols_unequal': ['label']}
         }
         self.dataset_full = wd_datasets.TurtlesOfSMSRC(root, img_load='bbox', load_segmentation=True, load_label=True)
-        super().__init__(matching_parts, **kwargs)
+        super().__init__(matching_parts, is_database, **kwargs)
 
 
 class SeaTurtleID2022(Dataset):
-    def __init__(self, root, **kwargs):
+    def __init__(self, root, is_database, **kwargs):
         matching_parts = {
             'heads': {'cols_equal': [], 'cols_unequal': []},
             'front flippers': {'cols_equal': [], 'cols_unequal': ['orientation']},
@@ -104,7 +115,7 @@ class SeaTurtleID2022(Dataset):
             'rear_left': 'flipper_rl',
             'rear_right': 'flipper_rr',
         })
-        super().__init__(matching_parts, **kwargs)
+        super().__init__(matching_parts, is_database, **kwargs)
 
     def _get_datasets(self):
         idx_front = self.dataset_flippers.metadata['orientation'].isin(['flipper_fl', 'flipper_fr'])
