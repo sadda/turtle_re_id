@@ -1,6 +1,8 @@
 import numpy as np
+import os
 import pandas as pd
 from wildlife_datasets import datasets as wd_datasets
+from ..turtlewatch_egypt import merge_datasets, TWE_Master
 
 def get_datasets_subset(dataset, col, min_value, max_value):
     s = dataset.metadata[col]
@@ -117,3 +119,67 @@ class SeaTurtleID2022(Dataset):
         metadata['encounter_id'] = metadata['identity'] + '_' + metadata['date']
 
         self.dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load='bbox', load_label=True)
+
+
+class TurtleWatchEgypt(Dataset):
+    def __init__(self, root_master, roots, score_min=0.8):
+        self.matching_parts = {
+            # TODO: add 'cols_equal': ['identity', 'encounter_id']?
+            # TODO: change cols_unequal to orientation/label?
+            'heads': {
+                'labels': ['head'],
+                'cols_equal': [],
+                'cols_unequal': []
+                },
+            'front flippers': {
+                'labels': ['flipper_fl', 'flipper_fr'],
+                'cols_equal': ['date'],
+                'cols_unequal': ['orientation']
+                },
+            'rear flippers': {
+                'labels': ['flipper_rl', 'flipper_rr'],
+                'cols_equal': ['date'],
+                'cols_unequal': ['orientation']
+                }
+            }
+        self.dataset = merge_datasets(root_master, roots, img_load='bbox', load_segmentation=True, load_label=True)
+        mask = self.dataset.metadata['score'] >= score_min
+        self.dataset = self.dataset.get_subset(mask)
+
+
+class TurtleWatchEgypt_Master(Dataset):
+    def __init__(self, root_heads, root_flippers_f, root_flippers_r):
+        self.matching_parts = {
+            'heads': {
+                'labels': ['head'],
+                'cols_equal': [],
+                'cols_unequal': []
+                },
+            'front flippers': {
+                'labels': ['front flipper'],
+                'cols_equal': [],
+                'cols_unequal': []
+                },
+            'rear flippers': {
+                'labels': ['rear flipper'],
+                'cols_equal': [],
+                'cols_unequal': []
+                }
+            }
+        
+        metadata_h = TWE_Master(root_heads).metadata
+        metadata_f =  TWE_Master(root_flippers_f).metadata
+        metadata_r =  TWE_Master(root_flippers_r).metadata
+
+        metadata_h['image_id'] = 'h_' + metadata_h['image_id'].astype(str)
+        metadata_h['label'] = 'head'
+        metadata_h['path'] = metadata_h['path'].apply(lambda x: os.path.join(root_heads, x))
+        metadata_f['image_id'] = 'f_' + metadata_f['image_id'].astype(str)
+        metadata_f['label'] = 'front flipper'
+        metadata_f['path'] = metadata_f['path'].apply(lambda x: os.path.join(root_flippers_f, x))
+        metadata_r['image_id'] = 'r_' + metadata_r['image_id'].astype(str)
+        metadata_r['label'] = 'rear flipper'
+        metadata_r['path'] = metadata_r['path'].apply(lambda x: os.path.join(root_flippers_r, x))
+        
+        metadata = pd.concat((metadata_h, metadata_f, metadata_r))
+        self.dataset = TWE_Master(root=None, df=metadata, load_label=True)
