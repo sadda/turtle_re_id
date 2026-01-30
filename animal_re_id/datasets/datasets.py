@@ -57,6 +57,17 @@ class Dataset:
         mask = self.dataset.metadata['label'].isin(labels)
         return self.dataset.get_subset(mask)
 
+    def get_subsets(self, matching_parts):
+        return {m: self.get_subset(m) for m in matching_parts}
+
+    def keep_only_unknown(self):
+        mask = self.dataset.metadata["identity"] == "unknown"
+        self.dataset = self.dataset.get_subset(mask)
+
+    def remove_unknown(self):
+        mask = self.dataset.metadata["identity"] != "unknown"
+        self.dataset = self.dataset.get_subset(mask)
+
 
 class TurtlesOfSMSRC(Dataset):
     def __init__(self, root, score_min=0.8):
