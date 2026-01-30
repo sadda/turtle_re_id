@@ -1,7 +1,14 @@
+import numpy as np
 import pandas as pd
 from wildlife_tools.similarity import CollectAll, MatchLightGlue
 from wildlife_tools.similarity.pairwise.utils import visualise_matches
 
+def extract_column(df, col):
+    if col in df.columns:
+        return df[col].to_numpy()
+    else:
+        return np.full(len(df), None)
+    
 def extract_features(dataset, pipeline, i):
     j = get_index(dataset, i)
     dataset = dataset.get_subset([j])
@@ -21,12 +28,12 @@ def gather_df(
         matching_part
         ):
     
-    image_ids_q = dataset_q.df['image_id'].to_numpy()
-    identities_q = dataset_q.df['identity'].to_numpy()
-    encounters_q = dataset_q.df['encounter_id'].to_numpy()    
-    image_ids_d = dataset_d.df['image_id'].to_numpy()
-    identities_d = dataset_d.df['identity'].to_numpy()
-    encounters_d = dataset_d.df['encounter_id'].to_numpy()    
+    image_ids_q = extract_column(dataset_q.df, 'image_id')
+    identities_q = extract_column(dataset_q.df, 'identity')
+    encounters_q = extract_column(dataset_q.df, 'encounter_id')
+    image_ids_d = extract_column(dataset_d.df, 'image_id')
+    identities_d = extract_column(dataset_d.df, 'identity')
+    encounters_d = extract_column(dataset_d.df, 'encounter_id')
     result = pd.DataFrame({
         'encounter1': encounters_q[i_sort],
         'encounter2': encounters_d[j_sort],
@@ -61,11 +68,13 @@ def plot_matches(dataset_q, dataset_d, result):
     else:
         # TODO: this is hacky as fuck
         dataset_q = dataset_q.get_subset([i_q])
-        dataset_q.metadata['path'] = dataset_q.root + '/' + dataset_q.metadata['path']
+        if dataset_q.root:
+            dataset_q.metadata['path'] = dataset_q.root + '/' + dataset_q.metadata['path']
         dataset_q.root = None
 
         dataset_d = dataset_d.get_subset([i_d])
-        dataset_d.metadata['path'] = dataset_d.root + '/' + dataset_d.metadata['path']
+        if dataset_d.root:
+            dataset_d.metadata['path'] = dataset_d.root + '/' + dataset_d.metadata['path']
         dataset_d.root = None
         
         dataset_q.metadata = pd.concat((dataset_q.metadata, dataset_d.metadata))
