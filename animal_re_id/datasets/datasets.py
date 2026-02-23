@@ -2,7 +2,8 @@ import numpy as np
 import os
 import pandas as pd
 from wildlife_datasets import datasets as wd_datasets
-from ..turtlewatch_egypt import merge_datasets, TWE_Master
+from wildlife_datasets.datasets import TurtlewatchEgypt_Master
+from ..turtlewatch_egypt import merge_datasets
 
 def get_datasets_subset(dataset, col, min_value, max_value):
     s = dataset.metadata[col]
@@ -178,9 +179,9 @@ class TurtleWatchEgypt_Master(Dataset):
                 }
             }
         
-        metadata_h = TWE_Master(root_heads).metadata
-        metadata_f =  TWE_Master(root_flippers_f).metadata
-        metadata_r =  TWE_Master(root_flippers_r).metadata
+        metadata_h = TurtlewatchEgypt_Master(root_heads).metadata
+        metadata_f = TurtlewatchEgypt_Master(root_flippers_f).metadata
+        metadata_r = TurtlewatchEgypt_Master(root_flippers_r).metadata
 
         metadata_h['image_id'] = 'h_' + metadata_h['image_id'].astype(str)
         metadata_h['label'] = 'head'
@@ -193,4 +194,4 @@ class TurtleWatchEgypt_Master(Dataset):
         metadata_r['path'] = metadata_r['path'].apply(lambda x: os.path.join(root_flippers_r, x))
         
         metadata = pd.concat((metadata_h, metadata_f, metadata_r))
-        self.dataset = TWE_Master(root=None, df=metadata, load_label=True)
+        self.dataset = TurtlewatchEgypt_Master(root=None, df=metadata, load_label=True)
