@@ -1,15 +1,6 @@
 import os
 import requests
 
-def strip_suffixes(x, suffixes):
-    suffixes = suffixes + [x.lower() for x in suffixes]
-    while any(x.endswith(ext) for ext in suffixes):
-        for ext in suffixes:
-            if x.endswith(ext):
-                x = x.removesuffix(ext).strip()
-                break
-    return x
-
 def download_detector(
         url = 'https://huggingface.co/BVRA/TurtleDetector/resolve/main/turtle_detector.pt',
         path_model = 'models/turtle_detector.pt',
