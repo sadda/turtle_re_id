@@ -5,7 +5,19 @@ from docx import Document
 from docx.shared import Pt
 import pandas as pd
 from tqdm import tqdm
-from wildlife_datasets.datasets import TurtlewatchEgypt_New
+from wildlife_datasets.datasets import TurtlewatchEgypt_New, utils
+
+
+IMAGE_EXTENSIONS = (
+    ".jpg", ".jpeg",
+    ".png",
+    ".bmp",
+    ".tif", ".tiff",
+    ".webp",
+    ".gif",
+    ".heic", ".heif",
+    ".avif"
+)
 
 def merge_datasets(
         master_root,
@@ -77,6 +89,7 @@ def download_dataset(root, data):
         }
         metadata = pd.concat((metadata, pd.DataFrame(metadata_part)))
     metadata = metadata.reset_index(drop=True)
+    metadata["image_id"] = utils.get_persistent_id(metadata["path"])
     metadata.to_csv(os.path.join(root, "metadata.csv"), index=False)
 
 
@@ -89,11 +102,14 @@ def get_folder(d):
     folder2 = d["author"]
     return f"{folder1}/{folder2}"
 
-def download_files(urls, download_folder):
+def download_files(urls, download_folder, exts=IMAGE_EXTENSIONS):
     os.makedirs(download_folder, exist_ok=True)
 
     save_paths = []
     for url in urls:
+        if not url.lower().endswith(exts):
+            print(f"Skipping non-image url: {url}")
+            continue
         file_name = url.split("/")[-1]
         save_path = os.path.join(download_folder, file_name)
         save_paths.append(save_path)
