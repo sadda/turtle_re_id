@@ -82,7 +82,7 @@ def plot_matches(dataset_q, dataset_d, result):
 
         identities = result[['identity1', 'identity2']].to_numpy()
         header_cols = [f'{identities[0]}_{identities[1]}', result['similarity']]
-        dataset_q.plot_grid(n_cols=2, header_cols=header_cols, rotate=False)
+        dataset_q.plot_grid(idx=[0,1], n_cols=2, header_cols=header_cols, rotate=False)
 
 def visualise_match(
         dataset_q,
