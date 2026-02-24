@@ -29,6 +29,8 @@ def _get_ignore_pairs(df, cols_equal, cols_unequal, ignore_unknown=True):
 
     # Ignores same values in cols_equal
     for col in cols_equal:
+        if col not in df.columns:
+            continue
         s = df[col]
         if ignore_unknown and col == 'identity':
             s = s[s != 'unknown']
@@ -41,6 +43,8 @@ def _get_ignore_pairs(df, cols_equal, cols_unequal, ignore_unknown=True):
 
     # Ignores different values in cols_unequal
     for col in cols_unequal:
+        if col not in df.columns:
+            continue
         s = df[col]
         if ignore_unknown and col == 'identity':
             s = s[s != 'unknown']

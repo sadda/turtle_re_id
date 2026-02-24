@@ -1,4 +1,3 @@
-import numpy as np
 import os
 import pandas as pd
 from wildlife_datasets import datasets as wd_datasets
@@ -11,33 +10,67 @@ class Dataset:
         self.matching_parts = matching_parts
     
 
-class TurtlesOfSMSRC(Dataset):
-    def __init__(self, root, score_min=0.8):
-        matching_parts = {
-            'heads': {
-                'labels': ['head'],
-                'cols_equal': ['identity'], 
-                'cols_unequal': []
-                },
-            'front flippers': {
-                'labels': ['flipper_fl', 'flipper_fr'],
-                'cols_equal': ['identity'],
-                'cols_unequal': ['label']
-                },
-            'rear flippers': {
-                'labels': ['flipper_rl', 'flipper_rr'],
-                'cols_equal': ['identity'],
-                'cols_unequal': ['label']
+class TurtlesSegmented(Dataset):
+    def __init__(self, dataset, database_query_matching):
+        if database_query_matching:
+            matching_parts = {
+                'heads': {
+                    'labels': ['head'],
+                    'cols_equal': [], 
+                    'cols_unequal': []
+                    },
+                'front flippers': {
+                    'labels': ['flipper_fl', 'flipper_fr'],
+                    'cols_equal': [],
+                    'cols_unequal': []
+                    },
+                'rear flippers': {
+                    'labels': ['flipper_rl', 'flipper_rr'],
+                    'cols_equal': [],
+                    'cols_unequal': []
+                    }
                 }
-            }
+        else:
+            matching_parts = {
+                'heads': {
+                    'labels': ['head'],
+                    'cols_equal': ['identity', 'encounter_id'], 
+                    'cols_unequal': []
+                    },
+                'front flippers': {
+                    'labels': ['flipper_fl', 'flipper_fr'],
+                    'cols_equal': ['identity', 'encounter_id'],
+                    'cols_unequal': ['label', 'orientation']
+                    },
+                'rear flippers': {
+                    'labels': ['flipper_rl', 'flipper_rr'],
+                    'cols_equal': ['identity', 'encounter_id'],
+                    'cols_unequal': ['label', 'orientation']
+                    }
+                }
+        super().__init__(dataset, matching_parts)
+
+
+class TurtlesOfSMSRC(TurtlesSegmented):
+    def __init__(self, root, is_database, score_min=0.8):
         dataset = wd_datasets.TurtlesOfSMSRC(root, img_load='bbox', load_segmentation=True, load_label=True)
         mask = dataset.metadata['score'] >= score_min
-        super().__init__(dataset.get_subset(mask), matching_parts)
+        super().__init__(dataset.get_subset(mask), is_database)
 
 
+class TurtlewatchEgypt_Citizen(TurtlesSegmented):
+    def __init__(self, root, is_database, score_min=0.8):
+        dataset = wd_datasets.TurtlewatchEgypt_Citizen(root, img_load='bbox', load_segmentation=True, load_label=True)
+        mask = dataset.metadata['score'] >= score_min
+        super().__init__(dataset.get_subset(mask), is_database)
 
 
-# TODO: odsud vsechno prepsat
+class TurtlewatchEgypt_New(TurtlesSegmented):
+    def __init__(self, root_master, roots, is_database, score_min=0.8):
+        dataset = merge_datasets(root_master, roots, img_load='bbox', load_segmentation=True, load_label=True)
+        mask = dataset.metadata['score'] >= score_min
+        super().__init__(dataset.get_subset(mask), is_database)
+
 
 class SeaTurtleID2022(Dataset):
     def __init__(self, root):
@@ -78,34 +111,9 @@ class SeaTurtleID2022(Dataset):
         self.dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load='bbox', load_label=True)
 
 
-class TurtlewatchEgypt_New(Dataset):
-    def __init__(self, root_master, roots, score_min=0.8):
-        self.matching_parts = {
-            # TODO: add 'cols_equal': ['identity', 'encounter_id']?
-            # TODO: change cols_unequal to orientation/label?
-            'heads': {
-                'labels': ['head'],
-                'cols_equal': [],
-                'cols_unequal': []
-                },
-            'front flippers': {
-                'labels': ['flipper_fl', 'flipper_fr'],
-                'cols_equal': ['date'],
-                'cols_unequal': ['orientation']
-                },
-            'rear flippers': {
-                'labels': ['flipper_rl', 'flipper_rr'],
-                'cols_equal': ['date'],
-                'cols_unequal': ['orientation']
-                }
-            }
-        self.dataset = merge_datasets(root_master, roots, img_load='bbox', load_segmentation=True, load_label=True)
-        mask = self.dataset.metadata['score'] >= score_min
-        self.dataset = self.dataset.get_subset(mask)
-
-
 class TurtlewatchEgypt_Master(Dataset):
-    def __init__(self, root_heads, root_flippers_f, root_flippers_r):
+    def __init__(self, root_heads, root_flippers_f, root_flippers_r, **kwargs):
+        # TODO: does not support query-query matching
         self.matching_parts = {
             'heads': {
                 'labels': ['head'],
@@ -124,9 +132,9 @@ class TurtlewatchEgypt_Master(Dataset):
                 }
             }
         
-        metadata_h = wd_datasets.TurtlewatchEgypt_Master(root_heads).metadata
-        metadata_f = wd_datasets.TurtlewatchEgypt_Master(root_flippers_f).metadata
-        metadata_r = wd_datasets.TurtlewatchEgypt_Master(root_flippers_r).metadata
+        metadata_h = wd_datasets.TurtlewatchEgypt_Master(root_heads, **kwargs).metadata
+        metadata_f = wd_datasets.TurtlewatchEgypt_Master(root_flippers_f, **kwargs).metadata
+        metadata_r = wd_datasets.TurtlewatchEgypt_Master(root_flippers_r, **kwargs).metadata
 
         metadata_h['image_id'] = 'h_' + metadata_h['image_id'].astype(str)
         metadata_h['label'] = 'head'
