@@ -10,11 +10,10 @@ def best_matches(
           ):
     
     results = results[results['similarity'] > min_similarity]
+    results = results.sort_values('similarity', ascending=False)
     results = results.reset_index(drop=True)
     idx_keep = results[['image_id1', 'image_id2']].drop_duplicates().index
     results = results.loc[idx_keep]
-
-    results = results.sort_values('similarity', ascending=False)
     results = results.reset_index(drop=True)
     
     results["key"] = results.apply(lambda r: frozenset((r["identity1"], r["identity2"])), axis=1)
