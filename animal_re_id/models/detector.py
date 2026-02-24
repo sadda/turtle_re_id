@@ -4,17 +4,22 @@ import pandas as pd
 from huggingface_hub import hf_hub_download
 from ultralytics import YOLO
 from tqdm import tqdm
+from wildlife_datasets.datasets import WildlifeDataset
 
-def run_detection(dataset, model):
+def run_detection(dataset: WildlifeDataset, model) -> pd.DataFrame:
+    assert dataset.root is not None
+
     image_ids = np.empty(0, dtype=int)
     bboxes = np.empty((0,4))
     scores = np.empty(0, dtype=float)
     labels = np.empty(0, dtype=int)
+    names = []
     for _, df_row in tqdm(dataset.df.iterrows(), total=len(dataset)):
         file_name = os.path.join(dataset.root, df_row['path'])        
         try:
             result = model.predict(source=file_name, verbose=False, save=False, show=False)[0]
-        except:
+            names = result.names
+        except Exception:
             continue
 
         for box in result.boxes:
@@ -23,6 +28,8 @@ def run_detection(dataset, model):
             scores = np.concatenate((scores, box.conf.cpu().numpy()))
             labels = np.concatenate((labels, box.cls.cpu().numpy()))
 
+    if len(image_ids) == 0:
+        return pd.DataFrame([])
     return pd.DataFrame({
         'image_id': image_ids,
         'bbox_x': bboxes[:,0],
@@ -30,13 +37,13 @@ def run_detection(dataset, model):
         'bbox_w': bboxes[:,2]-bboxes[:,0],
         'bbox_h': bboxes[:,3]-bboxes[:,1],
         'score': scores,
-        'label': [result.names[x] for x in labels]
+        'label': [names[x] for x in labels]
     })
 
 def turtle_detector(
-        repo_id ="BVRA/TurtleDetector",
-        filename = "turtle_detector.pt",
-        ):
+        repo_id: str ="BVRA/TurtleDetector",
+        filename: str = "turtle_detector.pt",
+        ) -> YOLO:
 
     path_model = hf_hub_download(repo_id=repo_id, filename=filename)
     return YOLO(path_model)
