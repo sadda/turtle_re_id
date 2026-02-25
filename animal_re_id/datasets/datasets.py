@@ -60,22 +60,22 @@ class TurtlesSegmented(Dataset):
 
 
 class TurtlesOfSMSRC(TurtlesSegmented):
-    def __init__(self, root, is_database, score_min=0.8):
-        dataset = wd_datasets.TurtlesOfSMSRC(root, img_load='bbox', load_segmentation=True, load_label=True)
+    def __init__(self, root, is_database, score_min=0.8, **kwargs):
+        dataset = wd_datasets.TurtlesOfSMSRC(root, img_load='bbox', load_segmentation=True, load_label=True, **kwargs)
         mask = dataset.metadata['score'] >= score_min
         super().__init__(dataset.get_subset(mask), is_database)
 
 
 class TurtlewatchEgypt_Citizen(TurtlesSegmented):
-    def __init__(self, root, is_database, score_min=0.8):
-        dataset = wd_datasets.TurtlewatchEgypt_Citizen(root, img_load='bbox', load_segmentation=True, load_label=True)
+    def __init__(self, root, is_database, score_min=0.8, **kwargs):
+        dataset = wd_datasets.TurtlewatchEgypt_Citizen(root, img_load='bbox', load_segmentation=True, load_label=True, **kwargs)
         mask = dataset.metadata['score'] >= score_min
         super().__init__(dataset.get_subset(mask), is_database)
 
 
 class TurtlewatchEgypt_New(TurtlesSegmented):
-    def __init__(self, root_master, roots, is_database, file_name, score_min=0.8):
-        dataset = merge_datasets(root_master, roots, file_name, img_load='bbox', load_segmentation=True, load_label=True)
+    def __init__(self, root_master, roots, is_database, file_name, score_min=0.8, **kwargs):
+        dataset = merge_datasets(root_master, roots, file_name, img_load='bbox', load_segmentation=True, load_label=True, **kwargs)
         mask = dataset.metadata['score'] >= score_min
         super().__init__(dataset.get_subset(mask), is_database)
 
