@@ -9,6 +9,14 @@ class Dataset:
         self.dataset = dataset
         self.matching_parts = matching_parts
     
+    def remove_unknown(self):
+        mask = self.dataset.metadata["identity"] != "unknown"
+        self.dataset = self.dataset.get_subset(mask)
+
+    def keep_only_unknown(self):
+        mask = self.dataset.metadata["identity"] == "unknown"
+        self.dataset = self.dataset.get_subset(mask)
+
 
 class TurtlesSegmented(Dataset):
     def __init__(self, dataset, database_query_matching):
@@ -66,8 +74,8 @@ class TurtlewatchEgypt_Citizen(TurtlesSegmented):
 
 
 class TurtlewatchEgypt_New(TurtlesSegmented):
-    def __init__(self, root_master, roots, is_database, score_min=0.8):
-        dataset = merge_datasets(root_master, roots, img_load='bbox', load_segmentation=True, load_label=True)
+    def __init__(self, root_master, roots, is_database, file_name, score_min=0.8):
+        dataset = merge_datasets(root_master, roots, file_name, img_load='bbox', load_segmentation=True, load_label=True)
         mask = dataset.metadata['score'] >= score_min
         super().__init__(dataset.get_subset(mask), is_database)
 
