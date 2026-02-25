@@ -59,6 +59,47 @@ class TurtlesSegmented(Dataset):
         super().__init__(dataset, matching_parts)
 
 
+class TurtlesFlippersMerged(Dataset):
+    def __init__(self, dataset, database_query_matching):
+        if database_query_matching:
+            matching_parts = {
+                'heads': {
+                    'labels': ['head'],
+                    'cols_equal': [], 
+                    'cols_unequal': []
+                    },
+                'front flippers': {
+                    'labels': ['front flipper'],
+                    'cols_equal': [],
+                    'cols_unequal': []
+                    },
+                'rear flippers': {
+                    'labels': ['rear flipper'],
+                    'cols_equal': [],
+                    'cols_unequal': []
+                    }
+                }
+        else:
+            matching_parts = {
+                'heads': {
+                    'labels': ['head'],
+                    'cols_equal': ['identity', 'encounter_id'],
+                    'cols_unequal': []
+                    },
+                'front flippers': {
+                    'labels': ['front flipper'],
+                    'cols_equal': ['identity', 'encounter_id'],
+                    'cols_unequal': ['label', 'orientation']
+                    },
+                'rear flippers': {
+                    'labels': ['rear flipper'],
+                    'cols_equal': ['identity', 'encounter_id'],
+                    'cols_unequal': ['label', 'orientation']
+                    }
+                }
+        super().__init__(dataset, matching_parts)
+
+
 class TurtlesOfSMSRC(TurtlesSegmented):
     def __init__(self, root, is_database, score_min=0.8, **kwargs):
         dataset = wd_datasets.TurtlesOfSMSRC(root, img_load='bbox', load_segmentation=True, load_label=True, **kwargs)
@@ -80,26 +121,8 @@ class TurtlewatchEgypt_New(TurtlesSegmented):
         super().__init__(dataset.get_subset(mask), is_database)
 
 
-class SeaTurtleID2022(Dataset):
-    def __init__(self, root):
-        self.matching_parts = {
-            'heads': {
-                'labels': ['head'],
-                'cols_equal': ['identity', 'encounter_id'],
-                'cols_unequal': []
-                },
-            'front flippers': {
-                'labels': ['front flipper'],
-                'cols_equal': ['identity', 'encounter_id'],
-                'cols_unequal': ['orientation']
-                },
-            'rear flippers': {
-                'labels': ['rear flipper'],
-                'cols_equal': ['identity', 'encounter_id'],
-                'cols_unequal': ['orientation']
-                }
-            }
-        
+class SeaTurtleID2022(TurtlesFlippersMerged):
+    def __init__(self, root, database_query_matching):
         metadata_h = wd_datasets.SeaTurtleID2022(root, category_name='head').metadata
         metadata_f = wd_datasets.SeaTurtleID2022(root, category_name='flipper').metadata
         
@@ -116,30 +139,12 @@ class SeaTurtleID2022(Dataset):
         metadata['year'] = dates.apply(lambda x: x.year)
         metadata['encounter_id'] = metadata['identity'] + '_' + metadata['date']
 
-        self.dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load='bbox', load_label=True)
+        dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load='bbox', load_label=True)
+        super().__init__(dataset, database_query_matching)
 
 
-class TurtlewatchEgypt_Master(Dataset):
-    def __init__(self, root_heads, root_flippers_f, root_flippers_r, **kwargs):
-        # TODO: does not support query-query matching
-        self.matching_parts = {
-            'heads': {
-                'labels': ['head'],
-                'cols_equal': [],
-                'cols_unequal': []
-                },
-            'front flippers': {
-                'labels': ['front flipper'],
-                'cols_equal': [],
-                'cols_unequal': []
-                },
-            'rear flippers': {
-                'labels': ['rear flipper'],
-                'cols_equal': [],
-                'cols_unequal': []
-                }
-            }
-        
+class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
+    def __init__(self, root_heads, root_flippers_f, root_flippers_r, database_query_matching, **kwargs):
         metadata_h = wd_datasets.TurtlewatchEgypt_Master(root_heads, load_segmentation=True, **kwargs).metadata
         metadata_f = wd_datasets.TurtlewatchEgypt_Master(root_flippers_f, **kwargs).metadata
         metadata_r = wd_datasets.TurtlewatchEgypt_Master(root_flippers_r, **kwargs).metadata
@@ -159,4 +164,5 @@ class TurtlewatchEgypt_Master(Dataset):
         metadata_r['path'] = metadata_r['path'].apply(lambda x: os.path.join(root_flippers_r, x))
         
         metadata = pd.concat((metadata_h, metadata_f, metadata_r))
-        self.dataset = wd_datasets.TurtlewatchEgypt_Master(root=None, df=metadata, load_label=True, **kwargs)
+        dataset = wd_datasets.TurtlewatchEgypt_Master(root=None, df=metadata, load_label=True, **kwargs)
+        super().__init__(dataset, database_query_matching)
