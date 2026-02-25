@@ -140,19 +140,23 @@ class TurtlewatchEgypt_Master(Dataset):
                 }
             }
         
-        metadata_h = wd_datasets.TurtlewatchEgypt_Master(root_heads, **kwargs).metadata
+        metadata_h = wd_datasets.TurtlewatchEgypt_Master(root_heads, load_segmentation=True, **kwargs).metadata
         metadata_f = wd_datasets.TurtlewatchEgypt_Master(root_flippers_f, **kwargs).metadata
         metadata_r = wd_datasets.TurtlewatchEgypt_Master(root_flippers_r, **kwargs).metadata
 
-        metadata_h['image_id'] = 'h_' + metadata_h['image_id'].astype(str)
-        metadata_h['label'] = 'head'
+        convertion = {
+            'flipper_fr': 'front flipper',
+            'flipper_fl': 'front flipper',
+            'flipper_rl': 'rear flipper',
+            'flipper_rr': 'rear flipper',
+        }
+        metadata_h['label'] = metadata_h['label'].replace(convertion)
         metadata_h['path'] = metadata_h['path'].apply(lambda x: os.path.join(root_heads, x))
-        metadata_f['image_id'] = 'f_' + metadata_f['image_id'].astype(str)
+        metadata_h = metadata_h[~metadata_h['label'].isnull()]
         metadata_f['label'] = 'front flipper'
         metadata_f['path'] = metadata_f['path'].apply(lambda x: os.path.join(root_flippers_f, x))
-        metadata_r['image_id'] = 'r_' + metadata_r['image_id'].astype(str)
         metadata_r['label'] = 'rear flipper'
         metadata_r['path'] = metadata_r['path'].apply(lambda x: os.path.join(root_flippers_r, x))
         
         metadata = pd.concat((metadata_h, metadata_f, metadata_r))
-        self.dataset = wd_datasets.TurtlewatchEgypt_Master(root=None, df=metadata, load_label=True)
+        self.dataset = wd_datasets.TurtlewatchEgypt_Master(root=None, df=metadata, load_label=True, **kwargs)
