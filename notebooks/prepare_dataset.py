@@ -1,7 +1,8 @@
 from animal_re_id.models import run_detection, turtle_detector
-from wildlife_datasets.datasets import TurtlewatchEgypt_New, utils
+from wildlife_datasets.datasets import TurtlewatchEgypt_Master, TurtlewatchEgypt_New, utils
 
 delete_corrupted = False
+check_files = False
 file_name = "../animal_re_id/turtlewatch_egypt/individuals.csv"
 roots = [
     '/data/wildlife_datasets/turtle_watch/2017 PICS + DATASHEET',
@@ -14,11 +15,12 @@ roots = [
     '/data/wildlife_datasets/turtle_watch/2024 PICS + online database',
     '/data/wildlife_datasets/turtle_watch/2025 PICS + online database',    
 ] 
+root_master = '/data/wildlife_datasets/turtle_watch/PROFILES'
 model = turtle_detector()
 
 for root in roots:    
     # Load dataset
-    dataset = TurtlewatchEgypt_New(root, file_name=file_name)
+    dataset = TurtlewatchEgypt_New(root, file_name=file_name, check_files=check_files)
 
     # Delete corrupted files
     if delete_corrupted:
@@ -28,3 +30,9 @@ for root in roots:
     # Extract segmentation
     segmentation = run_detection(dataset, model)
     segmentation.to_csv(f'{root}/segmentation.csv', index=False)
+
+# Do the same for master database of heads
+root = root_master
+dataset = TurtlewatchEgypt_Master(root, file_name=file_name, check_files=check_files)
+segmentation = run_detection(dataset, model)
+segmentation.to_csv(f'{root}/segmentation.csv', index=False)
