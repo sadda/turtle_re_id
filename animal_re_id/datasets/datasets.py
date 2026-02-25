@@ -4,9 +4,24 @@ from wildlife_datasets import datasets as wd_datasets
 from ..turtlewatch_egypt import merge_datasets
 
 
+def combine_matching_parts(matching_parts1, matching_parts2):
+    assert matching_parts1.keys() == matching_parts2.keys()
+    keys1 = matching_parts1.keys()
+    keys2 = ['labels', 'cols_equal', 'cols_unequal']
+    matching_parts = {key: {} for key in keys1}
+    for key1 in keys1:
+        for key2 in keys2:
+            value1 = matching_parts1[key1][key2]
+            value2 = matching_parts2[key1][key2]
+            value = list(set(value1).union(set(value2)))
+            matching_parts[key1][key2] = value
+    return matching_parts
+
+
 class Dataset:
     def __init__(self, dataset, matching_parts):
         self.dataset = dataset
+        self.dataset.metadata = self.dataset.metadata.reset_index(drop = True)
         self.matching_parts = matching_parts
     
     def remove_unknown(self):
@@ -144,10 +159,10 @@ class SeaTurtleID2022(TurtlesFlippersMerged):
 
 
 class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
-    def __init__(self, root_heads, root_flippers_f, root_flippers_r, database_query_matching, **kwargs):
-        metadata_h = wd_datasets.TurtlewatchEgypt_Master(root_heads, load_segmentation=True, **kwargs).metadata
-        metadata_f = wd_datasets.TurtlewatchEgypt_Master(root_flippers_f, **kwargs).metadata
-        metadata_r = wd_datasets.TurtlewatchEgypt_Master(root_flippers_r, **kwargs).metadata
+    def __init__(self, root_heads, root_flippers_f, root_flippers_r, database_query_matching, file_name, score_min=0.8, **kwargs):
+        metadata_h = wd_datasets.TurtlewatchEgypt_Master(root_heads, file_name=file_name, load_segmentation=True, **kwargs).metadata
+        metadata_f = wd_datasets.TurtlewatchEgypt_Master(root_flippers_f, file_name=file_name, **kwargs).metadata
+        metadata_r = wd_datasets.TurtlewatchEgypt_Master(root_flippers_r, file_name=file_name, **kwargs).metadata
 
         convertion = {
             'flipper_fr': 'front flipper',
@@ -158,11 +173,33 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
         metadata_h['label'] = metadata_h['label'].replace(convertion)
         metadata_h['path'] = metadata_h['path'].apply(lambda x: os.path.join(root_heads, x))
         metadata_h = metadata_h[~metadata_h['label'].isnull()]
+        metadata_h = metadata_h['score'] >= score_min
         metadata_f['label'] = 'front flipper'
         metadata_f['path'] = metadata_f['path'].apply(lambda x: os.path.join(root_flippers_f, x))
         metadata_r['label'] = 'rear flipper'
         metadata_r['path'] = metadata_r['path'].apply(lambda x: os.path.join(root_flippers_r, x))
         
         metadata = pd.concat((metadata_h, metadata_f, metadata_r))
-        dataset = wd_datasets.TurtlewatchEgypt_Master(root=None, df=metadata, load_label=True, **kwargs)
+        dataset = wd_datasets.TurtlewatchEgypt_Master(root=None, df=metadata, load_label=True, file_name=file_name, **kwargs)
         super().__init__(dataset, database_query_matching)
+
+
+class TurtlewatchEgypt_Combined(Dataset):
+    def __init__(
+        self,
+        root_master,
+        roots,
+        root_heads,
+        root_flippers_f,
+        root_flippers_r,
+        file_name,
+        score_min=0.8,
+        **kwargs,
+    ):
+
+        dataset1 = TurtlewatchEgypt_New(root_master, roots, False, file_name, score_min=score_min, **kwargs)
+        dataset2 = TurtlewatchEgypt_Master(root_heads, root_flippers_f, root_flippers_r, False, file_name, score_min=score_min, **kwargs)
+        metadata = pd.concat((dataset1.dataset.metadata, dataset2.dataset.metadata))
+        dataset = wd_datasets.WildlifeDataset(root=None, df=metadata, load_label=True, **kwargs)
+        matching_parts = combine_matching_parts(dataset1.matching_parts, dataset2.matching_parts)
+        super().__init__(dataset, matching_parts)
