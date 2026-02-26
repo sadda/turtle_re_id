@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 from wildlife_datasets import datasets as wd_datasets
-from ..turtlewatch_egypt import merge_datasets
 
 
 DEFAULT_SCORE_MIN = 0.8
@@ -22,6 +21,27 @@ def combine_datasets(datasets, encounter_prefixes=None, **kwargs):
         metadatas.append(metadata)
     metadatas = pd.concat(metadatas)
     return wd_datasets.WildlifeDataset(root=None, df=metadatas, **kwargs)
+
+
+def combine_datasets_twe(
+        master_root,
+        roots,
+        file_name,
+        load_segmentation=True,
+        encounter_prefixes=None,
+        **kwargs
+        ):
+
+    dfs = []
+    if encounter_prefixes is None:
+        encounter_prefixes = range(len(roots))
+    for root, encounter_prefix in zip(roots, encounter_prefixes):
+        dataset = wd_datasets.TurtlewatchEgypt_New(f'{master_root}/{root}', file_name=file_name, load_segmentation=load_segmentation)
+        dataset.df['path'] = root.split('/')[-1] + '/' + dataset.df['path']
+        dataset.df['encounter_id'] = dataset.df['encounter_id'].apply(lambda x: f'{encounter_prefix}_{x}')
+        dfs.append(dataset.df)
+    df = pd.concat(dfs).reset_index(drop=True)
+    return wd_datasets.TurtlewatchEgypt_New(root=master_root, df=df, **kwargs)
 
 
 def combine_matching_parts(matching_parts1, matching_parts2):
@@ -154,7 +174,7 @@ class TurtlewatchEgypt_Citizen(TurtlesSegmented):
 class TurtlewatchEgypt_New(TurtlesSegmented):
     def __init__(self, root_master, roots, is_database, file_name, score_min=DEFAULT_SCORE_MIN, **kwargs):
         img_load = kwargs.pop("img_load", "bbox")
-        dataset = merge_datasets(root_master, roots, file_name, img_load=img_load, load_segmentation=True, load_label=True, **kwargs)
+        dataset = combine_datasets_twe(root_master, roots, file_name, img_load=img_load, load_segmentation=True, load_label=True, **kwargs)
         mask = dataset.metadata['score'] >= score_min
         super().__init__(dataset.get_subset(mask), is_database)
 
