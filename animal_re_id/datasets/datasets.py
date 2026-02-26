@@ -4,6 +4,9 @@ from wildlife_datasets import datasets as wd_datasets
 from ..turtlewatch_egypt import merge_datasets
 
 
+DEFAULT_SCORE_MIN = 0.8
+
+
 def combine_datasets(datasets, encounter_prefixes=None, **kwargs):
     if encounter_prefixes is None:
         encounter_prefixes = range(len(datasets))
@@ -133,7 +136,7 @@ class TurtlesFlippersMerged(Dataset):
 
 
 class TurtlesOfSMSRC(TurtlesSegmented):
-    def __init__(self, root, is_database, score_min=0.8, **kwargs):
+    def __init__(self, root, is_database, score_min=DEFAULT_SCORE_MIN, **kwargs):
         img_load = kwargs.pop("img_load", "bbox")
         dataset = wd_datasets.TurtlesOfSMSRC(root, img_load=img_load, load_segmentation=True, load_label=True, **kwargs)
         mask = dataset.metadata['score'] >= score_min
@@ -141,7 +144,7 @@ class TurtlesOfSMSRC(TurtlesSegmented):
 
 
 class TurtlewatchEgypt_Citizen(TurtlesSegmented):
-    def __init__(self, root, is_database, score_min=0.8, **kwargs):
+    def __init__(self, root, is_database, score_min=DEFAULT_SCORE_MIN, **kwargs):
         img_load = kwargs.pop("img_load", "bbox")
         dataset = wd_datasets.TurtlewatchEgypt_Citizen(root, img_load=img_load, load_segmentation=True, load_label=True, **kwargs)
         mask = dataset.metadata['score'] >= score_min
@@ -149,7 +152,7 @@ class TurtlewatchEgypt_Citizen(TurtlesSegmented):
 
 
 class TurtlewatchEgypt_New(TurtlesSegmented):
-    def __init__(self, root_master, roots, is_database, file_name, score_min=0.8, **kwargs):
+    def __init__(self, root_master, roots, is_database, file_name, score_min=DEFAULT_SCORE_MIN, **kwargs):
         img_load = kwargs.pop("img_load", "bbox")
         dataset = merge_datasets(root_master, roots, file_name, img_load=img_load, load_segmentation=True, load_label=True, **kwargs)
         mask = dataset.metadata['score'] >= score_min
@@ -179,7 +182,7 @@ class SeaTurtleID2022(TurtlesFlippersMerged):
 
 
 class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
-    def __init__(self, root_heads, root_flippers_f, root_flippers_r, database_query_matching, file_name, score_min=0.8, **kwargs):
+    def __init__(self, root_heads, root_flippers_f, root_flippers_r, database_query_matching, file_name, score_min=DEFAULT_SCORE_MIN, **kwargs):
         metadata_h = wd_datasets.TurtlewatchEgypt_Master(root_heads, file_name=file_name, load_segmentation=True, **kwargs).metadata
         metadata_f = wd_datasets.TurtlewatchEgypt_Master(root_flippers_f, file_name=file_name, **kwargs).metadata
         metadata_r = wd_datasets.TurtlewatchEgypt_Master(root_flippers_r, file_name=file_name, **kwargs).metadata
@@ -213,7 +216,7 @@ class TurtlewatchEgypt_Combined(Dataset):
         root_flippers_f,
         root_flippers_r,
         file_name,
-        score_min=0.8,
+        score_min=DEFAULT_SCORE_MIN,
         **kwargs,
     ):
 
