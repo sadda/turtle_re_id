@@ -158,7 +158,8 @@ class TurtlesFlippersMerged(Dataset):
 class TurtlesOfSMSRC(TurtlesSegmented):
     def __init__(self, root, is_database, score_min=DEFAULT_SCORE_MIN, **kwargs):
         img_load = kwargs.pop("img_load", "bbox")
-        dataset = wd_datasets.TurtlesOfSMSRC(root, img_load=img_load, load_segmentation=True, load_label=True, **kwargs)
+        load_label = kwargs.pop("load_label", True)
+        dataset = wd_datasets.TurtlesOfSMSRC(root, img_load=img_load, load_segmentation=True, load_label=load_label, **kwargs)
         mask = dataset.metadata['score'] >= score_min
         super().__init__(dataset.get_subset(mask), is_database)
 
@@ -166,7 +167,8 @@ class TurtlesOfSMSRC(TurtlesSegmented):
 class TurtlewatchEgypt_Citizen(TurtlesSegmented):
     def __init__(self, root, is_database, score_min=DEFAULT_SCORE_MIN, **kwargs):
         img_load = kwargs.pop("img_load", "bbox")
-        dataset = wd_datasets.TurtlewatchEgypt_Citizen(root, img_load=img_load, load_segmentation=True, load_label=True, **kwargs)
+        load_label = kwargs.pop("load_label", True)
+        dataset = wd_datasets.TurtlewatchEgypt_Citizen(root, img_load=img_load, load_segmentation=True, load_label=load_label, **kwargs)
         mask = dataset.metadata['score'] >= score_min
         super().__init__(dataset.get_subset(mask), is_database)
 
@@ -174,7 +176,8 @@ class TurtlewatchEgypt_Citizen(TurtlesSegmented):
 class TurtlewatchEgypt_New(TurtlesSegmented):
     def __init__(self, root_master, roots, is_database, file_name, score_min=DEFAULT_SCORE_MIN, **kwargs):
         img_load = kwargs.pop("img_load", "bbox")
-        dataset = combine_datasets_twe(root_master, roots, file_name, img_load=img_load, load_segmentation=True, load_label=True, **kwargs)
+        load_label = kwargs.pop("load_label", True)
+        dataset = combine_datasets_twe(root_master, roots, file_name, img_load=img_load, load_segmentation=True, load_label=load_label, **kwargs)
         mask = dataset.metadata['score'] >= score_min
         super().__init__(dataset.get_subset(mask), is_database)
 
@@ -203,6 +206,8 @@ class SeaTurtleID2022(TurtlesFlippersMerged):
 
 class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
     def __init__(self, root_heads, root_flippers_f, root_flippers_r, database_query_matching, file_name, score_min=DEFAULT_SCORE_MIN, **kwargs):
+        load_label = kwargs.pop("load_label", True)
+        
         metadata_h = wd_datasets.TurtlewatchEgypt_Master(root_heads, file_name=file_name, load_segmentation=True, **kwargs).metadata
         metadata_f = wd_datasets.TurtlewatchEgypt_Master(root_flippers_f, file_name=file_name, **kwargs).metadata
         metadata_r = wd_datasets.TurtlewatchEgypt_Master(root_flippers_r, file_name=file_name, **kwargs).metadata
@@ -223,7 +228,7 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
         metadata_r['path'] = metadata_r['path'].apply(lambda x: os.path.join(root_flippers_r, x))
 
         metadata = pd.concat((metadata_h, metadata_f, metadata_r))
-        dataset = wd_datasets.TurtlewatchEgypt_Master(root=None, df=metadata, load_label=True, file_name=file_name, **kwargs)
+        dataset = wd_datasets.TurtlewatchEgypt_Master(root=None, df=metadata, load_label=load_label, file_name=file_name, **kwargs)
         super().__init__(dataset, database_query_matching)
 
 
@@ -240,8 +245,9 @@ class TurtlewatchEgypt_Combined(Dataset):
         **kwargs,
     ):
 
+        load_label = kwargs.pop("load_label", True)
         dataset1 = TurtlewatchEgypt_New(root_master, roots, False, file_name, score_min=score_min, **kwargs)
         dataset2 = TurtlewatchEgypt_Master(root_heads, root_flippers_f, root_flippers_r, False, file_name, score_min=score_min, **kwargs)
-        dataset = combine_datasets([dataset1.dataset, dataset2.dataset], load_label=True, **kwargs)
+        dataset = combine_datasets([dataset1.dataset, dataset2.dataset], load_label=load_label, **kwargs)
         matching_parts = combine_matching_parts(dataset1.matching_parts, dataset2.matching_parts)
         super().__init__(dataset, matching_parts)
