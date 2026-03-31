@@ -58,31 +58,12 @@ def get_index(dataset, image_id):
         print(f'image_id {image_id} not found')
         return None
 
-def plot_matches(dataset_q, dataset_d, result):
-    i_q = get_index(dataset_q, result['image_id1'])
-    i_d = get_index(dataset_d, result['image_id2'])
-    if dataset_q is dataset_d:
-        identities = result[['identity1', 'identity2']].to_numpy()
-        header_cols = [f'{identities[0]}_{identities[1]}', result['similarity']]
-        dataset_d.plot_grid(idx=[i_q, i_d], n_cols=2, header_cols=header_cols, rotate=False)
-    else:
-        # TODO: this is hacky as fuck
-        dataset_q = dataset_q.get_subset([i_q])
-        if dataset_q.root:
-            dataset_q.metadata['path'] = dataset_q.root + '/' + dataset_q.metadata['path']
-        dataset_q.root = None
-
-        dataset_d = dataset_d.get_subset([i_d])
-        if dataset_d.root:
-            dataset_d.metadata['path'] = dataset_d.root + '/' + dataset_d.metadata['path']
-        dataset_d.root = None
-        
-        dataset_q.metadata = pd.concat((dataset_q.metadata, dataset_d.metadata))
-        dataset_q.metadata = dataset_q.metadata.reset_index(drop=True)
-
-        identities = result[['identity1', 'identity2']].to_numpy()
-        header_cols = [f'{identities[0]}_{identities[1]}', result['similarity']]
-        dataset_q.plot_grid(idx=[0,1], n_cols=2, header_cols=header_cols, rotate=False)
+def plot_matches(dataset, result):
+    i_q = get_index(dataset, result['image_id1'])
+    i_d = get_index(dataset, result['image_id2'])
+    identities = result[['identity1', 'identity2']].to_numpy()
+    header_cols = [f'{identities[0]}_{identities[1]}', result['similarity']]
+    dataset.plot_grid(idx=[i_q, i_d], n_cols=2, header_cols=header_cols, rotate=False)
 
 def visualise_match(
         dataset_q,
