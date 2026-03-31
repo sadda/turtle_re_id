@@ -9,6 +9,7 @@ def best_matches(
           min_similarity = 0
           ):
     
+    # Sort the similarity and keep only one match between unique images (bounding boxes)
     results = results[results['similarity'] > min_similarity]
     results = results.sort_values('similarity', ascending=False)
     results = results.reset_index(drop=True)
@@ -16,6 +17,7 @@ def best_matches(
     results = results.loc[idx_keep]
     results = results.reset_index(drop=True)
     
+    # Keep only at most max_per_identity matches per a par of identities
     results["key"] = results.apply(lambda r: frozenset((r["identity1"], r["identity2"])), axis=1)
     idx_remove = []
     for identities, result_identity in results.groupby('key', sort=False):
@@ -23,8 +25,9 @@ def best_matches(
             continue 
         idx_remove = idx_remove + list(result_identity.index[max_per_identity:])
     idx_keep = np.setdiff1d(range(len(results)), idx_remove)
-
     results = results.loc[idx_keep]
+
+    # Keep only at most max_matches matches
     results = results[:max_matches]
     return results.reset_index(drop=True)
 
