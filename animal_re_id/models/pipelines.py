@@ -16,7 +16,7 @@ def get_pipelines(device='cpu', cache_prefix=None, use_calibration=False):
             model = timm.create_model("hf-hub:BVRA/MegaDescriptor-L-384", pretrained=True).eval(),
             device=device,
             batch_size=8,
-            cache_path=f"{cache_prefix}_md.pkl" if cache_prefix else None
+            cache_path=f"{cache_prefix}_md.lmdb" if cache_prefix else None
         ),
         transform = T.Compose([
             T.Resize(size=(384, 384)),
@@ -31,7 +31,7 @@ def get_pipelines(device='cpu', cache_prefix=None, use_calibration=False):
             model = AutoModel.from_pretrained("conservationxlabs/miewid-msv3", trust_remote_code=True),
             device=device,
             batch_size=8,
-            cache_path=f"{cache_prefix}_miew.pkl" if cache_prefix else None
+            cache_path=f"{cache_prefix}_miew.lmdb" if cache_prefix else None
         ),
         transform = T.Compose([
             T.Resize(size=(512, 512)),
@@ -42,7 +42,7 @@ def get_pipelines(device='cpu', cache_prefix=None, use_calibration=False):
     )
     pipeline_aliked = SimilarityPipeline(
         matcher = MatchLightGlue(features='aliked'),
-        extractor = AlikedExtractor(cache_path=f"{cache_prefix}_aliked.pkl" if cache_prefix else None),
+        extractor = AlikedExtractor(cache_path=f"{cache_prefix}_aliked.lmdb" if cache_prefix else None),
         transform = T.Compose([
             T.Resize([512, 512]),
             T.ToTensor()
@@ -51,7 +51,7 @@ def get_pipelines(device='cpu', cache_prefix=None, use_calibration=False):
     )    
     pipeline_disk = SimilarityPipeline(
         matcher = MatchLightGlue(features='disk'),
-        extractor = DiskExtractor(cache_path=f"{cache_prefix}_disk.pkl" if cache_prefix else None),
+        extractor = DiskExtractor(cache_path=f"{cache_prefix}_disk.lmdb" if cache_prefix else None),
         transform = T.Compose([
             T.Resize([512, 512]),
             T.ToTensor()
@@ -60,7 +60,7 @@ def get_pipelines(device='cpu', cache_prefix=None, use_calibration=False):
     )
     pipeline_superpoint = SimilarityPipeline(
         matcher = MatchLightGlue(features='superpoint'),
-        extractor = SuperPointExtractor(cache_path=f"{cache_prefix}_superpoint.pkl" if cache_prefix else None),
+        extractor = SuperPointExtractor(cache_path=f"{cache_prefix}_superpoint.lmdb" if cache_prefix else None),
         transform = T.Compose([
             T.Resize([512, 512]),
             T.ToTensor()
