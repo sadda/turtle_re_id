@@ -1,9 +1,10 @@
-from animal_re_id.models import run_detection, turtle_detector
+from animal_re_id.models import turtle_detector
 from wildlife_datasets.datasets import TurtlewatchEgypt_Master, TurtlewatchEgypt_New, utils
+from wildlife_datasets.detection import run_detection
 
 delete_corrupted = False
 check_files = False
-file_name = "../animal_re_id/turtlewatch_egypt/individuals.csv"
+file_name = "individuals.csv"
 roots = [
     '/data/wildlife_datasets/turtle_watch/2017 PICS + DATASHEET',
     '/data/wildlife_datasets/turtle_watch/2018 PICS + DATASHEET',
