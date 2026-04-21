@@ -7,6 +7,18 @@ from wildlife_tools.similarity import CosineSimilarity, MatchLightGlue
 from wildlife_tools.similarity.calibration import IsotonicCalibration
 from wildlife_tools.similarity.wildfusion import SimilarityPipeline, WildFusion
 
+class Wildfusion_Similarity:
+    def __init__(self, priority, pipeline, B, ignore_pairs: list[tuple[int, int]] = []):
+        self.priority = priority
+        self.pipeline = pipeline
+        self.B = B
+        self.ignore_pairs = ignore_pairs
+        self.wildfusion = WildFusion(calibrated_pipelines = [self.pipeline], priority_pipeline = self.priority)
+
+    def __call__(self, query, database):
+        similarity = self.wildfusion(query, database, B=self.B, ignore_pairs=self.ignore_pairs)
+        return similarity.astype(np.float64)
+
 def get_calibration(use_calibration) -> IsotonicCalibration | None:
     return IsotonicCalibration() if use_calibration else None
 
