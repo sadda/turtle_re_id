@@ -12,12 +12,15 @@ class Wildfusion_Similarity:
         self.priority = priority
         self.pipeline = pipeline
         self.B = B
-        self.ignore_pairs = ignore_pairs
+        self.set_ignore_pairs(ignore_pairs)
         self.wildfusion = WildFusion(calibrated_pipelines = [self.pipeline], priority_pipeline = self.priority)
 
     def __call__(self, query, database):
         similarity = self.wildfusion(query, database, B=self.B, ignore_pairs=self.ignore_pairs)
         return similarity.astype(np.float64)
+    
+    def set_ignore_pairs(self, ignore_pairs):
+        self.ignore_pairs = ignore_pairs
 
 def get_calibration(use_calibration) -> IsotonicCalibration | None:
     return IsotonicCalibration() if use_calibration else None
