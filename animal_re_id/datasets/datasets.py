@@ -85,12 +85,12 @@ class TurtlesSegmented(Dataset):
                 'front flippers': {
                     'labels': ['flipper_fl', 'flipper_fr'],
                     'cols_equal': [],
-                    'cols_unequal': []
+                    'cols_unequal': ['label', 'orientation']
                     },
                 'rear flippers': {
                     'labels': ['flipper_rl', 'flipper_rr'],
                     'cols_equal': [],
-                    'cols_unequal': []
+                    'cols_unequal': ['label', 'orientation']
                     }
                 }
         else:
@@ -126,12 +126,12 @@ class TurtlesFlippersMerged(Dataset):
                 'front flippers': {
                     'labels': ['front flipper'],
                     'cols_equal': [],
-                    'cols_unequal': []
+                    'cols_unequal': ['label', 'orientation']
                     },
                 'rear flippers': {
                     'labels': ['rear flipper'],
                     'cols_equal': [],
-                    'cols_unequal': []
+                    'cols_unequal': ['label', 'orientation']
                     }
                 }
         else:
