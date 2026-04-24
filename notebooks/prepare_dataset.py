@@ -1,10 +1,11 @@
-from animal_re_id.models import turtle_detector
 from wildlife_datasets.datasets import (
     TurtlewatchEgypt_Master,
     TurtlewatchEgypt_New,
     utils,
 )
 from wildlife_datasets.detection import run_detection
+
+from animal_re_id.models import turtle_detector
 
 delete_corrupted = False
 check_files = False

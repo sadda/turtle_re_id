@@ -1,13 +1,13 @@
 import numpy as np
-import torchvision.transforms as T
 import timm
+import torchvision.transforms as T
 from transformers import AutoImageProcessor, AutoModel
 from wildlife_tools.features import (
-    SuperPointExtractor,
     AlikedExtractor,
-    DiskExtractor,
     DeepFeatures,
     DinoFeatures,
+    DiskExtractor,
+    SuperPointExtractor,
 )
 from wildlife_tools.similarity import CosineSimilarity, MatchLightGlue
 from wildlife_tools.similarity.calibration import IsotonicCalibration
@@ -20,14 +20,10 @@ class Wildfusion_Similarity:
         self.pipeline = pipeline
         self.B = B
         self.set_ignore_pairs(ignore_pairs)
-        self.wildfusion = WildFusion(
-            calibrated_pipelines=[self.pipeline], priority_pipeline=self.priority
-        )
+        self.wildfusion = WildFusion(calibrated_pipelines=[self.pipeline], priority_pipeline=self.priority)
 
     def __call__(self, query, database):
-        similarity = self.wildfusion(
-            query, database, B=self.B, ignore_pairs=self.ignore_pairs
-        )
+        similarity = self.wildfusion(query, database, B=self.B, ignore_pairs=self.ignore_pairs)
         return similarity.astype(np.float64)
 
     def set_ignore_pairs(self, ignore_pairs):
@@ -63,15 +59,11 @@ def get_pipeline_dino(
     )
 
 
-def get_pipeline_mega(
-    device="cpu", cache_prefix=None, use_calibration=False
-) -> SimilarityPipeline:
+def get_pipeline_mega(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=CosineSimilarity(),
         extractor=DeepFeatures(
-            model=timm.create_model(
-                "hf-hub:BVRA/MegaDescriptor-L-384", pretrained=True
-            ).eval(),
+            model=timm.create_model("hf-hub:BVRA/MegaDescriptor-L-384", pretrained=True).eval(),
             device=device,
             batch_size=8,
             cache_path=f"{cache_prefix}_md.lmdb" if cache_prefix else None,
@@ -87,15 +79,11 @@ def get_pipeline_mega(
     )
 
 
-def get_pipeline_miew(
-    device="cpu", cache_prefix=None, use_calibration=False
-) -> SimilarityPipeline:
+def get_pipeline_miew(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=CosineSimilarity(),
         extractor=DeepFeatures(
-            model=AutoModel.from_pretrained(
-                "conservationxlabs/miewid-msv3", trust_remote_code=True
-            ),
+            model=AutoModel.from_pretrained("conservationxlabs/miewid-msv3", trust_remote_code=True),
             device=device,
             batch_size=8,
             cache_path=f"{cache_prefix}_miew.lmdb" if cache_prefix else None,
@@ -111,9 +99,7 @@ def get_pipeline_miew(
     )
 
 
-def get_pipeline_aliked(
-    device="cpu", cache_prefix=None, use_calibration=False
-) -> SimilarityPipeline:
+def get_pipeline_aliked(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=MatchLightGlue(features="aliked", device=device),
         extractor=AlikedExtractor(
@@ -125,22 +111,16 @@ def get_pipeline_aliked(
     )
 
 
-def get_pipeline_disk(
-    device="cpu", cache_prefix=None, use_calibration=False
-) -> SimilarityPipeline:
+def get_pipeline_disk(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=MatchLightGlue(features="disk"),
-        extractor=DiskExtractor(
-            cache_path=f"{cache_prefix}_disk.lmdb" if cache_prefix else None
-        ),
+        extractor=DiskExtractor(cache_path=f"{cache_prefix}_disk.lmdb" if cache_prefix else None),
         transform=T.Compose([T.Resize([512, 512]), T.ToTensor()]),
         calibration=get_calibration(use_calibration),
     )
 
 
-def get_pipeline_superpoint(
-    device="cpu", cache_prefix=None, use_calibration=False
-) -> SimilarityPipeline:
+def get_pipeline_superpoint(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=MatchLightGlue(features="superpoint", device=device),
         extractor=SuperPointExtractor(
@@ -153,18 +133,10 @@ def get_pipeline_superpoint(
 
 
 def get_pipelines(device="cpu", cache_prefix=None, use_calibration=False):
-    pipeline_mega = get_pipeline_mega(
-        device=device, cache_prefix=cache_prefix, use_calibration=use_calibration
-    )
-    pipeline_miew = get_pipeline_miew(
-        device=device, cache_prefix=cache_prefix, use_calibration=use_calibration
-    )
-    pipeline_aliked = get_pipeline_aliked(
-        device=device, cache_prefix=cache_prefix, use_calibration=use_calibration
-    )
-    pipeline_disk = get_pipeline_disk(
-        device=device, cache_prefix=cache_prefix, use_calibration=use_calibration
-    )
+    pipeline_mega = get_pipeline_mega(device=device, cache_prefix=cache_prefix, use_calibration=use_calibration)
+    pipeline_miew = get_pipeline_miew(device=device, cache_prefix=cache_prefix, use_calibration=use_calibration)
+    pipeline_aliked = get_pipeline_aliked(device=device, cache_prefix=cache_prefix, use_calibration=use_calibration)
+    pipeline_disk = get_pipeline_disk(device=device, cache_prefix=cache_prefix, use_calibration=use_calibration)
     pipeline_superpoint = get_pipeline_superpoint(
         device=device, cache_prefix=cache_prefix, use_calibration=use_calibration
     )

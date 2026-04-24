@@ -65,15 +65,11 @@ def plot_matches(dataset, result):
     dataset.plot_grid(idx=[i_q, i_d], n_cols=2, header_cols=header_cols, rotate=False)
 
 
-def visualise_match(
-    dataset_q, dataset_d, result, pipeline, features_name, init_threshold=0.65, ax=None
-):
+def visualise_match(dataset_q, dataset_d, result, pipeline, features_name, init_threshold=0.65, ax=None):
 
     img_q, features_q = extract_features(dataset_q, pipeline, result["image_id1"])
     img_d, features_d = extract_features(dataset_d, pipeline, result["image_id2"])
 
-    matcher = MatchLightGlue(
-        features=features_name, collector=CollectAll(), init_threshold=init_threshold
-    )
+    matcher = MatchLightGlue(features=features_name, collector=CollectAll(), init_threshold=init_threshold)
     results = matcher(features_q, features_d)[0]
     visualise_matches(img_q, results["kpts0"], img_d, results["kpts1"], ax=ax)

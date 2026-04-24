@@ -1,7 +1,7 @@
 import os
+
 import pandas as pd
 from wildlife_datasets import datasets as wd_datasets
-
 
 SCORE_THRESHOLD = 0.8
 SCORE_MIN = 0.3
@@ -19,9 +19,7 @@ def combine_datasets(datasets, encounter_prefixes=None, **kwargs):
             metadata["path"] = dataset.root + "/" + metadata["path"]
         if "encounter_id" in metadata.columns:
             mask = ~metadata["encounter_id"].isnull()
-            new_encounter_id = metadata.loc[mask, "encounter_id"].apply(
-                lambda x: f"{encounter_prefix}_{x}"
-            )
+            new_encounter_id = metadata.loc[mask, "encounter_id"].apply(lambda x: f"{encounter_prefix}_{x}")
             metadata.loc[mask, "encounter_id"] = new_encounter_id
         metadatas.append(metadata)
     metadatas = pd.concat(metadatas)
@@ -47,9 +45,7 @@ def combine_datasets_twe(
             load_segmentation=load_segmentation,
         )
         dataset.df["path"] = root.split("/")[-1] + "/" + dataset.df["path"]
-        dataset.df["encounter_id"] = dataset.df["encounter_id"].apply(
-            lambda x: f"{encounter_prefix}_{x}"
-        )
+        dataset.df["encounter_id"] = dataset.df["encounter_id"].apply(lambda x: f"{encounter_prefix}_{x}")
         dfs.append(dataset.df)
     df = pd.concat(dfs).reset_index(drop=True)
     return wd_datasets.TurtlewatchEgypt_New(root=master_root, df=df, **kwargs)
@@ -266,9 +262,7 @@ class SeaTurtleID2022(TurtlesFlippersMerged):
         metadata["year"] = dates.apply(lambda x: x.year)
         metadata["encounter_id"] = metadata["identity"] + "_" + metadata["date"]
 
-        dataset = wd_datasets.SeaTurtleID2022(
-            root, df=metadata, img_load="bbox", load_label=True
-        )
+        dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load="bbox", load_label=True)
         super().__init__(dataset, database_query_matching)
 
 
@@ -303,19 +297,13 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
             "flipper_rr": "rear flipper",
         }
         metadata_h["label"] = metadata_h["label"].replace(convertion)
-        metadata_h["path"] = metadata_h["path"].apply(
-            lambda x: os.path.join(root_heads, x)
-        )
+        metadata_h["path"] = metadata_h["path"].apply(lambda x: os.path.join(root_heads, x))
         metadata_h = metadata_h[~metadata_h["label"].isnull()]
         metadata_h = metadata_h[metadata_h["score"] >= score_min]
         metadata_f["label"] = "front flipper"
-        metadata_f["path"] = metadata_f["path"].apply(
-            lambda x: os.path.join(root_flippers_f, x)
-        )
+        metadata_f["path"] = metadata_f["path"].apply(lambda x: os.path.join(root_flippers_f, x))
         metadata_r["label"] = "rear flipper"
-        metadata_r["path"] = metadata_r["path"].apply(
-            lambda x: os.path.join(root_flippers_r, x)
-        )
+        metadata_r["path"] = metadata_r["path"].apply(lambda x: os.path.join(root_flippers_r, x))
 
         metadata = pd.concat((metadata_h, metadata_f, metadata_r))
         dataset = wd_datasets.TurtlewatchEgypt_Master(
@@ -368,7 +356,5 @@ class TurtlewatchEgypt_Combined(Dataset):
             load_label=load_label,
             **dataset_kwargs,
         )
-        matching_parts = combine_matching_parts(
-            dataset1.matching_parts, dataset2.matching_parts
-        )
+        matching_parts = combine_matching_parts(dataset1.matching_parts, dataset2.matching_parts)
         super().__init__(dataset, matching_parts)
