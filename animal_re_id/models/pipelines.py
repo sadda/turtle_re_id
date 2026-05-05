@@ -15,18 +15,17 @@ from wildlife_tools.similarity.wildfusion import SimilarityPipeline, WildFusion
 
 
 class Wildfusion_Similarity:
-    def __init__(self, priority, pipeline, B, ignore_pairs: list[tuple[int, int]] = []):
+    def __init__(self, priority, pipeline, B):
         self.priority = priority
         self.pipeline = pipeline
         self.B = B
-        self.set_ignore_pairs(ignore_pairs)
         self.wildfusion = WildFusion(calibrated_pipelines=[self.pipeline], priority_pipeline=self.priority)
 
     def __call__(self, query, database):
         similarity = self.wildfusion(query, database, B=self.B, ignore_pairs=self.ignore_pairs)
         return similarity.astype(np.float64)
 
-    def set_ignore_pairs(self, ignore_pairs):
+    def set_ignore_pairs(self, ignore_pairs: list[tuple[int, int]]):
         self.ignore_pairs = ignore_pairs
 
 
