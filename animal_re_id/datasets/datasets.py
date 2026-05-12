@@ -245,7 +245,11 @@ class TurtlewatchEgypt_New(TurtlesSegmented):
 
 
 class SeaTurtleID2022(TurtlesFlippersMerged):
-    def __init__(self, root, database_query_matching):
+    def __init__(self, root, database_query_matching, dataset_kwargs=None):
+        dataset_kwargs = dataset_kwargs or {}
+        img_load = dataset_kwargs.pop("img_load", "bbox")
+        load_label = dataset_kwargs.pop("load_label", True)
+
         metadata_h = wd_datasets.SeaTurtleID2022(root, category_name="head").metadata
         metadata_f = wd_datasets.SeaTurtleID2022(root, category_name="flipper").metadata
 
@@ -262,7 +266,7 @@ class SeaTurtleID2022(TurtlesFlippersMerged):
         metadata["year"] = dates.apply(lambda x: x.year)
         metadata["encounter_id"] = metadata["identity"] + "_" + metadata["date"]
 
-        dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load="bbox", load_label=True)
+        dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load=img_load, load_label=load_label)
         super().__init__(dataset, database_query_matching)
 
 
