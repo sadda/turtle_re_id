@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -130,3 +131,19 @@ def get_info(dataset, split_years):
         n_encounters_known[split_year] = summary_now_known["encounter"].nunique()
 
     return identities, n_encounters_all, n_encounters_known
+
+def plot_best_scores(best_scores, matching_parts, y_max=None):
+    best_scores_arr = np.asarray(best_scores, dtype=object)
+
+    plt.figure(figsize=(10,3))
+    for i, m in enumerate(matching_parts):
+        for correct, color in zip([True, False], ["green", "red"]):
+            mask1 = best_scores_arr[:,0] == correct
+            mask2 = best_scores_arr[:,2] == m
+            mask = mask1 & mask2
+
+            plt.subplot(1, 3, i+1)
+            plt.hist(best_scores_arr[mask, 1], density=True, alpha=0.6, color=color)
+            if y_max is not None:
+                plt.ylim([0, y_max])
+            plt.title(m)
