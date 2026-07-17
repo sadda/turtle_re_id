@@ -48,13 +48,12 @@ def best_matches_discovery(results, max_matches, max_per_identity, unlimited_unk
     return results.reset_index(drop=True)
 
 
-def compute_similarity(query, database, ignore_pairs, priority, pipelines, Bs, names):
-    similarities = {}
-    for pipeline, B, name in zip(pipelines, Bs, names):
+def compute_similarity(query, database, ignore_pairs, priority, pipelines, Bs):
+    similarities = []
+    for pipeline, B in zip(pipelines, Bs):
         wildfusion = WildFusion(calibrated_pipelines=[pipeline], priority_pipeline=priority)
         similarity = wildfusion(query, database, B=B, ignore_pairs=ignore_pairs)
-        similarity = similarity.astype(np.float64)
-        similarities[name] = similarity
+        similarities.append(similarity.astype(np.float64))
     return similarities
 
 
