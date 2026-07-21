@@ -9,7 +9,7 @@ MAX_PER_ENCOUNTER = 10
 MIN_PER_ENCOUNTER = 2
 
 
-def combine_datasets(datasets, encounter_prefixes=None, **kwargs):
+def combine_datasets(datasets, encounter_prefixes=None, **kwargs) -> wd_datasets.WildlifeDataset:
     if encounter_prefixes is None:
         encounter_prefixes = range(len(datasets))
     metadatas = []
@@ -33,7 +33,7 @@ def combine_datasets_twe(
     load_segmentation=True,
     encounter_prefixes=None,
     **kwargs,
-):
+) -> wd_datasets.TurtlewatchEgypt_New:
 
     dfs = []
     if encounter_prefixes is None:
