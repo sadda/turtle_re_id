@@ -135,7 +135,7 @@ def get_info(dataset, split_years):
 def plot_best_scores(best_scores, matching_parts, y_max=None):
     best_scores_arr = np.asarray(best_scores, dtype=object)
 
-    plt.figure(figsize=(10,3))
+    plt.figure(figsize=(10,2))
     for i, m in enumerate(matching_parts):
         for correct, color in zip([True, False], ["green", "red"]):
             mask1 = best_scores_arr[:,0] == correct
@@ -143,7 +143,8 @@ def plot_best_scores(best_scores, matching_parts, y_max=None):
             mask = mask1 & mask2
 
             plt.subplot(1, 3, i+1)
-            plt.hist(best_scores_arr[mask, 1], density=True, alpha=0.6, color=color)
+            plt.hist(best_scores_arr[mask, 1], alpha=0.6, color=color)
             if y_max is not None:
                 plt.ylim([0, y_max])
             plt.title(m)
+            plt.grid(alpha=0.6)
