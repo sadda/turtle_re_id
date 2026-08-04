@@ -142,7 +142,7 @@ def plot_best_scores(best_scores, matching_parts, y_max=None):
             mask2 = best_scores_arr[:,2] == m
             mask = mask1 & mask2
 
-            plt.subplot(1, 3, i+1)
+            plt.subplot(1, len(matching_parts), i+1)
             plt.hist(best_scores_arr[mask, 1], alpha=0.6, color=color)
             if y_max is not None:
                 plt.ylim([0, y_max])
