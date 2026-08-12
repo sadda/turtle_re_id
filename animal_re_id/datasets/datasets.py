@@ -57,7 +57,7 @@ def combine_datasets_twe_from_paths(paths, **kwargs) -> wd_datasets.TurtlewatchE
     return combine_datasets_twe(
         resolve_path(paths["root_new"]),
         paths["roots_new"],
-        resolve_path(paths["file_name"]),
+        resolve_path(paths["file_name_individuals"]),
         **kwargs,
     )
 
@@ -272,7 +272,7 @@ class TurtlewatchEgypt_New(TurtlesSegmented):
             resolve_path(paths["root_new"]),
             paths["roots_new"],
             is_database,
-            resolve_path(paths["file_name"]),
+            resolve_path(paths["file_name_individuals"]),
             dataset_kwargs=dataset_kwargs,
             subset_kwargs=subset_kwargs,
         )

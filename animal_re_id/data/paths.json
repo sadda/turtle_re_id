@@ -1,7 +1,8 @@
 {
   "TurtlewatchEgypt": {
-    "file_name": "notebooks/individuals.csv",
-    "root_new": "/data/wildlife_datasets/turtle_watch",
+    "file_name_individuals": "data/TurtlewatchEgypt/twe_individuals.csv",
+    "file_name_downloads": "data/TurtlewatchEgypt/citizen_files.csv",
+    "root_new": "data/TurtlewatchEgypt",
     "roots_new": [
       "2017 PICS + DATASHEET",
       "2018 PICS + DATASHEET",
@@ -13,17 +14,17 @@
       "2024 PICS + online database",
       "2025 PICS + online database"
     ],
-    "root_citizen": "/data/wildlife_datasets/turtle_watch/citizen",
-    "root_heads": "/data/wildlife_datasets/turtle_watch/PROFILES",
-    "root_flippers_f": "/data/wildlife_datasets/turtle_watch/TWE_flipperprofiles_registered ind_LR_front",
-    "root_flippers_r": "/data/wildlife_datasets/turtle_watch/TWE_flipperprofiles_registered ind_LR_rear",
-    "root_master": "/data/wildlife_datasets/turtle_watch/TWE_flipperprofiles_registered ind_LR",
-    "root_features": "/data/wildlife_datasets/features",
-    "root_results": "/data/wildlife_datasets/similarity"
+    "root_citizen": "data/TurtlewatchEgypt/citizen",
+    "root_heads": "data/TurtlewatchEgypt/PROFILES",
+    "root_flippers_f": "data/TurtlewatchEgypt/TWE_flipperprofiles_registered ind_LR_front",
+    "root_flippers_r": "data/TurtlewatchEgypt/TWE_flipperprofiles_registered ind_LR_rear",
+    "root_master": "data/TurtlewatchEgypt/TWE_flipperprofiles_registered ind_LR",
+    "root_features": "features/TurtlewatchEgypt",
+    "root_similarity": "similarity/TurtlewatchEgypt"
   },
   "SeaTurtleID2022": {
-    "root": "/data/wildlife_datasets/data/SeaTurtleID2022",
-    "root_features": "/data/wildlife_datasets/features",
-    "root_results": "/data/wildlife_datasets/similarity"
+    "root": "data/SeaTurtleID2022",
+    "root_features": "features/SeaTurtleID2022",
+    "root_similarity": "similarity/SeaTurtleID2022"
   }
 }

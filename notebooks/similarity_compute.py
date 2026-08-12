@@ -19,7 +19,7 @@ img_loads = ["bbox"]
 Bs = [5, 10, 50, 100]
 device = "cuda"
 
-paths = load_paths(dataset_name)
+paths = load_paths(dataset_name, local_path="config/paths.json")
 
 datasets = {}
 datasets_subset = {}
@@ -59,10 +59,10 @@ else:
     raise ValueError("Dataset now known")
 
 root_features = resolve_path(paths["root_features"])
-root_results = resolve_path(paths["root_results"])
+root_similarity = resolve_path(paths["root_similarity"])
 
 
-os.makedirs(f"{root_results}/{dataset_name}", exist_ok=True)
+os.makedirs(root_similarity, exist_ok=True)
 
 
 for B in Bs:
@@ -73,7 +73,7 @@ for B in Bs:
         for matching_part in matching_parts:
             dataset_subset = datasets_subset[(img_load, matching_part)]
 
-            cache_prefix = f"{root_features}/{dataset_name}_{matching_part}_{img_load}"
+            cache_prefix = f"{root_features}/{matching_part}_{img_load}"
             for pipeline1_fun, pipeline2_fun, name in pipeline_funs:
                 if pipeline2_fun is None:
                     pipeline = pipeline1_fun(device=device, cache_prefix=cache_prefix)
@@ -85,8 +85,8 @@ for B in Bs:
                 for match_opposite_sides in [False, True]:
                     for split_year in split_years:
                         # Skip if already computed
-                        file_name_part = f"{dataset_name}_{name}_{B}_{img_load}_{matching_part}_{match_opposite_sides}_{split_year}"
-                        file_name_save = f"{root_results}/{dataset_name}/{file_name_part}.pkl"
+                        file_name_part = f"{name}_{B}_{img_load}_{matching_part}_{match_opposite_sides}_{split_year}"
+                        file_name_save = f"{root_similarity}/{file_name_part}.pkl"
                         if os.path.exists(file_name_save):
                             continue
 
