@@ -16,7 +16,7 @@ dataset_name = "TurtlewatchEgypt"
 
 matching_parts = ["bodies", "heads", "front flippers", "rear flippers"]
 img_loads = ["bbox"]
-Bs = [5, 10, 50, 100]
+B = 100
 device = "cuda"
 
 paths = load_paths(dataset_name, local_path="config/paths.json")
@@ -65,72 +65,69 @@ root_similarity = resolve_path(paths["root_similarity"])
 os.makedirs(root_similarity, exist_ok=True)
 
 
-for B in Bs:
-    predictions_all = {}
-    scores_all = {}
-    for img_load in img_loads:
-        dataset = datasets[img_load]
-        for matching_part in matching_parts:
-            dataset_subset = datasets_subset[(img_load, matching_part)]
+for img_load in img_loads:
+    dataset = datasets[img_load]
+    for matching_part in matching_parts:
+        dataset_subset = datasets_subset[(img_load, matching_part)]
 
-            cache_prefix = f"{root_features}/{matching_part}_{img_load}"
-            for pipeline1_fun, pipeline2_fun, name in pipeline_funs:
-                if pipeline2_fun is None:
-                    pipeline = pipeline1_fun(device=device, cache_prefix=cache_prefix)
-                else:
-                    pipeline1 = pipeline1_fun(device=device, cache_prefix=cache_prefix)
-                    pipeline2 = pipeline2_fun(device=device, cache_prefix=cache_prefix)
-                    pipeline = Wildfusion_Similarity(pipeline1, pipeline2, B)
+        cache_prefix = f"{root_features}/{matching_part}_{img_load}"
+        for pipeline1_fun, pipeline2_fun, name in pipeline_funs:
+            if pipeline2_fun is None:
+                pipeline = pipeline1_fun(device=device, cache_prefix=cache_prefix)
+            else:
+                pipeline1 = pipeline1_fun(device=device, cache_prefix=cache_prefix)
+                pipeline2 = pipeline2_fun(device=device, cache_prefix=cache_prefix)
+                pipeline = Wildfusion_Similarity(pipeline1, pipeline2, B)
 
-                for match_opposite_sides in [False, True]:
-                    for split_year in split_years:
-                        # Skip if already computed
-                        file_name_part = f"{name}_{B}_{img_load}_{matching_part}_{match_opposite_sides}_{split_year}"
-                        file_name_save = f"{root_similarity}/{file_name_part}.pkl"
-                        if os.path.exists(file_name_save):
-                            continue
+            for match_opposite_sides in [False, True]:
+                for split_year in split_years:
+                    # Skip if already computed
+                    file_name_part = f"{name}_{B}_{img_load}_{matching_part}_{match_opposite_sides}_{split_year}"
+                    file_name_save = f"{root_similarity}/{file_name_part}.pkl"
+                    if os.path.exists(file_name_save):
+                        continue
 
-                        # Extract the database
-                        mask_database = dataset_subset.metadata["year"] < split_year
-                        database = dataset_subset.get_subset(mask_database)
+                    # Extract the database
+                    mask_database = dataset_subset.metadata["year"] < split_year
+                    database = dataset_subset.get_subset(mask_database)
 
-                        # Extract the query set
-                        labels_database = database.metadata["identity"].to_numpy()
-                        mask_query1 = dataset_subset.metadata["year"] == split_year
-                        mask_query2 = np.isin(dataset_subset.metadata["identity"], np.unique(labels_database))
-                        query = dataset_subset.get_subset(mask_query1 & mask_query2)
+                    # Extract the query set
+                    labels_database = database.metadata["identity"].to_numpy()
+                    mask_query1 = dataset_subset.metadata["year"] == split_year
+                    mask_query2 = np.isin(dataset_subset.metadata["identity"], np.unique(labels_database))
+                    query = dataset_subset.get_subset(mask_query1 & mask_query2)
 
-                        # Extract ignore_pairs
-                        if match_opposite_sides:
-                            ignore_pairs = []
-                        else:
-                            cols_equal = dataset.matching_parts[matching_part]["cols_equal"]
-                            cols_unequal = dataset.matching_parts[matching_part]["cols_unequal"]
-                            ignore_pairs = get_ignore_pairs(query.metadata, database.metadata, cols_equal, cols_unequal)
+                    # Extract ignore_pairs
+                    if match_opposite_sides:
+                        ignore_pairs = []
+                    else:
+                        cols_equal = dataset.matching_parts[matching_part]["cols_equal"]
+                        cols_unequal = dataset.matching_parts[matching_part]["cols_unequal"]
+                        ignore_pairs = get_ignore_pairs(query.metadata, database.metadata, cols_equal, cols_unequal)
 
-                        if pipeline2_fun is not None:
-                            assert isinstance(pipeline, Wildfusion_Similarity)
-                            pipeline.set_ignore_pairs(ignore_pairs)
+                    if pipeline2_fun is not None:
+                        assert isinstance(pipeline, Wildfusion_Similarity)
+                        pipeline.set_ignore_pairs(ignore_pairs)
 
-                        # Compute the similarity matrix
-                        similarity = pipeline(query, database)
+                    # Compute the similarity matrix
+                    similarity = pipeline(query, database)
 
-                        # Fix the similarity matrix by ignore_pairs
-                        if ignore_pairs:
-                            ignore_pairs_arr = np.asarray(ignore_pairs)
-                            similarity[ignore_pairs_arr[:, 0], ignore_pairs_arr[:, 1]] = -np.inf
+                    # Fix the similarity matrix by ignore_pairs
+                    if ignore_pairs:
+                        ignore_pairs_arr = np.asarray(ignore_pairs)
+                        similarity[ignore_pairs_arr[:, 0], ignore_pairs_arr[:, 1]] = -np.inf
 
-                        # Save the data
-                        save_data = {
-                            "similarity": similarity,
-                            "query": query,
-                            "database": database,
-                            "B": B,
-                            "img_load": img_load,
-                            "matching_part": matching_part,
-                            "name": name,
-                            "match_opposite_sides": match_opposite_sides,
-                            "split_year": split_year,
-                        }
-                        with open(file_name_save, "wb") as file:
-                            pickle.dump(save_data, file)
+                    # Save the data
+                    save_data = {
+                        "similarity": similarity,
+                        "query": query,
+                        "database": database,
+                        "B": B,
+                        "img_load": img_load,
+                        "matching_part": matching_part,
+                        "name": name,
+                        "match_opposite_sides": match_opposite_sides,
+                        "split_year": split_year,
+                    }
+                    with open(file_name_save, "wb") as file:
+                        pickle.dump(save_data, file)
