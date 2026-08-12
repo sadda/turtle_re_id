@@ -3,22 +3,24 @@ from collections import defaultdict
 import pandas as pd
 from wildlife_datasets.datasets import SeaTurtleID2022 as wd_SeaTurtleID2022
 
-from animal_re_id.datasets import TurtlewatchEgypt_New, combine_datasets_twe
+from animal_re_id.config import resolve_path
+from animal_re_id.datasets import TurtlewatchEgypt_New, combine_datasets_twe_from_paths
 
 
 class SeaTurtleID2022:
-    def __init__(self, root):
-        self.root = root
+    def __init__(self, paths):
+        self.paths = paths
 
     def _get_counts(self, dataset):
         counts = defaultdict(int)
         for key, df in dataset.metadata.groupby(["identity", "date"]):
             counts[key] += len(df)
         return counts
-        
+
     def get_summary(self):
-        dataset_heads = wd_SeaTurtleID2022(self.root, category_name="head")
-        dataset_flippers = wd_SeaTurtleID2022(self.root, category_name="flipper")
+        root = resolve_path(self.paths["root"])
+        dataset_heads = wd_SeaTurtleID2022(root, category_name="head")
+        dataset_flippers = wd_SeaTurtleID2022(root, category_name="flipper")
 
         mask1 = ~dataset_flippers.metadata["orientation"].isnull()
         mask2 = dataset_flippers.metadata["orientation"].str.startswith("front")
@@ -48,13 +50,11 @@ class SeaTurtleID2022:
 
 
 class TurtlewatchEgypt:
-    def __init__(self, root_new, roots_new, file_name):
-        self.root_new = root_new
-        self.roots_new = roots_new
-        self.file_name = file_name
+    def __init__(self, paths):
+        self.paths = paths
 
     def get_summary(self):
-        dataset_true = combine_datasets_twe(self.root_new, self.roots_new, self.file_name, load_segmentation=False)
+        dataset_true = combine_datasets_twe_from_paths(self.paths, load_segmentation=False)
         mask1 = dataset_true.metadata["identity"] != "unknown"
         mask2 = ~dataset_true.metadata["identity"].isnull()
         dataset_true = dataset_true.get_subset(mask1 & mask2)
@@ -73,7 +73,7 @@ class TurtlewatchEgypt:
             summary[encounter_id]["species"] = species[0]
             summary[encounter_id]["year"] = year[0]
 
-        dataset = TurtlewatchEgypt_New(self.root_new, self.roots_new, True, self.file_name)
+        dataset = TurtlewatchEgypt_New.from_paths(self.paths, True)
         metadata = dataset.dataset.metadata
         assert metadata["segmentation"].isnull().sum() == 0
 

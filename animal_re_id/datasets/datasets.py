@@ -3,6 +3,8 @@ import os
 import pandas as pd
 from wildlife_datasets import datasets as wd_datasets
 
+from ..config import resolve_path
+
 SCORE_THRESHOLD = 0.8
 SCORE_MIN = 0.3
 MAX_PER_ENCOUNTER = 10
@@ -49,6 +51,15 @@ def combine_datasets_twe(
         dfs.append(dataset.df)
     df = pd.concat(dfs).reset_index(drop=True)
     return wd_datasets.TurtlewatchEgypt_New(root=master_root, df=df, **kwargs)
+
+
+def combine_datasets_twe_from_paths(paths, **kwargs) -> wd_datasets.TurtlewatchEgypt_New:
+    return combine_datasets_twe(
+        resolve_path(paths["root_new"]),
+        paths["roots_new"],
+        resolve_path(paths["file_name"]),
+        **kwargs,
+    )
 
 
 def combine_matching_parts(matching_parts1, matching_parts2):
@@ -255,6 +266,17 @@ class TurtlewatchEgypt_New(TurtlesSegmented):
         super().__init__(dataset, is_database)
         self.select_subset(**subset_kwargs)
 
+    @classmethod
+    def from_paths(cls, paths, is_database, dataset_kwargs=None, subset_kwargs=None):
+        return cls(
+            resolve_path(paths["root_new"]),
+            paths["roots_new"],
+            is_database,
+            resolve_path(paths["file_name"]),
+            dataset_kwargs=dataset_kwargs,
+            subset_kwargs=subset_kwargs,
+        )
+
 
 class SeaTurtleID2022(TurtlesFlippersMerged):
     def __init__(self, root, database_query_matching, dataset_kwargs=None):
@@ -284,6 +306,10 @@ class SeaTurtleID2022(TurtlesFlippersMerged):
 
         dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load=img_load, load_label=load_label)
         super().__init__(dataset, database_query_matching)
+
+    @classmethod
+    def from_paths(cls, paths, database_query_matching, dataset_kwargs=None):
+        return cls(resolve_path(paths["root"]), database_query_matching, dataset_kwargs=dataset_kwargs)
 
 
 class TurtlewatchEgypt_Master(TurtlesFlippersMerged):

@@ -23,20 +23,13 @@ paths = load_paths(dataset_name)
 
 datasets = {}
 datasets_subset = {}
-if dataset_name == "TurtlewatchEgypt":
-    file_name = resolve_path(paths["file_name"])
-    root = resolve_path(paths["root_citizen"])
-    root_heads = resolve_path(paths["root_heads"])
-    root_flippers_f = resolve_path(paths["root_flippers_f"])
-    root_flippers_r = resolve_path(paths["root_flippers_r"])
-    root_new = resolve_path(paths["root_new"])
-    roots_new = paths["roots_new"]
+database_query_matching = True
 
+if dataset_name == "TurtlewatchEgypt":
     split_years = np.arange(2018, 2026).tolist()
     for img_load in img_loads:
-        database_query_matching = True
         dataset_kwargs = {"img_load": img_load}
-        dataset = TurtlewatchEgypt_New(root_new, roots_new, database_query_matching, file_name, dataset_kwargs=dataset_kwargs)
+        dataset = TurtlewatchEgypt_New.from_paths(paths, database_query_matching, dataset_kwargs=dataset_kwargs)
         datasets[img_load] = dataset
         for matching_part in matching_parts:
             dataset_subset = get_subset(dataset, matching_part)
@@ -49,13 +42,10 @@ if dataset_name == "TurtlewatchEgypt":
         (get_pipeline_miew, get_pipeline_aliked, "miew-aliked"),
     ]
 elif dataset_name == "SeaTurtleID2022":
-    root = resolve_path(paths["root"])
-
     split_years = np.arange(2011, 2023).tolist()
     for img_load in img_loads:
-        database_query_matching = True
         dataset_kwargs = {"img_load": img_load}
-        dataset = SeaTurtleID2022(root, database_query_matching, dataset_kwargs=dataset_kwargs)
+        dataset = SeaTurtleID2022.from_paths(paths, database_query_matching, dataset_kwargs=dataset_kwargs)
         datasets[img_load] = dataset
         for matching_part in matching_parts:
             dataset_subset = get_subset(dataset, matching_part)

@@ -8,5 +8,6 @@ from .datasets import (
     TurtlewatchEgypt_New,
     combine_datasets,
     combine_datasets_twe,
+    combine_datasets_twe_from_paths,
 )
 from .utils import add_date_exif
