@@ -5,23 +5,16 @@ from wildlife_datasets.datasets import (
 )
 from wildlife_datasets.detection import run_detection
 
+from animal_re_id.config import load_paths, resolve_path
 from animal_re_id.models import turtle_detector
 
 delete_corrupted = False
 check_files = False
-file_name = "individuals.csv"
-roots = [
-    "/data/wildlife_datasets/turtle_watch/2017 PICS + DATASHEET",
-    "/data/wildlife_datasets/turtle_watch/2018 PICS + DATASHEET",
-    "/data/wildlife_datasets/turtle_watch/2019 PICS + DATASHEET",
-    "/data/wildlife_datasets/turtle_watch/2020 PICS + DATASHEET",
-    "/data/wildlife_datasets/turtle_watch/2021 PICS + DATASHEET",
-    "/data/wildlife_datasets/turtle_watch/2022 PICS + online database",
-    "/data/wildlife_datasets/turtle_watch/2023 PICS + online database",
-    "/data/wildlife_datasets/turtle_watch/2024 PICS + online database",
-    "/data/wildlife_datasets/turtle_watch/2025 PICS + online database",
-]
-root_master = "/data/wildlife_datasets/turtle_watch/PROFILES"
+paths = load_paths()
+file_name = resolve_path(paths["twe"]["file_name"])
+root_new = resolve_path(paths["twe"]["root_new"])
+roots = [f"{root_new}/{r}" for r in paths["twe"]["roots_new"]]
+root_master = resolve_path(paths["twe"]["root_heads"])
 model = turtle_detector()
 
 for root in roots:

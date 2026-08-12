@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 
+from animal_re_id.config import load_paths, resolve_path
 from animal_re_id.datasets import SeaTurtleID2022, TurtlewatchEgypt_New, get_ignore_pairs, get_subset
 from animal_re_id.models import Wildfusion_Similarity, get_pipeline_aliked, get_pipeline_dino, get_pipeline_miew
 
@@ -18,26 +19,18 @@ img_loads = ["bbox"]
 Bs = [5, 10, 50, 100]
 device = "cuda"
 
+paths = load_paths()
+
 datasets = {}
 datasets_subset = {}
 if dataset_name == "twe":
-    file_name = "notebooks/individuals.csv"
-    root = "/data/wildlife_datasets/turtle_watch/citizen"
-    root_heads = "/data/wildlife_datasets/turtle_watch/PROFILES"
-    root_flippers_f = "/data/wildlife_datasets/turtle_watch/TWE_flipperprofiles_registered ind_LR_front"
-    root_flippers_r = "/data/wildlife_datasets/turtle_watch/TWE_flipperprofiles_registered ind_LR_rear"
-    root_new = "/data/wildlife_datasets/turtle_watch"
-    roots_new = [
-        "2017 PICS + DATASHEET",
-        "2018 PICS + DATASHEET",
-        "2019 PICS + DATASHEET",
-        "2020 PICS + DATASHEET",
-        "2021 PICS + DATASHEET",
-        "2022 PICS + online database",
-        "2023 PICS + online database",
-        "2024 PICS + online database",
-        "2025 PICS + online database",
-    ]
+    file_name = resolve_path(paths["twe"]["file_name"])
+    root = resolve_path(paths["twe"]["root_citizen"])
+    root_heads = resolve_path(paths["twe"]["root_heads"])
+    root_flippers_f = resolve_path(paths["twe"]["root_flippers_f"])
+    root_flippers_r = resolve_path(paths["twe"]["root_flippers_r"])
+    root_new = resolve_path(paths["twe"]["root_new"])
+    roots_new = paths["twe"]["roots_new"]
 
     split_years = np.arange(2018, 2026).tolist()
     for img_load in img_loads:
@@ -56,7 +49,7 @@ if dataset_name == "twe":
         (get_pipeline_miew, get_pipeline_aliked, "miew-aliked"),
     ]
 elif dataset_name == "seaturtleid2022":
-    root = "/data/wildlife_datasets/data/SeaTurtleID2022"
+    root = resolve_path(paths["seaturtleid2022"]["root"])
 
     split_years = np.arange(2011, 2023).tolist()
     for img_load in img_loads:
@@ -75,8 +68,8 @@ elif dataset_name == "seaturtleid2022":
 else:
     raise ValueError("Dataset now known")
 
-root_features = "/data/wildlife_datasets/features"
-root_results = "/data/wildlife_datasets/similarity"
+root_features = resolve_path(paths["root_features"])
+root_results = resolve_path(paths["root_results"])
 
 
 os.makedirs(f"{root_results}/{dataset_name}", exist_ok=True)

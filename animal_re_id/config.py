@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
+REPO_ROOT = CONFIG_DIR.parent
 
 
 def _deep_merge(base: dict, override: dict) -> dict:
@@ -12,6 +13,10 @@ def _deep_merge(base: dict, override: dict) -> dict:
         else:
             merged[key] = value
     return merged
+
+
+def resolve_path(value: str) -> str:
+    return str(REPO_ROOT / value)
 
 
 def load_paths() -> dict:
