@@ -11,18 +11,19 @@ from animal_re_id.models import Wildfusion_Similarity, get_pipeline_aliked, get_
 warnings.filterwarnings("ignore")
 
 
-dataset_name = "twe"
-# dataset_name = "seaturtleid2022"
+dataset_name = "TurtlewatchEgypt"
+# dataset_name = "SeaTurtleID2022"
 
 matching_parts = ["bodies", "heads", "front flippers", "rear flippers"]
 img_loads = ["bbox"]
 Bs = [5, 10, 50, 100]
 device = "cuda"
 
+paths = load_paths(dataset_name)
+
 datasets = {}
 datasets_subset = {}
-if dataset_name == "twe":
-    paths = load_paths("TurtlewatchEgypt")
+if dataset_name == "TurtlewatchEgypt":
     file_name = resolve_path(paths["file_name"])
     root = resolve_path(paths["root_citizen"])
     root_heads = resolve_path(paths["root_heads"])
@@ -47,8 +48,7 @@ if dataset_name == "twe":
         (get_pipeline_miew, None, "miew"),
         (get_pipeline_miew, get_pipeline_aliked, "miew-aliked"),
     ]
-elif dataset_name == "seaturtleid2022":
-    paths = load_paths("SeaTurtleID2022")
+elif dataset_name == "SeaTurtleID2022":
     root = resolve_path(paths["root"])
 
     split_years = np.arange(2011, 2023).tolist()
