@@ -19,7 +19,7 @@ def resolve_path(value: str) -> str:
     return str(REPO_ROOT / value)
 
 
-def load_paths() -> dict:
+def load_paths(dataset) -> dict:
     with open(CONFIG_DIR / "paths.json") as file:
         paths = json.load(file)
 
@@ -28,4 +28,4 @@ def load_paths() -> dict:
         with open(local_file) as file:
             paths = _deep_merge(paths, json.load(file))
 
-    return paths
+    return paths[dataset]

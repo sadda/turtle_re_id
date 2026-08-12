@@ -1,5 +1,5 @@
 {
-  "twe": {
+  "TurtlewatchEgypt": {
     "file_name": "notebooks/individuals.csv",
     "root_new": "/data/wildlife_datasets/turtle_watch",
     "roots_new": [
@@ -17,11 +17,13 @@
     "root_heads": "/data/wildlife_datasets/turtle_watch/PROFILES",
     "root_flippers_f": "/data/wildlife_datasets/turtle_watch/TWE_flipperprofiles_registered ind_LR_front",
     "root_flippers_r": "/data/wildlife_datasets/turtle_watch/TWE_flipperprofiles_registered ind_LR_rear",
-    "root_master": "/data/wildlife_datasets/turtle_watch/TWE_flipperprofiles_registered ind_LR"
+    "root_master": "/data/wildlife_datasets/turtle_watch/TWE_flipperprofiles_registered ind_LR",
+    "root_features": "/data/wildlife_datasets/features",
+    "root_results": "/data/wildlife_datasets/similarity"
   },
-  "seaturtleid2022": {
-    "root": "/data/wildlife_datasets/data/SeaTurtleID2022"
-  },
-  "root_features": "/data/wildlife_datasets/features",
-  "root_results": "/data/wildlife_datasets/similarity"
+  "SeaTurtleID2022": {
+    "root": "/data/wildlife_datasets/data/SeaTurtleID2022",
+    "root_features": "/data/wildlife_datasets/features",
+    "root_results": "/data/wildlife_datasets/similarity"
+  }
 }

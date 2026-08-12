@@ -19,18 +19,17 @@ img_loads = ["bbox"]
 Bs = [5, 10, 50, 100]
 device = "cuda"
 
-paths = load_paths()
-
 datasets = {}
 datasets_subset = {}
 if dataset_name == "twe":
-    file_name = resolve_path(paths["twe"]["file_name"])
-    root = resolve_path(paths["twe"]["root_citizen"])
-    root_heads = resolve_path(paths["twe"]["root_heads"])
-    root_flippers_f = resolve_path(paths["twe"]["root_flippers_f"])
-    root_flippers_r = resolve_path(paths["twe"]["root_flippers_r"])
-    root_new = resolve_path(paths["twe"]["root_new"])
-    roots_new = paths["twe"]["roots_new"]
+    paths = load_paths("TurtlewatchEgypt")
+    file_name = resolve_path(paths["file_name"])
+    root = resolve_path(paths["root_citizen"])
+    root_heads = resolve_path(paths["root_heads"])
+    root_flippers_f = resolve_path(paths["root_flippers_f"])
+    root_flippers_r = resolve_path(paths["root_flippers_r"])
+    root_new = resolve_path(paths["root_new"])
+    roots_new = paths["roots_new"]
 
     split_years = np.arange(2018, 2026).tolist()
     for img_load in img_loads:
@@ -49,7 +48,8 @@ if dataset_name == "twe":
         (get_pipeline_miew, get_pipeline_aliked, "miew-aliked"),
     ]
 elif dataset_name == "seaturtleid2022":
-    root = resolve_path(paths["seaturtleid2022"]["root"])
+    paths = load_paths("SeaTurtleID2022")
+    root = resolve_path(paths["root"])
 
     split_years = np.arange(2011, 2023).tolist()
     for img_load in img_loads:

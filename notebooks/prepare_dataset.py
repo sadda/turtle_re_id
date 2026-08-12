@@ -10,11 +10,11 @@ from animal_re_id.models import turtle_detector
 
 delete_corrupted = False
 check_files = False
-paths = load_paths()
-file_name = resolve_path(paths["twe"]["file_name"])
-root_new = resolve_path(paths["twe"]["root_new"])
-roots = [f"{root_new}/{r}" for r in paths["twe"]["roots_new"]]
-root_master = resolve_path(paths["twe"]["root_heads"])
+paths = load_paths("TurtlewatchEgypt")
+file_name = resolve_path(paths["file_name"])
+root_new = resolve_path(paths["root_new"])
+roots = [f"{root_new}/{r}" for r in paths["roots_new"]]
+root_master = resolve_path(paths["root_heads"])
 model = turtle_detector()
 
 for root in roots:
