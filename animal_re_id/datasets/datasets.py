@@ -95,6 +95,7 @@ class TurtlesSegmented(Dataset):
                     "cols_equal": [],
                     "cols_unequal": ["label", "orientation"],
                 },
+                "bodies": {"labels": ["turtle"], "cols_equal": [], "cols_unequal": []},
             }
         else:
             matching_parts = {
@@ -112,6 +113,11 @@ class TurtlesSegmented(Dataset):
                     "labels": ["flipper_rl", "flipper_rr"],
                     "cols_equal": ["identity", "encounter_id"],
                     "cols_unequal": ["label", "orientation"],
+                },
+                "bodies": {
+                    "labels": ["turtle"],
+                    "cols_equal": ["identity", "encounter_id"],
+                    "cols_unequal": [],
                 },
             }
         super().__init__(dataset, matching_parts)
@@ -155,6 +161,7 @@ class TurtlesFlippersMerged(Dataset):
                     "cols_equal": [],
                     "cols_unequal": ["label", "orientation"],
                 },
+                "bodies": {"labels": ["turtle"], "cols_equal": [], "cols_unequal": []},
             }
         else:
             matching_parts = {
@@ -172,6 +179,11 @@ class TurtlesFlippersMerged(Dataset):
                     "labels": ["rear flipper"],
                     "cols_equal": ["identity", "encounter_id"],
                     "cols_unequal": ["label", "orientation"],
+                },
+                "bodies": {
+                    "labels": ["turtle"],
+                    "cols_equal": ["identity", "encounter_id"],
+                    "cols_unequal": [],
                 },
             }
         super().__init__(dataset, matching_parts)
@@ -252,16 +264,20 @@ class SeaTurtleID2022(TurtlesFlippersMerged):
 
         metadata_h = wd_datasets.SeaTurtleID2022(root, category_name="head").metadata
         metadata_f = wd_datasets.SeaTurtleID2022(root, category_name="flipper").metadata
+        metadata_t = wd_datasets.SeaTurtleID2022(root, category_name="turtle").metadata
 
         metadata_h["image_id"] = "h_" + metadata_h["image_id"].astype(str)
         metadata_h["label"] = "head"
         metadata_f["image_id"] = "f_" + metadata_f["image_id"].astype(str)
+        metadata_t["image_id"] = "t_" + metadata_t["image_id"].astype(str)
+        metadata_t["label"] = "turtle"
+
         mask = metadata_f["orientation"].astype(str).str.startswith("front")
         metadata_f.loc[mask, "label"] = "front flipper"
         mask = metadata_f["orientation"].astype(str).str.startswith("rear")
         metadata_f.loc[mask, "label"] = "rear flipper"
 
-        metadata = pd.concat((metadata_h, metadata_f))
+        metadata = pd.concat((metadata_h, metadata_f, metadata_t))
         dates = pd.to_datetime(metadata["date"])
         metadata["year"] = dates.apply(lambda x: x.year)
         metadata["encounter_id"] = metadata["identity"] + "_" + metadata["date"]
