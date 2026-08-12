@@ -39,7 +39,6 @@ class SeaTurtleID2022:
             identity, date = key
             summary[f"{identity}_{date}"] = {
                 "identity": identity,
-                "species": "cc",
                 "year": int(date[:4]),
                 "heads": counts_h[key],
                 "front flippers": counts_f[key],
@@ -65,12 +64,10 @@ class TurtlewatchEgypt:
         for encounter_id, df_encounter in dataset_true.metadata.groupby("encounter_id"):
             identity = df_encounter["identity"].unique().tolist()
             year = df_encounter["year"].unique().tolist()
-            species = df_encounter["species"].unique().tolist()
-            for arr in [identity, year, species]:
+            for arr in [identity, year]:
                 if len(arr) != 1:
                     raise ValueError(f"Multiple values for encounter: {arr}")
             summary[encounter_id]["identity"] = identity[0]
-            summary[encounter_id]["species"] = species[0]
             summary[encounter_id]["year"] = year[0]
 
         dataset = TurtlewatchEgypt_New.from_paths(self.paths, True)
