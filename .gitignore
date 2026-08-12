@@ -1,3 +1,5 @@
+config/paths.local.json
+
 notebooks_smsrc/hidden
 verification_data_*.csv
 runs/
