@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 dataset_name = "twe"
 # dataset_name = "seaturtleid2022"
 
-matching_parts = ["heads", "front flippers", "rear flippers"]
+matching_parts = ["bodies", "heads", "front flippers", "rear flippers"]
 img_loads = ["bbox"]
 Bs = [5, 10, 50, 100]
 device = "cuda"
@@ -21,7 +21,7 @@ device = "cuda"
 datasets = {}
 datasets_subset = {}
 if dataset_name == "twe":
-    file_name = "../notebooks/individuals.csv"
+    file_name = "notebooks/individuals.csv"
     root = "/data/wildlife_datasets/turtle_watch/citizen"
     root_heads = "/data/wildlife_datasets/turtle_watch/PROFILES"
     root_flippers_f = "/data/wildlife_datasets/turtle_watch/TWE_flipperprofiles_registered ind_LR_front"
