@@ -1,4 +1,5 @@
 import os
+from abc import ABC, abstractmethod
 
 import pandas as pd
 from wildlife_datasets import datasets as wd_datasets
@@ -76,11 +77,16 @@ def combine_matching_parts(matching_parts1, matching_parts2):
     return matching_parts
 
 
-class Dataset:
+class Dataset(ABC):
     def __init__(self, dataset, matching_parts):
         self.dataset = dataset
         self.dataset.metadata = self.dataset.metadata.reset_index(drop=True)
         self.matching_parts = matching_parts
+
+    @classmethod
+    @abstractmethod
+    def from_paths(cls, paths, *args, **kwargs):
+        raise NotImplementedError
 
     def remove_unknown(self):
         mask = self.dataset.metadata["identity"] != "unknown"
@@ -218,6 +224,10 @@ class TurtlesOfSMSRC(TurtlesSegmented):
         super().__init__(dataset, is_database)
         self.select_subset(**subset_kwargs)
 
+    @classmethod
+    def from_paths(cls, paths, is_database, dataset_kwargs=None, subset_kwargs=None):
+        return cls(resolve_path(paths["root"]), is_database, dataset_kwargs=dataset_kwargs, subset_kwargs=subset_kwargs)
+
 
 class TurtlewatchEgypt_Citizen(TurtlesSegmented):
     def __init__(self, root, is_database, dataset_kwargs=None, subset_kwargs=None):
@@ -236,6 +246,10 @@ class TurtlewatchEgypt_Citizen(TurtlesSegmented):
         )
         super().__init__(dataset, is_database)
         self.select_subset(**subset_kwargs)
+
+    @classmethod
+    def from_paths(cls, paths, is_database, dataset_kwargs=None, subset_kwargs=None):
+        return cls(resolve_path(paths["root_citizen"]), is_database, dataset_kwargs=dataset_kwargs, subset_kwargs=subset_kwargs)
 
 
 class TurtlewatchEgypt_New(TurtlesSegmented):
@@ -355,6 +369,18 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
         )
         super().__init__(dataset, database_query_matching)
 
+    @classmethod
+    def from_paths(cls, paths, database_query_matching, dataset_kwargs=None, score_min=SCORE_THRESHOLD):
+        return cls(
+            resolve_path(paths["root_heads"]),
+            resolve_path(paths["root_flippers_f"]),
+            resolve_path(paths["root_flippers_r"]),
+            database_query_matching,
+            resolve_path(paths["file_name_individuals"]),
+            dataset_kwargs=dataset_kwargs,
+            score_min=score_min,
+        )
+
 
 class TurtlewatchEgypt_Combined(Dataset):
     def __init__(
@@ -398,3 +424,16 @@ class TurtlewatchEgypt_Combined(Dataset):
         )
         matching_parts = combine_matching_parts(dataset1.matching_parts, dataset2.matching_parts)
         super().__init__(dataset, matching_parts)
+
+    @classmethod
+    def from_paths(cls, paths, dataset_kwargs=None, subset_kwargs=None):
+        return cls(
+            resolve_path(paths["root_new"]),
+            paths["roots_new"],
+            resolve_path(paths["root_heads"]),
+            resolve_path(paths["root_flippers_f"]),
+            resolve_path(paths["root_flippers_r"]),
+            resolve_path(paths["file_name_individuals"]),
+            dataset_kwargs=dataset_kwargs,
+            subset_kwargs=subset_kwargs,
+        )
