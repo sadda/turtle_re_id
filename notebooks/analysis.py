@@ -25,14 +25,14 @@ class SeaTurtleID2022:
         mask1 = ~dataset_flippers.metadata["orientation"].isnull()
         mask2 = dataset_flippers.metadata["orientation"].str.startswith("front")
         mask3 = dataset_flippers.metadata["orientation"].str.startswith("rear")
-        
+
         dataset_front = dataset_flippers.get_subset(mask1 & mask2)
         dataset_rear = dataset_flippers.get_subset(mask1 & mask3)
 
         counts_h = self._get_counts(dataset_heads)
         counts_f = self._get_counts(dataset_front)
         counts_r = self._get_counts(dataset_rear)
-        keys = set().union(counts_h, counts_f, counts_r)        
+        keys = set().union(counts_h, counts_f, counts_r)
 
         summary = {}
         for key in keys:

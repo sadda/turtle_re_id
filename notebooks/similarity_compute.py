@@ -93,7 +93,7 @@ for B in Bs:
                         # Extract the database
                         mask_database = dataset_subset.metadata["year"] < split_year
                         database = dataset_subset.get_subset(mask_database)
-                        
+
                         # Extract the query set
                         labels_database = database.metadata["identity"].to_numpy()
                         mask_query1 = dataset_subset.metadata["year"] == split_year

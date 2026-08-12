@@ -326,15 +326,9 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
         dataset_kwargs = dataset_kwargs or {}
         load_label = dataset_kwargs.pop("load_label", True)
 
-        metadata_h = wd_datasets.TurtlewatchEgypt_Master(
-            root_heads, file_name=file_name, load_segmentation=True, **dataset_kwargs
-        ).metadata
-        metadata_f = wd_datasets.TurtlewatchEgypt_Master(
-            root_flippers_f, file_name=file_name, **dataset_kwargs
-        ).metadata
-        metadata_r = wd_datasets.TurtlewatchEgypt_Master(
-            root_flippers_r, file_name=file_name, **dataset_kwargs
-        ).metadata
+        metadata_h = wd_datasets.TurtlewatchEgypt_Master(root_heads, file_name=file_name, load_segmentation=True, **dataset_kwargs).metadata
+        metadata_f = wd_datasets.TurtlewatchEgypt_Master(root_flippers_f, file_name=file_name, **dataset_kwargs).metadata
+        metadata_r = wd_datasets.TurtlewatchEgypt_Master(root_flippers_r, file_name=file_name, **dataset_kwargs).metadata
 
         convertion = {
             "flipper_fr": "front flipper",
