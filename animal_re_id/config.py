@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
-REPO_ROOT = CONFIG_DIR.parent
+PACKAGE_DIR = Path(__file__).resolve().parent
+DEFAULT_PATHS_FILE = PACKAGE_DIR / "data" / "paths.json"
 
 
 def _deep_merge(base: dict, override: dict) -> dict:
@@ -16,16 +16,15 @@ def _deep_merge(base: dict, override: dict) -> dict:
 
 
 def resolve_path(value: str) -> str:
-    return str(REPO_ROOT / value)
+    return str(Path(value).expanduser().resolve())
 
 
-def load_paths(dataset) -> dict:
-    with open(CONFIG_DIR / "paths.json") as file:
+def load_paths(dataset: str, local_path: str | Path | None = None) -> dict:
+    with open(DEFAULT_PATHS_FILE) as file:
         paths = json.load(file)
 
-    local_file = CONFIG_DIR / "paths.local.json"
-    if local_file.exists():
-        with open(local_file) as file:
+    if local_path is not None and Path(local_path).exists():
+        with open(local_path) as file:
             paths = _deep_merge(paths, json.load(file))
 
     return paths[dataset]

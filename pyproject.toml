@@ -1,5 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "animal-re-id"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pandas",
+    "wildlife-datasets",
+]
+
+[project.optional-dependencies]
+models = [
+    "wildlife-tools",
+    "torch",
+    "torchvision",
+    "timm",
+    "transformers",
+    "ultralytics",
+    "huggingface_hub",
+]
+
 [tool.setuptools.packages.find]
-include = ["wildlife_re_id_app*"]
+include = ["animal_re_id*"]
+
+[tool.setuptools.package-data]
+animal_re_id = ["data/paths.json"]
 
 [tool.ruff]
 line-length = 250
