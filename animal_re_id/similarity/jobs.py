@@ -15,7 +15,6 @@ class SimilarityJob:
         dataset: Dataset,
         dataset_subset: WildlifeDataset,
         matching_part: str,
-        img_load: str,
         pipeline_spec: PipelineSpec,
         computer: SimilarityComputer,
         ignore_policy: IgnorePairsPolicy,
@@ -25,7 +24,6 @@ class SimilarityJob:
         self.dataset = dataset
         self.dataset_subset = dataset_subset
         self.matching_part = matching_part
-        self.img_load = img_load
         self.pipeline_spec = pipeline_spec
         self.computer = computer
         self.ignore_policy = ignore_policy
@@ -33,7 +31,8 @@ class SimilarityJob:
         self.cache = cache
 
     def run(self) -> None:
-        key_parts = self.cache.key_for(self.pipeline_spec, self.ignore_policy, self.split, self.img_load, self.matching_part)
+        img_load = self.dataset_subset.img_load
+        key_parts = self.cache.key_for(self.pipeline_spec, self.ignore_policy, self.split, img_load, self.matching_part)
         if self.cache.exists(key_parts):
             return
 
@@ -50,7 +49,7 @@ class SimilarityJob:
             database=database,
             name=self.pipeline_spec.name,
             B=self.pipeline_spec.B,
-            img_load=self.img_load,
+            img_load=img_load,
             matching_part=self.matching_part,
             match_opposite_sides=self.ignore_policy.cache_key,
             split_year=self.split.name,
@@ -64,7 +63,6 @@ class SimilarityGrid:
         dataset: Dataset,
         dataset_subset: WildlifeDataset,
         matching_part: str,
-        img_load: str,
         splitter: Splitter,
         pipeline_specs: list[PipelineSpec],
         ignore_pairs_policies: list[IgnorePairsPolicy],
@@ -75,7 +73,6 @@ class SimilarityGrid:
         self.dataset = dataset
         self.dataset_subset = dataset_subset
         self.matching_part = matching_part
-        self.img_load = img_load
         self.splitter = splitter
         self.pipeline_specs = pipeline_specs
         self.ignore_pairs_policies = ignore_pairs_policies
@@ -95,7 +92,6 @@ class SimilarityGrid:
                         dataset=self.dataset,
                         dataset_subset=self.dataset_subset,
                         matching_part=self.matching_part,
-                        img_load=self.img_load,
                         pipeline_spec=pipeline_spec,
                         computer=computer,
                         ignore_policy=ignore_policy,

@@ -79,7 +79,6 @@ for matching_part in matching_parts:
         dataset=dataset,
         dataset_subset=dataset_subset,
         matching_part=matching_part,
-        img_load=img_load,
         splitter=splitter,
         pipeline_specs=pipeline_specs,
         ignore_pairs_policies=ignore_pairs_policies,
