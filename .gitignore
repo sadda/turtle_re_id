@@ -1,8 +1,8 @@
-notebooks_loc
-notebooks_smsrc
+scripts/LOC
+scripts/SMSRC
 plot_matches.ipynb
 
-notebooks_smsrc/hidden
+scripts/SMSRC/hidden
 verification_data_*.csv
 runs/
 mmdetection/
