@@ -7,8 +7,8 @@ from animal_re_id.config import load_paths, resolve_path
 from animal_re_id.datasets import SeaTurtleID2022, TurtlewatchEgypt_New, get_subset
 from animal_re_id.models import get_pipeline_aliked, get_pipeline_dino, get_pipeline_miew
 from animal_re_id.similarity import (
-    ColumnIgnorePairsPolicy,
-    NoIgnorePairsPolicy,
+    AllowAllPairsPolicy,
+    MetadataIgnorePairsPolicy,
     PipelineSpec,
     SimilarityCache,
     SimilarityGrid,
@@ -67,8 +67,8 @@ os.makedirs(root_similarity, exist_ok=True)
 splitter = YearSplitter(split_years)
 cache = SimilarityCache(root_similarity)
 ignore_pairs_policies = [
-    ColumnIgnorePairsPolicy(cache_key=False),
-    NoIgnorePairsPolicy(cache_key=True),
+    MetadataIgnorePairsPolicy(cache_key=False),
+    AllowAllPairsPolicy(cache_key=True),
 ]
 
 for matching_part in matching_parts:

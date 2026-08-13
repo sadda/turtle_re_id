@@ -27,7 +27,7 @@ class IgnorePairsPolicy(ABC):
         raise NotImplementedError
 
 
-class NoIgnorePairsPolicy(IgnorePairsPolicy):
+class AllowAllPairsPolicy(IgnorePairsPolicy):
     def get_pair_selector(self, dataset: Dataset, matching_part: str) -> PairSelector:
         return TopkPairSelector()
 
@@ -41,7 +41,7 @@ class NoIgnorePairsPolicy(IgnorePairsPolicy):
         return None
 
 
-class ColumnIgnorePairsPolicy(IgnorePairsPolicy):
+class MetadataIgnorePairsPolicy(IgnorePairsPolicy):
     def get_pair_selector(self, dataset: Dataset, matching_part: str) -> PairSelector:
         return MaskedPairSelector(TopkPairSelector(), self._build_mask_provider(dataset, matching_part))
 
