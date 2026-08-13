@@ -12,6 +12,7 @@ def add_date_exif(dataset, i, file_name):
         exif[tag] = date
     img.save(file_name, exif=exif)
 
+
 def get_subset(dataset, matching_part):
     labels = dataset.matching_parts[matching_part]["labels"]
     mask = dataset.dataset.metadata["label"].isin(labels)

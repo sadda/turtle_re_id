@@ -38,6 +38,7 @@ if dataset_name == "TurtlewatchEgypt":
         PipelineSpec("miew", get_pipeline_miew, B=B),
         PipelineSpec("miew-aliked", get_pipeline_miew, get_pipeline_aliked, B=B),
     ]
+
     def postprocess(dataset):
         dataset.metadata["year"] = dataset.metadata["path"].str[:4].astype(int)
         mask = dataset.metadata["identity"] != "unknown"
@@ -49,6 +50,7 @@ elif dataset_name == "SeaTurtleID2022":
         PipelineSpec("dino", get_pipeline_dino, B=B),
         PipelineSpec("dino-aliked", get_pipeline_dino, get_pipeline_aliked, B=B),
     ]
+
     def postprocess(dataset):
         return dataset
 else:
