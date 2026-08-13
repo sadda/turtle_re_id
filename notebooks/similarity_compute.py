@@ -9,9 +9,10 @@ from animal_re_id.models import get_pipeline_aliked, get_pipeline_dino, get_pipe
 from animal_re_id.similarity import (
     AllowAllPairsPolicy,
     MetadataIgnorePairsPolicy,
-    PipelineSpec,
     SimilarityCache,
     SimilarityGrid,
+    SinglePipelineSpec,
+    WildfusionPipelineSpec,
     YearSplitter,
 )
 
@@ -35,8 +36,8 @@ if dataset_name == "TurtlewatchEgypt":
     split_years = np.arange(2018, 2026).tolist()
     dataset_class = TurtlewatchEgypt_New
     pipeline_specs = [
-        PipelineSpec("miew", get_pipeline_miew, B=B),
-        PipelineSpec("miew-aliked", get_pipeline_miew, get_pipeline_aliked, B=B),
+        SinglePipelineSpec("miew", get_pipeline_miew, B=B),
+        WildfusionPipelineSpec("miew-aliked", get_pipeline_miew, get_pipeline_aliked, B=B),
     ]
 
     def postprocess(dataset):
@@ -47,8 +48,8 @@ elif dataset_name == "SeaTurtleID2022":
     split_years = np.arange(2011, 2023).tolist()
     dataset_class = SeaTurtleID2022
     pipeline_specs = [
-        PipelineSpec("dino", get_pipeline_dino, B=B),
-        PipelineSpec("dino-aliked", get_pipeline_dino, get_pipeline_aliked, B=B),
+        SinglePipelineSpec("dino", get_pipeline_dino, B=B),
+        WildfusionPipelineSpec("dino-aliked", get_pipeline_dino, get_pipeline_aliked, B=B),
     ]
 
     def postprocess(dataset):

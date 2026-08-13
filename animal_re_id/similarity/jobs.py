@@ -2,7 +2,6 @@ from wildlife_datasets.datasets import WildlifeDataset
 
 from ..datasets.datasets import Dataset
 from .cache import SimilarityCache
-from .compute import SimilarityComputer
 from .ignore_pairs_policy import IgnorePairsPolicy
 from .pipeline_spec import PipelineSpec
 from .result import SimilarityResult
@@ -16,7 +15,6 @@ class SimilarityJob:
         dataset_subset: WildlifeDataset,
         matching_part: str,
         pipeline_spec: PipelineSpec,
-        computer: SimilarityComputer,
         ignore_policy: IgnorePairsPolicy,
         split: Split,
         cache: SimilarityCache,
@@ -25,7 +23,6 @@ class SimilarityJob:
         self.dataset_subset = dataset_subset
         self.matching_part = matching_part
         self.pipeline_spec = pipeline_spec
-        self.computer = computer
         self.ignore_policy = ignore_policy
         self.split = split
         self.cache = cache
@@ -41,7 +38,7 @@ class SimilarityJob:
 
         pair_selector = self.ignore_policy.get_pair_selector(self.dataset, self.matching_part)
         ignore_mask = self.ignore_policy.get_ignore_mask(self.dataset, self.matching_part, query, database)
-        similarity = self.computer.compute(query, database, pair_selector, ignore_mask)
+        similarity = self.pipeline_spec.compute(query, database, pair_selector, ignore_mask)
 
         result = SimilarityResult(
             similarity=similarity,
@@ -84,7 +81,7 @@ class SimilarityGrid:
         splits = self.splitter.get_splits(self.dataset_subset.metadata)
 
         for pipeline_spec in self.pipeline_specs:
-            computer = pipeline_spec.build(self.device, self.cache_prefix)
+            pipeline_spec.build(self.device, self.cache_prefix)
 
             for ignore_policy in self.ignore_pairs_policies:
                 for split in splits:
@@ -93,7 +90,6 @@ class SimilarityGrid:
                         dataset_subset=self.dataset_subset,
                         matching_part=self.matching_part,
                         pipeline_spec=pipeline_spec,
-                        computer=computer,
                         ignore_policy=ignore_policy,
                         split=split,
                         cache=self.cache,
