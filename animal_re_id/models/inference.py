@@ -1,5 +1,4 @@
 import numpy as np
-from wildlife_tools.similarity.wildfusion import WildFusion
 
 
 def best_matches_matching(results, max_per_encounter, min_similarity=0):
@@ -46,15 +45,6 @@ def best_matches_discovery(results, max_matches, max_per_identity, unlimited_unk
     # Keep only at most max_matches matches
     results = results[:max_matches]
     return results.reset_index(drop=True)
-
-
-def compute_similarity(query, database, ignore_pairs, priority, pipelines, Bs):
-    similarities = []
-    for pipeline, B in zip(pipelines, Bs):
-        wildfusion = WildFusion(calibrated_pipelines=[pipeline], priority_pipeline=priority)
-        similarity = wildfusion(query, database, B=B, ignore_pairs=ignore_pairs)
-        similarities.append(similarity.astype(np.float64))
-    return similarities
 
 
 def top_indices(similarity, ignore_lower_diagonal=False):

@@ -4,15 +4,16 @@ import pandas as pd
 
 DEF_VALUES = [-np.inf, "", ""]
 
+
 class Data:
-    def __init__(self, scores: dict, predictions: dict, matching_parts: str | dict, k_max = None):
+    def __init__(self, scores: dict, predictions: dict, matching_parts: str | dict, k_max=None):
         self.scores = scores
         self.predictions = predictions
 
-        self._save_matching_part(matching_parts)        
+        self._save_matching_part(matching_parts)
         if k_max is not None:
             self._extend_data(k_max)
-    
+
     def _extend_data(self, k_max):
         data = [self.scores, self.predictions, self.matching_parts]
         for var, fill_value in zip(data, DEF_VALUES):
@@ -48,12 +49,12 @@ class Data:
         return results
 
 
-
 def array_extend(x, n, fill_value):
     n_missing = n - len(x)
     if n_missing > 0:
         return np.concatenate((x, np.full(n_missing, fill_value)))
     return x
+
 
 def merge_data(data: dict[str, Data], k_max) -> Data:
     # Get all keys (encounters)
@@ -65,7 +66,7 @@ def merge_data(data: dict[str, Data], k_max) -> Data:
     # Find the index for the matching part with the largest score
     scores_merged = {}
     predictions_merged = {}
-    parts_merged = {} 
+    parts_merged = {}
     for encounter in encounters:
         ss = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[0])) for s in scores]).flatten()
         pp = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[1])) for s in predictions]).flatten()
@@ -92,7 +93,7 @@ def merge_data(data: dict[str, Data], k_max) -> Data:
         # Extract the highest scores
         scores_merged[encounter] = array_extend(ss, k_max, DEF_VALUES[0])[:k_max]
         predictions_merged[encounter] = array_extend(pp, k_max, DEF_VALUES[1])[:k_max]
-        parts_merged[encounter] =  array_extend(qq, k_max, DEF_VALUES[2])[:k_max]
+        parts_merged[encounter] = array_extend(qq, k_max, DEF_VALUES[2])[:k_max]
 
     return Data(scores_merged, predictions_merged, parts_merged)
 
@@ -106,11 +107,7 @@ def get_info(dataset, split_years):
             raise ValueError("Multiple identities for encounter")
         if len(year) != 1:
             raise ValueError("Multiple years for encounter")
-        summary.append({
-            "encounter": encounter_id,
-            "identity": identity[0],
-            "year": year[0]
-        })
+        summary.append({"encounter": encounter_id, "identity": identity[0], "year": year[0]})
 
     identities = {s["encounter"]: s["identity"] for s in summary}
     summary_df = pd.DataFrame(summary)
@@ -119,10 +116,10 @@ def get_info(dataset, split_years):
     for split_year in split_years:
         mask_now = summary_df["year"] == split_year
         mask_before = summary_df["year"] < split_year
-        
+
         summary_now = summary_df[mask_now]
         summary_before = summary_df[mask_before]
-        
+
         identities_known = summary_before["identity"].unique()
         mask_known = summary_now["identity"].isin(identities_known)
         summary_now_known = summary_now[mask_known]
@@ -132,17 +129,18 @@ def get_info(dataset, split_years):
 
     return identities, n_encounters_all, n_encounters_known
 
+
 def plot_best_scores(best_scores, matching_parts, y_max=None):
     best_scores_arr = np.asarray(best_scores, dtype=object)
 
-    plt.figure(figsize=(10,2))
+    plt.figure(figsize=(10, 2))
     for i, m in enumerate(matching_parts):
         for correct, color in zip([True, False], ["green", "red"]):
-            mask1 = best_scores_arr[:,0] == correct
-            mask2 = best_scores_arr[:,2] == m
+            mask1 = best_scores_arr[:, 0] == correct
+            mask2 = best_scores_arr[:, 2] == m
             mask = mask1 & mask2
 
-            plt.subplot(1, len(matching_parts), i+1)
+            plt.subplot(1, len(matching_parts), i + 1)
             plt.hist(best_scores_arr[mask, 1], alpha=0.6, color=color)
             if y_max is not None:
                 plt.ylim([0, y_max])
