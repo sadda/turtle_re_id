@@ -133,19 +133,3 @@ def get_pipeline_superpoint(device="cpu", cache_prefix=None, use_calibration=Fal
         transform=T.Compose([T.Resize([512, 512]), T.ToTensor()]),
         calibration=get_calibration(use_calibration),
     )
-
-
-def get_pipelines(device="cpu", cache_prefix=None, use_calibration=False):
-    pipeline_mega = get_pipeline_mega(device=device, cache_prefix=cache_prefix, use_calibration=use_calibration)
-    pipeline_miew = get_pipeline_miew(device=device, cache_prefix=cache_prefix, use_calibration=use_calibration)
-    pipeline_aliked = get_pipeline_aliked(device=device, cache_prefix=cache_prefix, use_calibration=use_calibration)
-    pipeline_disk = get_pipeline_disk(device=device, cache_prefix=cache_prefix, use_calibration=use_calibration)
-    pipeline_superpoint = get_pipeline_superpoint(device=device, cache_prefix=cache_prefix, use_calibration=use_calibration)
-
-    return (
-        pipeline_mega,
-        pipeline_miew,
-        pipeline_aliked,
-        pipeline_disk,
-        pipeline_superpoint,
-    )
