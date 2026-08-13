@@ -5,4 +5,4 @@ from .ignore_pairs_policy import ColumnIgnorePairsPolicy, IgnorePairsPolicy, NoI
 from .jobs import SimilarityJob
 from .pipeline_spec import PipelineSpec
 from .result import SimilarityResult
-from .splitters import RandomSplitter, SelfSplitter, Split, Splitter, YearSplitter
+from .splitters import Split, Splitter, YearSplitter
