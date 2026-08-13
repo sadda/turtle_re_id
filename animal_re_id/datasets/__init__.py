@@ -1,4 +1,3 @@
-from .dataset_operations import get_ignore_pairs, get_subset
 from .datasets import (
     SeaTurtleID2022,
     TurtlesOfSMSRC,
@@ -10,4 +9,4 @@ from .datasets import (
     combine_datasets_twe,
     combine_datasets_twe_from_paths,
 )
-from .utils import add_date_exif
+from .utils import add_date_exif, get_subset
