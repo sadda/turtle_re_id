@@ -1,5 +1,4 @@
 import numpy as np
-from wildlife_tools.similarity.wildfusion import WildFusion
 
 
 def best_matches_matching(results, max_per_encounter, min_similarity=0):
