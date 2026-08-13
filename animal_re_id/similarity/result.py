@@ -1,19 +1,23 @@
 from dataclasses import dataclass
+from typing import Any
+
+import numpy as np
+from wildlife_datasets.datasets import WildlifeDataset
 
 
 @dataclass
 class SimilarityResult:
-    similarity: object
-    query: object
-    database: object
+    similarity: np.ndarray
+    query: WildlifeDataset
+    database: WildlifeDataset
     name: str
-    B: object
+    B: int | None
     img_load: str
     matching_part: str
-    match_opposite_sides: object
+    match_opposite_sides: Any
     split_year: str
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
         return {
             "similarity": self.similarity,
             "query": self.query,

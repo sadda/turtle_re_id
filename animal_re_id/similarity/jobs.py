@@ -1,3 +1,6 @@
+from wildlife_datasets.datasets import WildlifeDataset
+
+from ..datasets.datasets import Dataset
 from .cache import SimilarityCache
 from .compute import SimilarityComputer
 from .ignore_pairs_policy import IgnorePairsPolicy
@@ -9,16 +12,16 @@ from .splitters import Split, Splitter
 class SimilarityJob:
     def __init__(
         self,
-        dataset,
-        dataset_subset,
-        matching_part,
-        img_load,
+        dataset: Dataset,
+        dataset_subset: WildlifeDataset,
+        matching_part: str,
+        img_load: str,
         pipeline_spec: PipelineSpec,
         computer: SimilarityComputer,
         ignore_policy: IgnorePairsPolicy,
         split: Split,
         cache: SimilarityCache,
-    ):
+    ) -> None:
         self.dataset = dataset
         self.dataset_subset = dataset_subset
         self.matching_part = matching_part
@@ -29,7 +32,7 @@ class SimilarityJob:
         self.split = split
         self.cache = cache
 
-    def run(self):
+    def run(self) -> None:
         key_parts = self.cache.key_for(self.pipeline_spec, self.ignore_policy, self.split, self.img_load, self.matching_part)
         if self.cache.exists(key_parts):
             return
@@ -58,17 +61,17 @@ class SimilarityJob:
 class SimilarityGrid:
     def __init__(
         self,
-        dataset,
-        dataset_subset,
-        matching_part,
-        img_load,
+        dataset: Dataset,
+        dataset_subset: WildlifeDataset,
+        matching_part: str,
+        img_load: str,
         splitter: Splitter,
         pipeline_specs: list[PipelineSpec],
         ignore_pairs_policies: list[IgnorePairsPolicy],
         cache: SimilarityCache,
-        device="cuda",
-        cache_prefix=None,
-    ):
+        device: str = "cuda",
+        cache_prefix: str | None = None,
+    ) -> None:
         self.dataset = dataset
         self.dataset_subset = dataset_subset
         self.matching_part = matching_part
@@ -80,7 +83,7 @@ class SimilarityGrid:
         self.device = device
         self.cache_prefix = cache_prefix
 
-    def run(self):
+    def run(self) -> None:
         splits = self.splitter.get_splits(self.dataset_subset.metadata)
 
         for pipeline_spec in self.pipeline_specs:

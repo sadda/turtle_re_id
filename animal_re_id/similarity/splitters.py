@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
+from wildlife_datasets.datasets import WildlifeDataset
 
 
 @dataclass
@@ -11,10 +12,10 @@ class Split:
     mask_database: pd.Series
     mask_query: pd.Series
 
-    def database(self, dataset):
+    def database(self, dataset: WildlifeDataset) -> WildlifeDataset:
         return dataset.get_subset(self.mask_database)
 
-    def query(self, dataset):
+    def query(self, dataset: WildlifeDataset) -> WildlifeDataset:
         return dataset.get_subset(self.mask_query)
 
 
@@ -25,7 +26,7 @@ class Splitter(ABC):
 
 
 class YearSplitter(Splitter):
-    def __init__(self, split_years, year_col="year", identity_col="identity"):
+    def __init__(self, split_years: list[int], year_col: str = "year", identity_col: str = "identity") -> None:
         self.split_years = split_years
         self.year_col = year_col
         self.identity_col = identity_col
@@ -40,4 +41,3 @@ class YearSplitter(Splitter):
             mask_query = mask_query & metadata[self.identity_col].isin(np.unique(labels_database))
             splits.append(Split(name=str(split_year), mask_database=mask_database, mask_query=mask_query))
         return splits
-
