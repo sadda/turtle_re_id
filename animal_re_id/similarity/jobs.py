@@ -37,8 +37,9 @@ class SimilarityJob:
         database = self.split.database(self.dataset_subset)
         query = self.split.query(self.dataset_subset)
 
-        ignore_pairs = self.ignore_policy.get_ignore_pairs(self.dataset, self.matching_part, query, database)
-        similarity = self.computer.compute(query, database, ignore_pairs)
+        pair_selector = self.ignore_policy.get_pair_selector(self.dataset, self.matching_part)
+        ignore_mask = self.ignore_policy.get_ignore_mask(self.dataset, self.matching_part, query, database)
+        similarity = self.computer.compute(query, database, pair_selector, ignore_mask)
 
         result = SimilarityResult(
             similarity=similarity,

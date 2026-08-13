@@ -1,3 +1,7 @@
+notebooks_loc
+notebooks_smsrc
+plot_matches.ipynb
+
 notebooks_smsrc/hidden
 verification_data_*.csv
 runs/

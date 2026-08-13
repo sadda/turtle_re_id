@@ -9,24 +9,28 @@ from wildlife_tools.features import (
     DiskExtractor,
     SuperPointExtractor,
 )
-from wildlife_tools.similarity import CosineSimilarity, MatchLightGlue
+from wildlife_tools.similarity import CosineSimilarity, MatchLightGlue, PairSelector
 from wildlife_tools.similarity.calibration import IsotonicCalibration
 from wildlife_tools.similarity.wildfusion import SimilarityPipeline, WildFusion
 
 
 class Wildfusion_Similarity:
-    def __init__(self, priority, pipeline, B):
+    def __init__(self, priority, pipeline, B, pair_selector: PairSelector | None = None):
         self.priority = priority
         self.pipeline = pipeline
         self.B = B
-        self.wildfusion = WildFusion(calibrated_pipelines=[self.pipeline], priority_pipeline=self.priority)
+        self.wildfusion = WildFusion(
+            calibrated_pipelines=[self.pipeline],
+            priority_pipeline=self.priority,
+            pair_selector=pair_selector,
+        )
 
     def __call__(self, query, database):
-        similarity = self.wildfusion(query, database, B=self.B, ignore_pairs=self.ignore_pairs)
+        similarity = self.wildfusion(query, database, B=self.B)
         return similarity.astype(np.float64)
 
-    def set_ignore_pairs(self, ignore_pairs: list[tuple[int, int]]):
-        self.ignore_pairs = ignore_pairs
+    def set_pair_selector(self, pair_selector: PairSelector):
+        self.wildfusion.pair_selector = pair_selector
 
 
 def get_calibration(use_calibration) -> IsotonicCalibration | None:
