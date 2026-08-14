@@ -26,5 +26,10 @@
     "root": "data/SeaTurtleID2022",
     "root_features": "features/SeaTurtleID2022",
     "root_similarity": "similarity/SeaTurtleID2022"
+  },
+  "TurtlesOfSMSRC": {
+    "root": "data/TurtlesOfSMSRC",
+    "root_features": "features/TurtlesOfSMSRC",
+    "root_similarity": "similarity/TurtlesOfSMSRC"
   }
 }
