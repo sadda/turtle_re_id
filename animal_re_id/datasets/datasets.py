@@ -330,8 +330,8 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
     def __init__(
         self,
         root_heads,
-        root_flippers_f,
-        root_flippers_r,
+        root_flippers_front,
+        root_flippers_hind,
         database_query_matching,
         file_name,
         dataset_kwargs=None,
@@ -341,8 +341,8 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
         load_label = dataset_kwargs.pop("load_label", True)
 
         metadata_h = wd_datasets.TurtlewatchEgypt_Master(root_heads, file_name=file_name, load_segmentation=True, **dataset_kwargs).metadata
-        metadata_f = wd_datasets.TurtlewatchEgypt_Master(root_flippers_f, file_name=file_name, **dataset_kwargs).metadata
-        metadata_r = wd_datasets.TurtlewatchEgypt_Master(root_flippers_r, file_name=file_name, **dataset_kwargs).metadata
+        metadata_f = wd_datasets.TurtlewatchEgypt_Master(root_flippers_front, file_name=file_name, **dataset_kwargs).metadata
+        metadata_r = wd_datasets.TurtlewatchEgypt_Master(root_flippers_hind, file_name=file_name, **dataset_kwargs).metadata
 
         convertion = {
             "flipper_fr": "front flipper",
@@ -355,9 +355,9 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
         metadata_h = metadata_h[~metadata_h["label"].isnull()]
         metadata_h = metadata_h[metadata_h["score"] >= score_min]
         metadata_f["label"] = "front flipper"
-        metadata_f["path"] = metadata_f["path"].apply(lambda x: os.path.join(root_flippers_f, x))
+        metadata_f["path"] = metadata_f["path"].apply(lambda x: os.path.join(root_flippers_front, x))
         metadata_r["label"] = "hind flipper"
-        metadata_r["path"] = metadata_r["path"].apply(lambda x: os.path.join(root_flippers_r, x))
+        metadata_r["path"] = metadata_r["path"].apply(lambda x: os.path.join(root_flippers_hind, x))
 
         metadata = pd.concat((metadata_h, metadata_f, metadata_r))
         wildlife_dataset = wd_datasets.TurtlewatchEgypt_Master(
@@ -373,8 +373,8 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
     def from_paths(cls, paths, database_query_matching, dataset_kwargs=None, score_min=SCORE_THRESHOLD):
         return cls(
             resolve_path(paths["root_heads"]),
-            resolve_path(paths["root_flippers_f"]),
-            resolve_path(paths["root_flippers_r"]),
+            resolve_path(paths["root_flippers_front"]),
+            resolve_path(paths["root_flippers_hind"]),
             database_query_matching,
             resolve_path(paths["file_name_individuals"]),
             dataset_kwargs=dataset_kwargs,
@@ -388,8 +388,8 @@ class TurtlewatchEgypt_Combined(MatchingDataset):
         root_master,
         roots,
         root_heads,
-        root_flippers_f,
-        root_flippers_r,
+        root_flippers_front,
+        root_flippers_hind,
         file_name,
         dataset_kwargs=None,
         subset_kwargs=None,
@@ -410,8 +410,8 @@ class TurtlewatchEgypt_Combined(MatchingDataset):
         )
         matching_dataset2 = TurtlewatchEgypt_Master(
             root_heads,
-            root_flippers_f,
-            root_flippers_r,
+            root_flippers_front,
+            root_flippers_hind,
             False,
             file_name,
             dataset_kwargs=dataset_kwargs,
@@ -431,8 +431,8 @@ class TurtlewatchEgypt_Combined(MatchingDataset):
             resolve_path(paths["root_new"]),
             paths["roots_new"],
             resolve_path(paths["root_heads"]),
-            resolve_path(paths["root_flippers_f"]),
-            resolve_path(paths["root_flippers_r"]),
+            resolve_path(paths["root_flippers_front"]),
+            resolve_path(paths["root_flippers_hind"]),
             resolve_path(paths["file_name_individuals"]),
             dataset_kwargs=dataset_kwargs,
             subset_kwargs=subset_kwargs,

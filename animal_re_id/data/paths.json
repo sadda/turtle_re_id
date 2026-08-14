@@ -16,8 +16,8 @@
     ],
     "root_citizen": "data/TurtlewatchEgypt/citizen",
     "root_heads": "data/TurtlewatchEgypt/PROFILES",
-    "root_flippers_f": "data/TurtlewatchEgypt/TWE_flipperprofiles_registered ind_LR_front",
-    "root_flippers_r": "data/TurtlewatchEgypt/TWE_flipperprofiles_registered ind_LR_rear",
+    "root_flippers_front": "data/TurtlewatchEgypt/TWE_flipperprofiles_registered ind_LR_front",
+    "root_flippers_hind": "data/TurtlewatchEgypt/TWE_flipperprofiles_registered ind_LR_hind",
     "root_master": "data/TurtlewatchEgypt/TWE_flipperprofiles_registered ind_LR",
     "root_features": "features/TurtlewatchEgypt",
     "root_similarity": "similarity/TurtlewatchEgypt"
