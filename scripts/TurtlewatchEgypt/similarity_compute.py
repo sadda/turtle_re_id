@@ -27,7 +27,8 @@ img_load = "bbox"
 B = 100
 device = "cuda"
 
-paths = load_paths(dataset_name, local_path="config/paths.json")
+local_path = "config/paths.json"
+paths = load_paths(dataset_name, local_path=local_path)
 
 wildlife_datasets = {}
 database_query_matching = True

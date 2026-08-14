@@ -9,7 +9,8 @@ from animal_re_id.config import load_paths, resolve_path
 from animal_re_id.models import turtle_detector
 
 delete_corrupted = False
-paths = load_paths("TurtlewatchEgypt", local_path="config/paths.json")
+local_path = "config/paths.json"
+paths = load_paths("TurtlewatchEgypt", local_path=local_path)
 file_name = resolve_path(paths["file_name_individuals"])
 root_new = resolve_path(paths["root_new"])
 roots = [f"{root_new}/{r}" for r in paths["roots_new"]]
