@@ -117,9 +117,7 @@ def _build_matching_parts(front_labels, hind_labels, database_query_matching):
 
 class TurtleDetectorSegmented(MatchingDataset):
     def __init__(self, wildlife_dataset, database_query_matching):
-        matching_parts = _build_matching_parts(
-            ["flipper_fl", "flipper_fr"], ["flipper_hl", "flipper_hr"], database_query_matching
-        )
+        matching_parts = _build_matching_parts(["flipper_fl", "flipper_fr"], ["flipper_hl", "flipper_hr"], database_query_matching)
         super().__init__(wildlife_dataset, matching_parts)
 
     def select_subset(
