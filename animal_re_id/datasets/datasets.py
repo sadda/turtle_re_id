@@ -97,46 +97,29 @@ class MatchingDataset(ABC):
         self.wildlife_dataset = self.wildlife_dataset.get_subset(mask)
 
 
-class TurtlesSegmented(MatchingDataset):
+def _build_matching_parts(front_labels, hind_labels, database_query_matching):
+    cols_equal = [] if database_query_matching else ["identity", "encounter_id"]
+    return {
+        "heads": {"labels": ["head"], "cols_equal": cols_equal, "cols_unequal": []},
+        "front flippers": {
+            "labels": front_labels,
+            "cols_equal": cols_equal,
+            "cols_unequal": ["label", "orientation"],
+        },
+        "hind flippers": {
+            "labels": hind_labels,
+            "cols_equal": cols_equal,
+            "cols_unequal": ["label", "orientation"],
+        },
+        "bodies": {"labels": ["turtle"], "cols_equal": cols_equal, "cols_unequal": []},
+    }
+
+
+class TurtleDetectorSegmented(MatchingDataset):
     def __init__(self, wildlife_dataset, database_query_matching):
-        if database_query_matching:
-            matching_parts = {
-                "heads": {"labels": ["head"], "cols_equal": [], "cols_unequal": []},
-                "front flippers": {
-                    "labels": ["flipper_fl", "flipper_fr"],
-                    "cols_equal": [],
-                    "cols_unequal": ["label", "orientation"],
-                },
-                "hind flippers": {
-                    "labels": ["flipper_hl", "flipper_hr"],
-                    "cols_equal": [],
-                    "cols_unequal": ["label", "orientation"],
-                },
-                "bodies": {"labels": ["turtle"], "cols_equal": [], "cols_unequal": []},
-            }
-        else:
-            matching_parts = {
-                "heads": {
-                    "labels": ["head"],
-                    "cols_equal": ["identity", "encounter_id"],
-                    "cols_unequal": [],
-                },
-                "front flippers": {
-                    "labels": ["flipper_fl", "flipper_fr"],
-                    "cols_equal": ["identity", "encounter_id"],
-                    "cols_unequal": ["label", "orientation"],
-                },
-                "hind flippers": {
-                    "labels": ["flipper_hl", "flipper_hr"],
-                    "cols_equal": ["identity", "encounter_id"],
-                    "cols_unequal": ["label", "orientation"],
-                },
-                "bodies": {
-                    "labels": ["turtle"],
-                    "cols_equal": ["identity", "encounter_id"],
-                    "cols_unequal": [],
-                },
-            }
+        matching_parts = _build_matching_parts(
+            ["flipper_fl", "flipper_fr"], ["flipper_hl", "flipper_hr"], database_query_matching
+        )
         super().__init__(wildlife_dataset, matching_parts)
 
     def select_subset(
@@ -165,48 +148,11 @@ class TurtlesSegmented(MatchingDataset):
 
 class TurtlesFlippersMerged(MatchingDataset):
     def __init__(self, wildlife_dataset, database_query_matching):
-        if database_query_matching:
-            matching_parts = {
-                "heads": {"labels": ["head"], "cols_equal": [], "cols_unequal": []},
-                "front flippers": {
-                    "labels": ["front flipper"],
-                    "cols_equal": [],
-                    "cols_unequal": ["label", "orientation"],
-                },
-                "hind flippers": {
-                    "labels": ["hind flipper"],
-                    "cols_equal": [],
-                    "cols_unequal": ["label", "orientation"],
-                },
-                "bodies": {"labels": ["turtle"], "cols_equal": [], "cols_unequal": []},
-            }
-        else:
-            matching_parts = {
-                "heads": {
-                    "labels": ["head"],
-                    "cols_equal": ["identity", "encounter_id"],
-                    "cols_unequal": [],
-                },
-                "front flippers": {
-                    "labels": ["front flipper"],
-                    "cols_equal": ["identity", "encounter_id"],
-                    "cols_unequal": ["label", "orientation"],
-                },
-                "hind flippers": {
-                    "labels": ["hind flipper"],
-                    "cols_equal": ["identity", "encounter_id"],
-                    "cols_unequal": ["label", "orientation"],
-                },
-                "bodies": {
-                    "labels": ["turtle"],
-                    "cols_equal": ["identity", "encounter_id"],
-                    "cols_unequal": [],
-                },
-            }
+        matching_parts = _build_matching_parts(["front flipper"], ["hind flipper"], database_query_matching)
         super().__init__(wildlife_dataset, matching_parts)
 
 
-class TurtlesOfSMSRC(TurtlesSegmented):
+class TurtlesOfSMSRC(TurtleDetectorSegmented):
     def __init__(self, root, is_database, dataset_kwargs=None, subset_kwargs=None):
         dataset_kwargs = dataset_kwargs or {}
         subset_kwargs = subset_kwargs or {}
@@ -229,7 +175,7 @@ class TurtlesOfSMSRC(TurtlesSegmented):
         return cls(resolve_path(paths["root"]), is_database, dataset_kwargs=dataset_kwargs, subset_kwargs=subset_kwargs)
 
 
-class TurtlewatchEgypt_Citizen(TurtlesSegmented):
+class TurtlewatchEgypt_Citizen(TurtleDetectorSegmented):
     def __init__(self, root, is_database, dataset_kwargs=None, subset_kwargs=None):
         dataset_kwargs = dataset_kwargs or {}
         subset_kwargs = subset_kwargs or {}
@@ -252,7 +198,7 @@ class TurtlewatchEgypt_Citizen(TurtlesSegmented):
         return cls(resolve_path(paths["root_citizen"]), is_database, dataset_kwargs=dataset_kwargs, subset_kwargs=subset_kwargs)
 
 
-class TurtlewatchEgypt_New(TurtlesSegmented):
+class TurtlewatchEgypt_New(TurtleDetectorSegmented):
     def __init__(
         self,
         root_master,

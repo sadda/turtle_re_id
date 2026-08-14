@@ -74,11 +74,15 @@ class TurtlewatchEgypt:
         metadata = matching_dataset.wildlife_dataset.metadata
         assert metadata["segmentation"].isnull().sum() == 0
 
+        head_labels = matching_dataset.matching_parts["heads"]["labels"]
+        front_labels = matching_dataset.matching_parts["front flippers"]["labels"]
+        hind_labels = matching_dataset.matching_parts["hind flippers"]["labels"]
+
         for encounter_id, df_encounter in metadata.groupby("encounter_id"):
             if encounter_id in encounters_id:
-                n_heads = (df_encounter["label"] == "head").sum()
-                n_front_flippers = (df_encounter["label"].isin(("flipper_fl", "flipper_fr"))).sum()
-                n_hind_flippers = (df_encounter["label"].isin(("flipper_hl", "flipper_hr"))).sum()
+                n_heads = (df_encounter["label"].isin(head_labels)).sum()
+                n_front_flippers = (df_encounter["label"].isin(front_labels)).sum()
+                n_hind_flippers = (df_encounter["label"].isin(hind_labels)).sum()
 
                 summary[encounter_id]["heads"] = n_heads
                 summary[encounter_id]["front flippers"] = n_front_flippers
