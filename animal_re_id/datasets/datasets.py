@@ -107,8 +107,8 @@ class TurtlesSegmented(MatchingDataset):
                     "cols_equal": [],
                     "cols_unequal": ["label", "orientation"],
                 },
-                "rear flippers": {
-                    "labels": ["flipper_rl", "flipper_rr"],
+                "hind flippers": {
+                    "labels": ["flipper_hl", "flipper_hr"],
                     "cols_equal": [],
                     "cols_unequal": ["label", "orientation"],
                 },
@@ -126,8 +126,8 @@ class TurtlesSegmented(MatchingDataset):
                     "cols_equal": ["identity", "encounter_id"],
                     "cols_unequal": ["label", "orientation"],
                 },
-                "rear flippers": {
-                    "labels": ["flipper_rl", "flipper_rr"],
+                "hind flippers": {
+                    "labels": ["flipper_hl", "flipper_hr"],
                     "cols_equal": ["identity", "encounter_id"],
                     "cols_unequal": ["label", "orientation"],
                 },
@@ -173,8 +173,8 @@ class TurtlesFlippersMerged(MatchingDataset):
                     "cols_equal": [],
                     "cols_unequal": ["label", "orientation"],
                 },
-                "rear flippers": {
-                    "labels": ["rear flipper"],
+                "hind flippers": {
+                    "labels": ["hind flipper"],
                     "cols_equal": [],
                     "cols_unequal": ["label", "orientation"],
                 },
@@ -192,8 +192,8 @@ class TurtlesFlippersMerged(MatchingDataset):
                     "cols_equal": ["identity", "encounter_id"],
                     "cols_unequal": ["label", "orientation"],
                 },
-                "rear flippers": {
-                    "labels": ["rear flipper"],
+                "hind flippers": {
+                    "labels": ["hind flipper"],
                     "cols_equal": ["identity", "encounter_id"],
                     "cols_unequal": ["label", "orientation"],
                 },
@@ -311,7 +311,7 @@ class SeaTurtleID2022(TurtlesFlippersMerged):
         mask = metadata_f["orientation"].astype(str).str.startswith("front")
         metadata_f.loc[mask, "label"] = "front flipper"
         mask = metadata_f["orientation"].astype(str).str.startswith("rear")
-        metadata_f.loc[mask, "label"] = "rear flipper"
+        metadata_f.loc[mask, "label"] = "hind flipper"
 
         metadata = pd.concat((metadata_h, metadata_f, metadata_t))
         dates = pd.to_datetime(metadata["date"])
@@ -347,8 +347,8 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
         convertion = {
             "flipper_fr": "front flipper",
             "flipper_fl": "front flipper",
-            "flipper_rl": "rear flipper",
-            "flipper_rr": "rear flipper",
+            "flipper_hl": "hind flipper",
+            "flipper_hr": "hind flipper",
         }
         metadata_h["label"] = metadata_h["label"].replace(convertion)
         metadata_h["path"] = metadata_h["path"].apply(lambda x: os.path.join(root_heads, x))
@@ -356,7 +356,7 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
         metadata_h = metadata_h[metadata_h["score"] >= score_min]
         metadata_f["label"] = "front flipper"
         metadata_f["path"] = metadata_f["path"].apply(lambda x: os.path.join(root_flippers_f, x))
-        metadata_r["label"] = "rear flipper"
+        metadata_r["label"] = "hind flipper"
         metadata_r["path"] = metadata_r["path"].apply(lambda x: os.path.join(root_flippers_r, x))
 
         metadata = pd.concat((metadata_h, metadata_f, metadata_r))

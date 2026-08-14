@@ -22,7 +22,7 @@ warnings.filterwarnings("ignore")
 dataset_name = "TurtlewatchEgypt"
 # dataset_name = "SeaTurtleID2022"
 
-matching_parts = ["bodies", "heads", "front flippers", "rear flippers"]
+matching_parts = ["bodies", "heads", "front flippers", "hind flippers"]
 img_load = "bbox"
 B = 100
 device = "cuda"
