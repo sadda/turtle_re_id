@@ -12,14 +12,14 @@ MAX_PER_ENCOUNTER = 10
 MIN_PER_ENCOUNTER = 2
 
 
-def combine_datasets(datasets, encounter_prefixes=None, **kwargs) -> wd_datasets.WildlifeDataset:
+def combine_datasets(wildlife_datasets, encounter_prefixes=None, **kwargs) -> wd_datasets.WildlifeDataset:
     if encounter_prefixes is None:
-        encounter_prefixes = range(len(datasets))
+        encounter_prefixes = range(len(wildlife_datasets))
     metadatas = []
-    for dataset, encounter_prefix in zip(datasets, encounter_prefixes):
-        metadata = dataset.metadata.copy()
-        if dataset.root is not None:
-            metadata["path"] = dataset.root + "/" + metadata["path"]
+    for wildlife_dataset, encounter_prefix in zip(wildlife_datasets, encounter_prefixes):
+        metadata = wildlife_dataset.metadata.copy()
+        if wildlife_dataset.root is not None:
+            metadata["path"] = wildlife_dataset.root + "/" + metadata["path"]
         if "encounter_id" in metadata.columns:
             mask = ~metadata["encounter_id"].isnull()
             new_encounter_id = metadata.loc[mask, "encounter_id"].apply(lambda x: f"{encounter_prefix}_{x}")
@@ -42,14 +42,14 @@ def combine_datasets_twe(
     if encounter_prefixes is None:
         encounter_prefixes = range(len(roots))
     for root, encounter_prefix in zip(roots, encounter_prefixes):
-        dataset = wd_datasets.TurtlewatchEgypt_New(
+        wildlife_dataset = wd_datasets.TurtlewatchEgypt_New(
             f"{master_root}/{root}",
             file_name=file_name,
             load_segmentation=load_segmentation,
         )
-        dataset.df["path"] = root.split("/")[-1] + "/" + dataset.df["path"]
-        dataset.df["encounter_id"] = dataset.df["encounter_id"].apply(lambda x: f"{encounter_prefix}_{x}")
-        dfs.append(dataset.df)
+        wildlife_dataset.df["path"] = root.split("/")[-1] + "/" + wildlife_dataset.df["path"]
+        wildlife_dataset.df["encounter_id"] = wildlife_dataset.df["encounter_id"].apply(lambda x: f"{encounter_prefix}_{x}")
+        dfs.append(wildlife_dataset.df)
     df = pd.concat(dfs).reset_index(drop=True)
     return wd_datasets.TurtlewatchEgypt_New(root=master_root, df=df, **kwargs)
 
@@ -77,10 +77,10 @@ def combine_matching_parts(matching_parts1, matching_parts2):
     return matching_parts
 
 
-class Dataset(ABC):
-    def __init__(self, dataset, matching_parts):
-        self.dataset = dataset
-        self.dataset.metadata = self.dataset.metadata.reset_index(drop=True)
+class MatchingDataset(ABC):
+    def __init__(self, wildlife_dataset, matching_parts):
+        self.wildlife_dataset = wildlife_dataset
+        self.wildlife_dataset.metadata = self.wildlife_dataset.metadata.reset_index(drop=True)
         self.matching_parts = matching_parts
 
     @classmethod
@@ -89,16 +89,16 @@ class Dataset(ABC):
         raise NotImplementedError
 
     def remove_unknown(self):
-        mask = self.dataset.metadata["identity"] != "unknown"
-        self.dataset = self.dataset.get_subset(mask)
+        mask = self.wildlife_dataset.metadata["identity"] != "unknown"
+        self.wildlife_dataset = self.wildlife_dataset.get_subset(mask)
 
     def keep_only_unknown(self):
-        mask = self.dataset.metadata["identity"] == "unknown"
-        self.dataset = self.dataset.get_subset(mask)
+        mask = self.wildlife_dataset.metadata["identity"] == "unknown"
+        self.wildlife_dataset = self.wildlife_dataset.get_subset(mask)
 
 
-class TurtlesSegmented(Dataset):
-    def __init__(self, dataset, database_query_matching):
+class TurtlesSegmented(MatchingDataset):
+    def __init__(self, wildlife_dataset, database_query_matching):
         if database_query_matching:
             matching_parts = {
                 "heads": {"labels": ["head"], "cols_equal": [], "cols_unequal": []},
@@ -137,7 +137,7 @@ class TurtlesSegmented(Dataset):
                     "cols_unequal": [],
                 },
             }
-        super().__init__(dataset, matching_parts)
+        super().__init__(wildlife_dataset, matching_parts)
 
     def select_subset(
         self,
@@ -148,7 +148,7 @@ class TurtlesSegmented(Dataset):
     ):
 
         mask = []
-        for _, df_label in self.dataset.metadata.groupby("label"):
+        for _, df_label in self.wildlife_dataset.metadata.groupby("label"):
             for _, df_encounter in df_label.groupby("encounter_id"):
                 df_encounter = df_encounter.sort_values("score", ascending=False)
                 df_encounter = df_encounter.iloc[:max_per_encounter]
@@ -160,11 +160,11 @@ class TurtlesSegmented(Dataset):
                     df_encounter = df_encounter.iloc[:min_per_encounter]
                 mask.extend(df_encounter.index)
 
-        self.dataset = self.dataset.get_subset(mask)
+        self.wildlife_dataset = self.wildlife_dataset.get_subset(mask)
 
 
-class TurtlesFlippersMerged(Dataset):
-    def __init__(self, dataset, database_query_matching):
+class TurtlesFlippersMerged(MatchingDataset):
+    def __init__(self, wildlife_dataset, database_query_matching):
         if database_query_matching:
             matching_parts = {
                 "heads": {"labels": ["head"], "cols_equal": [], "cols_unequal": []},
@@ -203,7 +203,7 @@ class TurtlesFlippersMerged(Dataset):
                     "cols_unequal": [],
                 },
             }
-        super().__init__(dataset, matching_parts)
+        super().__init__(wildlife_dataset, matching_parts)
 
 
 class TurtlesOfSMSRC(TurtlesSegmented):
@@ -214,14 +214,14 @@ class TurtlesOfSMSRC(TurtlesSegmented):
         img_load = dataset_kwargs.pop("img_load", "bbox")
         load_label = dataset_kwargs.pop("load_label", True)
 
-        dataset = wd_datasets.TurtlesOfSMSRC(
+        wildlife_dataset = wd_datasets.TurtlesOfSMSRC(
             root,
             img_load=img_load,
             load_segmentation=True,
             load_label=load_label,
             **dataset_kwargs,
         )
-        super().__init__(dataset, is_database)
+        super().__init__(wildlife_dataset, is_database)
         self.select_subset(**subset_kwargs)
 
     @classmethod
@@ -237,14 +237,14 @@ class TurtlewatchEgypt_Citizen(TurtlesSegmented):
         img_load = dataset_kwargs.pop("img_load", "bbox")
         load_label = dataset_kwargs.pop("load_label", True)
 
-        dataset = wd_datasets.TurtlewatchEgypt_Citizen(
+        wildlife_dataset = wd_datasets.TurtlewatchEgypt_Citizen(
             root,
             img_load=img_load,
             load_segmentation=True,
             load_label=load_label,
             **dataset_kwargs,
         )
-        super().__init__(dataset, is_database)
+        super().__init__(wildlife_dataset, is_database)
         self.select_subset(**subset_kwargs)
 
     @classmethod
@@ -268,7 +268,7 @@ class TurtlewatchEgypt_New(TurtlesSegmented):
         img_load = dataset_kwargs.pop("img_load", "bbox")
         load_label = dataset_kwargs.pop("load_label", True)
 
-        dataset = combine_datasets_twe(
+        wildlife_dataset = combine_datasets_twe(
             root_master,
             roots,
             file_name,
@@ -277,7 +277,7 @@ class TurtlewatchEgypt_New(TurtlesSegmented):
             load_label=load_label,
             **dataset_kwargs,
         )
-        super().__init__(dataset, is_database)
+        super().__init__(wildlife_dataset, is_database)
         self.select_subset(**subset_kwargs)
 
     @classmethod
@@ -318,8 +318,8 @@ class SeaTurtleID2022(TurtlesFlippersMerged):
         metadata["year"] = dates.apply(lambda x: x.year)
         metadata["encounter_id"] = metadata["identity"] + "_" + metadata["date"]
 
-        dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load=img_load, load_label=load_label)
-        super().__init__(dataset, database_query_matching)
+        wildlife_dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load=img_load, load_label=load_label)
+        super().__init__(wildlife_dataset, database_query_matching)
 
     @classmethod
     def from_paths(cls, paths, database_query_matching, dataset_kwargs=None):
@@ -360,14 +360,14 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
         metadata_r["path"] = metadata_r["path"].apply(lambda x: os.path.join(root_flippers_r, x))
 
         metadata = pd.concat((metadata_h, metadata_f, metadata_r))
-        dataset = wd_datasets.TurtlewatchEgypt_Master(
+        wildlife_dataset = wd_datasets.TurtlewatchEgypt_Master(
             root=None,
             df=metadata,
             load_label=load_label,
             file_name=file_name,
             **dataset_kwargs,
         )
-        super().__init__(dataset, database_query_matching)
+        super().__init__(wildlife_dataset, database_query_matching)
 
     @classmethod
     def from_paths(cls, paths, database_query_matching, dataset_kwargs=None, score_min=SCORE_THRESHOLD):
@@ -382,7 +382,7 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
         )
 
 
-class TurtlewatchEgypt_Combined(Dataset):
+class TurtlewatchEgypt_Combined(MatchingDataset):
     def __init__(
         self,
         root_master,
@@ -400,7 +400,7 @@ class TurtlewatchEgypt_Combined(Dataset):
         load_label = dataset_kwargs.pop("load_label", True)
         score_min = subset_kwargs.pop("score_min", SCORE_MIN)
 
-        dataset1 = TurtlewatchEgypt_New(
+        matching_dataset1 = TurtlewatchEgypt_New(
             root_master,
             roots,
             False,
@@ -408,7 +408,7 @@ class TurtlewatchEgypt_Combined(Dataset):
             dataset_kwargs=dataset_kwargs,
             subset_kwargs=subset_kwargs,
         )
-        dataset2 = TurtlewatchEgypt_Master(
+        matching_dataset2 = TurtlewatchEgypt_Master(
             root_heads,
             root_flippers_f,
             root_flippers_r,
@@ -417,13 +417,13 @@ class TurtlewatchEgypt_Combined(Dataset):
             dataset_kwargs=dataset_kwargs,
             score_min=score_min,
         )
-        dataset = combine_datasets(
-            [dataset1.dataset, dataset2.dataset],
+        wildlife_dataset = combine_datasets(
+            [matching_dataset1.wildlife_dataset, matching_dataset2.wildlife_dataset],
             load_label=load_label,
             **dataset_kwargs,
         )
-        matching_parts = combine_matching_parts(dataset1.matching_parts, dataset2.matching_parts)
-        super().__init__(dataset, matching_parts)
+        matching_parts = combine_matching_parts(matching_dataset1.matching_parts, matching_dataset2.matching_parts)
+        super().__init__(wildlife_dataset, matching_parts)
 
     @classmethod
     def from_paths(cls, paths, dataset_kwargs=None, subset_kwargs=None):
