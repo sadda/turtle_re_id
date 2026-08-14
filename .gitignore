@@ -1,17 +1,16 @@
-data/
-scripts/LOC
-scripts/SMSRC
+/data/
+/scripts/LOC
+/scripts/SMSRC
 plot_matches.ipynb
 
-scripts/SMSRC/hidden
+/scripts/SMSRC/hidden
 verification_data_*.csv
-runs/
-mmdetection/
-venv*/
+/runs/
+/mmdetection/
 tokens/
 nohup.out
-.vscode/
-config/
+/.vscode/
+/config/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
