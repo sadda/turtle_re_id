@@ -22,6 +22,10 @@ models = [
     "ultralytics",
     "huggingface_hub",
 ]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.11",
+]
 
 [tool.setuptools.packages.find]
 include = ["animal_re_id*"]
