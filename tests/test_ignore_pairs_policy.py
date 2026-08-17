@@ -8,6 +8,7 @@ from wildlife_tools.similarity import MaskedPairSelector, TopkPairSelector
 from animal_re_id.datasets.datasets import MatchingDataset
 from animal_re_id.similarity.ignore_pairs_policy import (
     AllowAllPairsPolicy,
+    DiagonalIgnorePairsPolicy,
     MetadataIgnorePairsPolicy,
 )
 
@@ -33,15 +34,22 @@ class TestAllowAllPairsPolicy:
         selector = policy.get_pair_selector(matching_dataset=cast(MatchingDataset, None), matching_part="heads")
         assert isinstance(selector, TopkPairSelector)
 
-    def test_get_ignore_mask_is_none(self) -> None:
-        policy = AllowAllPairsPolicy(cache_key="allow_all")
-        mask = policy.get_ignore_mask(
-            matching_dataset=cast(MatchingDataset, None),
-            matching_part="heads",
-            query=cast(WildlifeDataset, None),
-            database=cast(WildlifeDataset, None),
-        )
-        assert mask is None
+
+class TestDiagonalIgnorePairsPolicy:
+    def test_get_pair_selector_returns_masked_selector(self) -> None:
+        policy = DiagonalIgnorePairsPolicy(cache_key="diagonal")
+        selector = policy.get_pair_selector(matching_dataset=cast(MatchingDataset, None), matching_part="heads")
+        assert isinstance(selector, MaskedPairSelector)
+
+    def test_get_ignore_mask_masks_diagonal(self) -> None:
+        policy = DiagonalIgnorePairsPolicy(cache_key="diagonal")
+        selector = policy.get_pair_selector(matching_dataset=cast(MatchingDataset, None), matching_part="heads")
+
+        query = make_wildlife_dataset_like(pd.DataFrame({"identity": ["a", "b"]}))
+        database = make_wildlife_dataset_like(pd.DataFrame({"identity": ["a", "c"]}))
+
+        mask = selector.get_ignore_mask(query, database)
+        assert mask.tolist() == [[True, False], [False, True]]
 
 
 class TestMetadataIgnorePairsPolicy:
@@ -54,11 +62,12 @@ class TestMetadataIgnorePairsPolicy:
     def test_get_ignore_mask_ignores_same_identity(self) -> None:
         matching_dataset = make_matching_dataset(cols_equal=["identity"], cols_unequal=[])
         policy = MetadataIgnorePairsPolicy(cache_key="match_opposite")
+        selector = policy.get_pair_selector(matching_dataset, "heads")
 
         query = make_wildlife_dataset_like(pd.DataFrame({"identity": ["a", "b"]}))
         database = make_wildlife_dataset_like(pd.DataFrame({"identity": ["a", "c"]}))
 
-        mask = policy.get_ignore_mask(matching_dataset, "heads", query, database)
+        mask = selector.get_ignore_mask(query, database)
         assert mask.shape == (2, 2)
         # query[0]="a" matches database[0]="a" -> ignored
         assert mask[0, 0]
@@ -69,11 +78,12 @@ class TestMetadataIgnorePairsPolicy:
     def test_get_ignore_mask_ignores_different_values_in_cols_unequal(self) -> None:
         matching_dataset = make_matching_dataset(cols_equal=[], cols_unequal=["orientation"], matching_part="front flippers")
         policy = MetadataIgnorePairsPolicy(cache_key="match_same")
+        selector = policy.get_pair_selector(matching_dataset, "front flippers")
 
         query = make_wildlife_dataset_like(pd.DataFrame({"orientation": ["left", "right"]}))
         database = make_wildlife_dataset_like(pd.DataFrame({"orientation": ["left", "left"]}))
 
-        mask = policy.get_ignore_mask(matching_dataset, "front flippers", query, database)
+        mask = selector.get_ignore_mask(query, database)
         # query[0]="left" vs database[0]="left" -> equal -> not ignored (cols_unequal ignores unequal pairs)
         assert not mask[0, 0]
         # query[0]="left" vs database[1]="left" -> equal -> not ignored
@@ -96,8 +106,8 @@ class TestMetadataIgnorePairsPolicy:
         query = make_wildlife_dataset_like(pd.DataFrame({"identity": ["a"]}))
         database = make_wildlife_dataset_like(pd.DataFrame({"identity": ["a"]}))
 
-        mask_heads = policy.get_ignore_mask(matching_dataset, "heads", query, database)
-        mask_bodies = policy.get_ignore_mask(matching_dataset, "bodies", query, database)
+        mask_heads = policy.get_pair_selector(matching_dataset, "heads").get_ignore_mask(query, database)
+        mask_bodies = policy.get_pair_selector(matching_dataset, "bodies").get_ignore_mask(query, database)
         assert mask_heads[0, 0]
         assert not mask_bodies[0, 0]
 

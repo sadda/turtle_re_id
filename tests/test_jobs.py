@@ -53,11 +53,10 @@ class TestSimilarityJob:
         job.split.database.return_value = "database_subset"
         job.split.query.return_value = "query_subset"
         job.ignore_policy.get_pair_selector.return_value = "pair_selector"
-        job.ignore_policy.get_ignore_mask.return_value = "ignore_mask"
 
         job.run()
 
-        job.pipeline_spec.compute.assert_called_once_with("query_subset", "database_subset", "pair_selector", "ignore_mask")
+        job.pipeline_spec.compute.assert_called_once_with("query_subset", "database_subset", "pair_selector")
         job.cache.save.assert_called_once()
         saved_key, saved_data = job.cache.save.call_args[0]
         assert saved_key == ["key"]
@@ -74,14 +73,14 @@ class TestSimilarityJob:
         job.run()
         job.cache.key_for.assert_called_once_with(job.pipeline_spec, job.ignore_policy, job.split, "bbox", "heads")
 
-    def test_run_builds_ignore_mask_with_query_and_database(self) -> None:
+    def test_run_builds_pair_selector_with_matching_dataset_and_part(self) -> None:
         job = make_job(cache_exists=False)
         job.split.database.return_value = "database_subset"
         job.split.query.return_value = "query_subset"
 
         job.run()
 
-        job.ignore_policy.get_ignore_mask.assert_called_once_with(job.matching_dataset, "heads", "query_subset", "database_subset")
+        job.ignore_policy.get_pair_selector.assert_called_once_with(job.matching_dataset, "heads")
 
 
 class TestSimilarityGrid:

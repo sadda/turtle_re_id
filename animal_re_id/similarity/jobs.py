@@ -37,8 +37,7 @@ class SimilarityJob:
         query = self.split.query(self.wildlife_dataset)
 
         pair_selector = self.ignore_policy.get_pair_selector(self.matching_dataset, self.matching_part)
-        ignore_mask = self.ignore_policy.get_ignore_mask(self.matching_dataset, self.matching_part, query, database)
-        similarity = self.pipeline_spec.compute(query, database, pair_selector, ignore_mask)
+        similarity = self.pipeline_spec.compute(query, database, pair_selector)
 
         result = SimilarityResult(
             similarity=similarity,
