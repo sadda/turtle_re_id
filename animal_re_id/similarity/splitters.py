@@ -13,6 +13,7 @@ class Split:
     mask_query: pd.Series
 
     def database(self, wildlife_dataset: WildlifeDataset) -> WildlifeDataset:
+        # TODO: return the same object if index full
         return wildlife_dataset.get_subset(self.mask_database)
 
     def query(self, wildlife_dataset: WildlifeDataset) -> WildlifeDataset:
@@ -41,3 +42,9 @@ class YearSplitter(Splitter):
             mask_query = mask_query & metadata[self.identity_col].isin(np.unique(labels_database))
             splits.append(Split(name=str(split_year), mask_database=mask_database, mask_query=mask_query))
         return splits
+
+
+class DiscoverySplitter(Splitter):
+    def get_splits(self, metadata: pd.DataFrame) -> list[Split]:
+        mask = pd.Series(True, index=metadata.index)
+        return [Split(name="discovery", mask_database=mask, mask_query=mask)]
