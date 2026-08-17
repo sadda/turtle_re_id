@@ -15,6 +15,7 @@ from animal_re_id.models import (
 )
 from animal_re_id.similarity import (
     AllowAllPairsPolicy,
+    CombinedIgnorePairsPolicy,
     DiscoverySplitter,
     MetadataIgnorePairsPolicy,
     SimilarityCache,
@@ -91,7 +92,7 @@ elif dataset_name == "TurtlesOfSMSRC":
     ]
     dataset_kwargs = {"img_load": img_load, "replace_identity": replace_identity}
     splitter = DiscoverySplitter()
-    ignore_pairs_policies = [MetadataIgnorePairsPolicy(cache_key=None)]
+    ignore_pairs_policies = [CombinedIgnorePairsPolicy(cache_key=None)]
 
     def postprocess(wildlife_dataset):
         return wildlife_dataset
