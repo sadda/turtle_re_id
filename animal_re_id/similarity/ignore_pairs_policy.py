@@ -41,6 +41,26 @@ class AllowAllPairsPolicy(IgnorePairsPolicy):
         return None
 
 
+class _DiagonalIgnoreMask:
+    def get_ignore_mask(self, df1: Any, df2: Any) -> np.ndarray:
+        return np.eye(len(df1), len(df2), dtype=bool)
+
+
+# TODO: should be possible to combine multiple policies
+class DiagonalIgnorePairsPolicy(IgnorePairsPolicy):
+    def get_pair_selector(self, matching_dataset: MatchingDataset, matching_part: str) -> PairSelector:
+        return MaskedPairSelector(TopkPairSelector(), _DiagonalIgnoreMask())
+
+    def get_ignore_mask(
+        self,
+        matching_dataset: MatchingDataset,
+        matching_part: str,
+        query: WildlifeDataset,
+        database: WildlifeDataset,
+    ) -> np.ndarray | None:
+        return _DiagonalIgnoreMask().get_ignore_mask(query.metadata, database.metadata)
+
+
 class MetadataIgnorePairsPolicy(IgnorePairsPolicy):
     def get_pair_selector(self, matching_dataset: MatchingDataset, matching_part: str) -> PairSelector:
         return MaskedPairSelector(TopkPairSelector(), self._build_mask_provider(matching_dataset, matching_part))
