@@ -9,12 +9,12 @@ requires-python = ">=3.10"
 dependencies = [
     "numpy",
     "pandas",
-    "wildlife-datasets",
+    "wildlife-datasets @ git+https://github.com/WildlifeDatasets/wildlife-datasets",
 ]
 
 [project.optional-dependencies]
 models = [
-    "wildlife-tools",
+    "wildlife-tools @ git+https://github.com/WildlifeDatasets/wildlife-tools",
     "torch",
     "torchvision",
     "timm",
@@ -22,12 +22,20 @@ models = [
     "ultralytics",
     "huggingface_hub",
 ]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.11",
+]
 
 [tool.setuptools.packages.find]
 include = ["animal_re_id*"]
 
 [tool.setuptools.package-data]
 animal_re_id = ["data/paths.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"
 
 [tool.ruff]
 line-length = 250
