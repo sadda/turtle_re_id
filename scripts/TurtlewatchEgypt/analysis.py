@@ -42,7 +42,7 @@ class SeaTurtleID2022:
                 "year": int(date[:4]),
                 "heads": counts_h[key],
                 "front flippers": counts_f[key],
-                "rear flippers": counts_r[key],
+                "hind flippers": counts_r[key],
                 "total": counts_h[key] + counts_f[key] + counts_r[key],
             }
         return pd.DataFrame(summary).T
@@ -70,20 +70,24 @@ class TurtlewatchEgypt:
             summary[encounter_id]["identity"] = identity[0]
             summary[encounter_id]["year"] = year[0]
 
-        dataset = TurtlewatchEgypt_New.from_paths(self.paths, True)
-        metadata = dataset.dataset.metadata
+        matching_dataset = TurtlewatchEgypt_New.from_paths(self.paths, True)
+        metadata = matching_dataset.wildlife_dataset.metadata
         assert metadata["segmentation"].isnull().sum() == 0
+
+        head_labels = matching_dataset.matching_parts["heads"]["labels"]
+        front_labels = matching_dataset.matching_parts["front flippers"]["labels"]
+        hind_labels = matching_dataset.matching_parts["hind flippers"]["labels"]
 
         for encounter_id, df_encounter in metadata.groupby("encounter_id"):
             if encounter_id in encounters_id:
-                n_heads = (df_encounter["label"] == "head").sum()
-                n_front_flippers = (df_encounter["label"].isin(("flipper_fl", "flipper_fr"))).sum()
-                n_rear_flippers = (df_encounter["label"].isin(("flipper_rl", "flipper_rr"))).sum()
+                n_heads = (df_encounter["label"].isin(head_labels)).sum()
+                n_front_flippers = (df_encounter["label"].isin(front_labels)).sum()
+                n_hind_flippers = (df_encounter["label"].isin(hind_labels)).sum()
 
                 summary[encounter_id]["heads"] = n_heads
                 summary[encounter_id]["front flippers"] = n_front_flippers
-                summary[encounter_id]["rear flippers"] = n_rear_flippers
-                summary[encounter_id]["total"] = n_heads + n_front_flippers + n_rear_flippers
+                summary[encounter_id]["hind flippers"] = n_hind_flippers
+                summary[encounter_id]["total"] = n_heads + n_front_flippers + n_hind_flippers
 
         summary_df = pd.DataFrame(summary).T
         summary_df = summary_df.replace(pd.NA, 0)

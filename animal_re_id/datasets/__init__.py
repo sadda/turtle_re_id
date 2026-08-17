@@ -9,4 +9,4 @@ from .datasets import (
     combine_datasets_twe,
     combine_datasets_twe_from_paths,
 )
-from .utils import add_date_exif, get_subset
+from .utils import add_date_exif, get_wildlife_dataset

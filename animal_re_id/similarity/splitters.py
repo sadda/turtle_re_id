@@ -12,11 +12,11 @@ class Split:
     mask_database: pd.Series
     mask_query: pd.Series
 
-    def database(self, dataset: WildlifeDataset) -> WildlifeDataset:
-        return dataset.get_subset(self.mask_database)
+    def database(self, wildlife_dataset: WildlifeDataset) -> WildlifeDataset:
+        return wildlife_dataset.get_subset(self.mask_database)
 
-    def query(self, dataset: WildlifeDataset) -> WildlifeDataset:
-        return dataset.get_subset(self.mask_query)
+    def query(self, wildlife_dataset: WildlifeDataset) -> WildlifeDataset:
+        return wildlife_dataset.get_subset(self.mask_query)
 
 
 class Splitter(ABC):

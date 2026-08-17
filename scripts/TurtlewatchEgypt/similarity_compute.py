@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 
 from animal_re_id.config import load_paths, resolve_path
-from animal_re_id.datasets import SeaTurtleID2022, TurtlewatchEgypt_New, get_subset
+from animal_re_id.datasets import SeaTurtleID2022, TurtlewatchEgypt_New, get_wildlife_dataset
 from animal_re_id.models import get_pipeline_aliked, get_pipeline_dino, get_pipeline_miew
 from animal_re_id.similarity import (
     AllowAllPairsPolicy,
@@ -22,46 +22,47 @@ warnings.filterwarnings("ignore")
 dataset_name = "TurtlewatchEgypt"
 # dataset_name = "SeaTurtleID2022"
 
-matching_parts = ["bodies", "heads", "front flippers", "rear flippers"]
+matching_parts = ["bodies", "heads", "front flippers", "hind flippers"]
 img_load = "bbox"
 B = 100
 device = "cuda"
 
-paths = load_paths(dataset_name, local_path="config/paths.json")
+local_path = "config/paths.json"
+paths = load_paths(dataset_name, local_path=local_path)
 
-datasets_subset = {}
+wildlife_datasets = {}
 database_query_matching = True
 
 if dataset_name == "TurtlewatchEgypt":
     split_years = np.arange(2018, 2026).tolist()
-    dataset_class = TurtlewatchEgypt_New
+    matching_dataset_class = TurtlewatchEgypt_New
     pipeline_specs = [
         SinglePipelineSpec("miew", get_pipeline_miew, B=B),
         WildfusionPipelineSpec("miew-aliked", get_pipeline_miew, get_pipeline_aliked, B=B),
     ]
 
-    def postprocess(dataset):
-        dataset.metadata["year"] = dataset.metadata["path"].str[:4].astype(int)
-        mask = dataset.metadata["identity"] != "unknown"
-        return dataset.get_subset(mask)
+    def postprocess(wildlife_dataset):
+        wildlife_dataset.metadata["year"] = wildlife_dataset.metadata["path"].str[:4].astype(int)
+        mask = wildlife_dataset.metadata["identity"] != "unknown"
+        return wildlife_dataset.get_subset(mask)
 elif dataset_name == "SeaTurtleID2022":
     split_years = np.arange(2011, 2023).tolist()
-    dataset_class = SeaTurtleID2022
+    matching_dataset_class = SeaTurtleID2022
     pipeline_specs = [
         SinglePipelineSpec("dino", get_pipeline_dino, B=B),
         WildfusionPipelineSpec("dino-aliked", get_pipeline_dino, get_pipeline_aliked, B=B),
     ]
 
-    def postprocess(dataset):
-        return dataset
+    def postprocess(wildlife_dataset):
+        return wildlife_dataset
 else:
     raise ValueError("Dataset now known")
 
 dataset_kwargs = {"img_load": img_load}
-dataset = dataset_class.from_paths(paths, database_query_matching, dataset_kwargs=dataset_kwargs)
+matching_dataset = matching_dataset_class.from_paths(paths, database_query_matching, dataset_kwargs=dataset_kwargs)
 for matching_part in matching_parts:
-    dataset_subset = get_subset(dataset, matching_part)
-    datasets_subset[matching_part] = postprocess(dataset_subset)
+    wildlife_dataset = get_wildlife_dataset(matching_dataset, matching_part)
+    wildlife_datasets[matching_part] = postprocess(wildlife_dataset)
 
 root_features = resolve_path(paths["root_features"])
 root_similarity = resolve_path(paths["root_similarity"])
@@ -75,12 +76,12 @@ ignore_pairs_policies = [
 ]
 
 for matching_part in matching_parts:
-    dataset_subset = datasets_subset[matching_part]
+    wildlife_dataset = wildlife_datasets[matching_part]
     cache_prefix = f"{root_features}/{matching_part}_{img_load}"
 
     grid = SimilarityGrid(
-        dataset=dataset,
-        dataset_subset=dataset_subset,
+        matching_dataset=matching_dataset,
+        wildlife_dataset=wildlife_dataset,
         matching_part=matching_part,
         splitter=splitter,
         pipeline_specs=pipeline_specs,
