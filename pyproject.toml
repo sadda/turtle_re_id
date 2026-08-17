@@ -9,7 +9,7 @@ requires-python = ">=3.10"
 dependencies = [
     "numpy",
     "pandas",
-    "wildlife-datasets",
+    "wildlife-datasets @ git+https://github.com/WildlifeDatasets/wildlife-datasets",
 ]
 
 [project.optional-dependencies]
