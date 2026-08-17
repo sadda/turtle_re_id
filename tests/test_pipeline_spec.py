@@ -50,26 +50,36 @@ class TestSinglePipelineSpec:
         spec.build(device="cuda", cache_prefix="prefix")
         assert received == {"device": "cuda", "cache_prefix": "prefix"}
 
-    def test_compute_keeps_only_mask_true_entries(self) -> None:
-        similarity = np.array([[1.0, 2.0], [3.0, 4.0]])
-        spec = SinglePipelineSpec("dino", pipeline_fun=lambda **kw: FakeSimilarityPipeline(similarity))
-        spec.build(device="cpu", cache_prefix=None)
-        keep_mask = np.array([[True, False], [False, False]])
-        pair_selector = FakePairSelectorWithMask(keep_mask)
-
-        result = spec.compute("query", "database", pair_selector=pair_selector)
-        assert result[0, 0] == 1.0
-        assert result[0, 1] == -np.inf
-        assert result[1, 0] == -np.inf
-        assert result[1, 1] == -np.inf
-        assert pair_selector.calls == [("query", "database")]
-
     def test_compute_no_mask_capability_returns_similarity_unchanged(self) -> None:
         similarity = np.array([[1.0, 2.0], [3.0, 4.0]])
         spec = SinglePipelineSpec("dino", pipeline_fun=lambda **kw: FakeSimilarityPipeline(similarity))
         spec.build(device="cpu", cache_prefix=None)
 
         result = spec.compute("query", "database", pair_selector=FakePairSelectorNoMask())
+        assert np.array_equal(result, similarity)
+
+    def test_compute_excludes_only_mask_true_entries(self) -> None:
+        similarity = np.array([[1.0, 2.0], [3.0, 4.0]])
+        spec = SinglePipelineSpec("dino", pipeline_fun=lambda **kw: FakeSimilarityPipeline(similarity))
+        spec.build(device="cpu", cache_prefix=None)
+        ignore_mask = np.array([[True, False], [False, False]])
+        pair_selector = FakePairSelectorWithMask(ignore_mask)
+
+        result = spec.compute("query", "database", pair_selector=pair_selector)
+        assert result[0, 0] == -np.inf
+        assert result[0, 1] == 2.0
+        assert result[1, 0] == 3.0
+        assert result[1, 1] == 4.0
+        assert pair_selector.calls == [("query", "database")]
+
+    def test_compute_all_false_mask_returns_similarity_unchanged(self) -> None:
+        similarity = np.array([[1.0, 2.0], [3.0, 4.0]])
+        spec = SinglePipelineSpec("dino", pipeline_fun=lambda **kw: FakeSimilarityPipeline(similarity))
+        spec.build(device="cpu", cache_prefix=None)
+        ignore_mask = np.zeros((2, 2), dtype=bool)
+        pair_selector = FakePairSelectorWithMask(ignore_mask)
+
+        result = spec.compute("query", "database", pair_selector=pair_selector)
         assert np.array_equal(result, similarity)
 
     def test_compute_passes_query_and_database_through(self) -> None:
