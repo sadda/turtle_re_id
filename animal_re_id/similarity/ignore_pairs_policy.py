@@ -24,6 +24,8 @@ class AllowAllPairsPolicy(IgnorePairsPolicy):
 
 class _DiagonalIgnoreMask(IgnoreMaskProvider):
     def get_ignore_mask(self, df1: pd.DataFrame, df2: pd.DataFrame) -> np.ndarray:
+        if len(df1) != len(df2):
+            raise ValueError(f"Diagonal ignore mask requires query and database of equal size, got {len(df1)} and {len(df2)}")
         return np.eye(len(df1), len(df2), dtype=bool)
 
 
