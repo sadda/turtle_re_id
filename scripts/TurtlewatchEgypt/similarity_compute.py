@@ -1,13 +1,21 @@
+import ast
 import os
 import warnings
 
 import numpy as np
 
 from animal_re_id.config import load_paths, resolve_path
-from animal_re_id.datasets import SeaTurtleID2022, TurtlewatchEgypt_New, get_wildlife_dataset
-from animal_re_id.models import get_pipeline_aliked, get_pipeline_dino, get_pipeline_miew
+from animal_re_id.datasets import SeaTurtleID2022, TurtlesOfSMSRC, TurtlewatchEgypt_New, get_wildlife_dataset
+from animal_re_id.models import (
+    get_pipeline_aliked,
+    get_pipeline_dino,
+    get_pipeline_disk,
+    get_pipeline_miew,
+    get_pipeline_superpoint,
+)
 from animal_re_id.similarity import (
     AllowAllPairsPolicy,
+    DiscoverySplitter,
     MetadataIgnorePairsPolicy,
     SimilarityCache,
     SimilarityGrid,
@@ -21,8 +29,8 @@ warnings.filterwarnings("ignore")
 
 dataset_name = "TurtlewatchEgypt"
 # dataset_name = "SeaTurtleID2022"
+# dataset_name = "TurtlesOfSMSRC"
 
-matching_parts = ["bodies", "heads", "front flippers", "hind flippers"]
 img_load = "bbox"
 B = 100
 device = "cuda"
@@ -34,11 +42,18 @@ wildlife_datasets = {}
 database_query_matching = True
 
 if dataset_name == "TurtlewatchEgypt":
+    matching_parts = ["bodies", "heads", "front flippers", "hind flippers"]
     split_years = np.arange(2018, 2026).tolist()
     matching_dataset_class = TurtlewatchEgypt_New
     pipeline_specs = [
         SinglePipelineSpec("miew", get_pipeline_miew, B=B),
         WildfusionPipelineSpec("miew-aliked", get_pipeline_miew, get_pipeline_aliked, B=B),
+    ]
+    dataset_kwargs = {"img_load": img_load}
+    splitter = YearSplitter(split_years)
+    ignore_pairs_policies = [
+        MetadataIgnorePairsPolicy(cache_key=False),
+        AllowAllPairsPolicy(cache_key=True),
     ]
 
     def postprocess(wildlife_dataset):
@@ -46,19 +61,43 @@ if dataset_name == "TurtlewatchEgypt":
         mask = wildlife_dataset.metadata["identity"] != "unknown"
         return wildlife_dataset.get_subset(mask)
 elif dataset_name == "SeaTurtleID2022":
+    matching_parts = ["bodies", "heads", "front flippers", "hind flippers"]
     split_years = np.arange(2011, 2023).tolist()
     matching_dataset_class = SeaTurtleID2022
     pipeline_specs = [
         SinglePipelineSpec("dino", get_pipeline_dino, B=B),
         WildfusionPipelineSpec("dino-aliked", get_pipeline_dino, get_pipeline_aliked, B=B),
     ]
+    dataset_kwargs = {"img_load": img_load}
+    splitter = YearSplitter(split_years)
+    ignore_pairs_policies = [
+        MetadataIgnorePairsPolicy(cache_key=False),
+        AllowAllPairsPolicy(cache_key=True),
+    ]
+
+    def postprocess(wildlife_dataset):
+        return wildlife_dataset
+elif dataset_name == "TurtlesOfSMSRC":
+    with open("scripts/SMSRC/hidden/matched_encounters.txt") as file:
+        replace_identity = ast.literal_eval(file.read())
+
+    matching_parts = ["heads", "front flippers", "hind flippers"]
+    database_query_matching = False
+    matching_dataset_class = TurtlesOfSMSRC
+    pipeline_specs = [
+        WildfusionPipelineSpec("miew-aliked", get_pipeline_miew, get_pipeline_aliked, B=B),
+        WildfusionPipelineSpec("miew-disk", get_pipeline_miew, get_pipeline_disk, B=B),
+        WildfusionPipelineSpec("miew-superpoint", get_pipeline_miew, get_pipeline_superpoint, B=B),
+    ]
+    dataset_kwargs = {"img_load": img_load, "replace_identity": replace_identity}
+    splitter = DiscoverySplitter()
+    ignore_pairs_policies = [MetadataIgnorePairsPolicy(cache_key=None)]
 
     def postprocess(wildlife_dataset):
         return wildlife_dataset
 else:
     raise ValueError("Dataset now known")
 
-dataset_kwargs = {"img_load": img_load}
 matching_dataset = matching_dataset_class.from_paths(paths, database_query_matching, dataset_kwargs=dataset_kwargs)
 for matching_part in matching_parts:
     wildlife_dataset = get_wildlife_dataset(matching_dataset, matching_part)
@@ -68,12 +107,7 @@ root_features = resolve_path(paths["root_features"])
 root_similarity = resolve_path(paths["root_similarity"])
 os.makedirs(root_similarity, exist_ok=True)
 
-splitter = YearSplitter(split_years)
 cache = SimilarityCache(root_similarity)
-ignore_pairs_policies = [
-    MetadataIgnorePairsPolicy(cache_key=False),
-    AllowAllPairsPolicy(cache_key=True),
-]
 
 for matching_part in matching_parts:
     wildlife_dataset = wildlife_datasets[matching_part]
