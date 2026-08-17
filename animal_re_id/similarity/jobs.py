@@ -81,6 +81,7 @@ class SimilarityGrid:
         splits = self.splitter.get_splits(self.wildlife_dataset.metadata)
 
         for pipeline_spec in self.pipeline_specs:
+            # TODO: this is a bit strange because it is significantly different from SimilarityJob
             pipeline_spec.build(self.device, self.cache_prefix)
 
             for ignore_policy in self.ignore_pairs_policies:
