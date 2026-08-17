@@ -47,11 +47,10 @@ class SinglePipelineSpec(PipelineSpec):
         similarity = self.pipeline(query, database)
 
         # SinglePipelineSpec computes the full similarity matrix (no shortlisting), so the
-        # mask here is used to keep only the pairs the pair_selector selects, rather than to
-        # exclude them: `get_ignore_mask` marks opposite-side pairs (the ones we want to keep).
+        # ignore mask has to be applied here explicitly instead of via pair_selector.
         if hasattr(pair_selector, "get_ignore_mask"):
-            keep_mask = pair_selector.get_ignore_mask(query, database)
-            similarity[~keep_mask] = -np.inf
+            ignore_mask = pair_selector.get_ignore_mask(query, database)
+            similarity[ignore_mask] = -np.inf
         return similarity
 
 
