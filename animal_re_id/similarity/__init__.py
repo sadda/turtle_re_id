@@ -1,6 +1,7 @@
 from .cache import SimilarityCache
 from .ignore_pairs_policy import (
     AllowAllPairsPolicy,
+    CombinedIgnorePairsPolicy,
     DiagonalIgnorePairsPolicy,
     IgnorePairsPolicy,
     MetadataIgnorePairsPolicy,
