@@ -29,6 +29,10 @@ include = ["animal_re_id*"]
 [tool.setuptools.package-data]
 animal_re_id = ["data/paths.json"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"
+
 [tool.ruff]
 line-length = 250
 
