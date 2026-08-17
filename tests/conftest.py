@@ -18,6 +18,7 @@ def make_wildlife_dataset(df: pd.DataFrame, img_load: str = "full", root: str | 
 def simple_metadata() -> pd.DataFrame:
     return pd.DataFrame(
         {
+            "image_id": [1, 2, 3, 4, 5, 6],
             "path": [f"img_{i}.jpg" for i in range(6)],
             "identity": ["a", "a", "b", "b", "c", "unknown"],
             "year": [2019, 2020, 2019, 2021, 2021, 2021],
