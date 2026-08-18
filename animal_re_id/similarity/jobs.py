@@ -1,5 +1,3 @@
-from wildlife_datasets.datasets import WildlifeDataset
-
 from ..datasets.datasets import MatchingDataset
 from .cache import SimilarityCache
 from .result import SimilarityResult
@@ -11,13 +9,11 @@ class SimilarityJob:
     def __init__(
         self,
         matching_dataset: MatchingDataset,
-        wildlife_dataset: WildlifeDataset,
         split: Split,
         run_spec: SimilarityRunSpec,
         cache: SimilarityCache,
     ) -> None:
         self.matching_dataset = matching_dataset
-        self.wildlife_dataset = wildlife_dataset
         self.split = split
         self.run_spec = run_spec
         self.cache = cache
@@ -27,8 +23,8 @@ class SimilarityJob:
         if self.cache.exists(key_parts):
             return
 
-        database = self.split.database(self.wildlife_dataset)
-        query = self.split.query(self.wildlife_dataset)
+        database = self.split.database(self.matching_dataset.wildlife_dataset)
+        query = self.split.query(self.matching_dataset.wildlife_dataset)
 
         pipeline_spec = self.run_spec.pipeline_spec
         ignore_policy = self.run_spec.ignore_policy
@@ -55,20 +51,25 @@ class SimilarityGrid:
     def __init__(
         self,
         matching_dataset: MatchingDataset,
-        wildlife_dataset: WildlifeDataset,
         run_specs: list[SimilarityRunSpec],
         cache: SimilarityCache,
         cache_prefix: str | None = None,
         device: str = "cuda",
     ) -> None:
         self.matching_dataset = matching_dataset
-        self.wildlife_dataset = wildlife_dataset
         self.run_specs = run_specs
         self.cache = cache
         self.cache_prefix = cache_prefix
         self.device = device
 
     def run(self) -> None:
+        if not self.run_specs:
+            return
+
+        matching_parts = {run_spec.matching_part for run_spec in self.run_specs}
+        if len(matching_parts) > 1:
+            raise ValueError(f"SimilarityGrid requires all run_specs to share the same matching_part, got: {matching_parts}")
+
         # TODO: this is a bit strange because it is significantly different from SimilarityJob
         built_pipeline_specs: set[int] = set()
         splits_by_splitter: dict[int, Split] = {}
@@ -82,12 +83,11 @@ class SimilarityGrid:
 
             splitter_id = id(run_spec.splitter)
             if splitter_id not in splits_by_splitter:
-                splits_by_splitter[splitter_id] = run_spec.splitter.get_split(self.wildlife_dataset.metadata)
+                splits_by_splitter[splitter_id] = run_spec.splitter.get_split(self.matching_dataset.wildlife_dataset.metadata)
             split = splits_by_splitter[splitter_id]
 
             job = SimilarityJob(
                 matching_dataset=self.matching_dataset,
-                wildlife_dataset=self.wildlife_dataset,
                 split=split,
                 run_spec=run_spec,
                 cache=self.cache,
