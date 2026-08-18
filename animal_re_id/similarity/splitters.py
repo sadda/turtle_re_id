@@ -25,6 +25,11 @@ class Splitter(ABC):
     def get_splits(self, metadata: pd.DataFrame) -> list[Split]:
         raise NotImplementedError
 
+    @abstractmethod
+    def get_split_names(self) -> list[str]:
+        """Names of the splits this splitter produces, without needing any metadata."""
+        raise NotImplementedError
+
 
 class YearSplitter(Splitter):
     def __init__(self, split_years: list[int], year_col: str = "year", identity_col: str = "identity") -> None:
@@ -43,8 +48,14 @@ class YearSplitter(Splitter):
             splits.append(Split(name=str(split_year), mask_database=mask_database, mask_query=mask_query))
         return splits
 
+    def get_split_names(self) -> list[str]:
+        return [str(split_year) for split_year in self.split_years]
+
 
 class DiscoverySplitter(Splitter):
     def get_splits(self, metadata: pd.DataFrame) -> list[Split]:
         mask = pd.Series(True, index=metadata.index)
         return [Split(name="discovery", mask_database=mask, mask_query=mask)]
+
+    def get_split_names(self) -> list[str]:
+        return ["discovery"]

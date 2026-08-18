@@ -29,7 +29,7 @@ class SimilarityJob:
 
     def run(self) -> None:
         img_load = self.wildlife_dataset.img_load
-        key_parts = self.cache.key_for(self.pipeline_spec, self.ignore_policy, self.split, img_load, self.matching_part)
+        key_parts = self.cache.key_for(self.pipeline_spec, self.ignore_policy, self.split.name, img_load, self.matching_part)
         if self.cache.exists(key_parts):
             return
 

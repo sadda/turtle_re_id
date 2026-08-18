@@ -1,4 +1,5 @@
 from .cache import SimilarityCache
+from .dataset_config import SimilarityDatasetConfig, get_similarity_dataset_config
 from .ignore_pairs_policy import (
     AllowAllPairsPolicy,
     CombinedIgnorePairsPolicy,
