@@ -12,12 +12,17 @@ class Split:
     mask_database: pd.Series
     mask_query: pd.Series
 
+    def _get_subset(self, mask: pd.Series, wildlife_dataset: WildlifeDataset) -> WildlifeDataset:
+        if len(mask) == len(wildlife_dataset) and mask.all():
+            return wildlife_dataset
+        else:
+            return wildlife_dataset.get_subset(mask)
+
     def database(self, wildlife_dataset: WildlifeDataset) -> WildlifeDataset:
-        # TODO: return the same object if index full
-        return wildlife_dataset.get_subset(self.mask_database)
+        return self._get_subset(self.mask_database, wildlife_dataset)
 
     def query(self, wildlife_dataset: WildlifeDataset) -> WildlifeDataset:
-        return wildlife_dataset.get_subset(self.mask_query)
+        return self._get_subset(self.mask_query, wildlife_dataset)
 
 
 class Splitter(ABC):
