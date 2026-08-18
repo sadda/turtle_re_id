@@ -70,7 +70,6 @@ class SimilarityGrid:
         if len(matching_parts) > 1:
             raise ValueError(f"SimilarityGrid requires all run_specs to share the same matching_part, got: {matching_parts}")
 
-        # TODO: this is a bit strange because it is significantly different from SimilarityJob
         built_pipeline_specs: set[int] = set()
         splits_by_splitter: dict[int, Split] = {}
 
