@@ -23,7 +23,7 @@ class SimilarityJob:
         self.cache = cache
 
     def run(self) -> None:
-        key_parts = self.run_spec.key(self.cache)
+        key_parts = self.run_spec.key_parts()
         if self.cache.exists(key_parts):
             return
 

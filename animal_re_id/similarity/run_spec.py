@@ -17,10 +17,15 @@ class SimilarityRunSpec:
     matching_part: str
     img_load: str
 
-    def key(self, cache: SimilarityCache) -> list[Any]:
-        split_name = self.splitter.get_split_name()
-        return cache.key_for(self.pipeline_spec, self.ignore_policy, split_name, self.img_load, self.matching_part)
+    def key_parts(self) -> list[Any]:
+        return [
+            self.pipeline_spec.name,
+            self.pipeline_spec.B,
+            self.img_load,
+            self.matching_part,
+            self.ignore_policy.cache_key,
+            self.splitter.get_split_name(),
+        ]
 
     def load(self, cache: SimilarityCache) -> dict[str, Any]:
-        split_name = self.splitter.get_split_name()
-        return cache.load_result(self.pipeline_spec, self.ignore_policy, split_name, self.img_load, self.matching_part)
+        return cache.load(self.key_parts())
