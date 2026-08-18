@@ -23,6 +23,7 @@ config = get_similarity_dataset_config(dataset_name, B=B)
 img_load = config.img_load
 
 wildlife_datasets = {}
+# TODO: this should be part of the splitter/config
 database_query_matching = True
 
 if dataset_name == "TurtlewatchEgypt":
