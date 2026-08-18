@@ -21,6 +21,10 @@ class Split:
 
 
 class Splitter(ABC):
+    #: Whether query and database are disjoint sets for this splitter (True), or the
+    #: same set (False, e.g. discovery-style self-matching).
+    database_query_matching: bool
+
     @abstractmethod
     def get_split(self, metadata: pd.DataFrame) -> Split:
         raise NotImplementedError
@@ -32,6 +36,8 @@ class Splitter(ABC):
 
 
 class YearSplitter(Splitter):
+    database_query_matching = True
+
     def __init__(self, split_year: int, year_col: str = "year", identity_col: str = "identity") -> None:
         self.split_year = split_year
         self.year_col = year_col
@@ -50,6 +56,8 @@ class YearSplitter(Splitter):
 
 
 class DiscoverySplitter(Splitter):
+    database_query_matching = False
+
     def get_split(self, metadata: pd.DataFrame) -> Split:
         mask = pd.Series(True, index=metadata.index)
         return Split(name=self.get_split_name(), mask_database=mask, mask_query=mask)

@@ -21,9 +21,7 @@ paths = load_paths(dataset_name, local_path=local_path)
 
 config = get_similarity_dataset_config(dataset_name, B=B)
 img_load = config.img_load
-
-# TODO: this should be part of the splitter/config
-database_query_matching = True
+database_query_matching = config.database_query_matching
 
 if dataset_name == "TurtlewatchEgypt":
     matching_dataset_class = TurtlewatchEgypt_New
@@ -35,7 +33,6 @@ elif dataset_name == "TurtlesOfSMSRC":
     with open("scripts/SMSRC/hidden/matched_encounters.txt") as file:
         replace_identity = ast.literal_eval(file.read())
 
-    database_query_matching = False
     matching_dataset_class = TurtlesOfSMSRC
     dataset_kwargs = {"img_load": img_load, "replace_identity": replace_identity}
 else:

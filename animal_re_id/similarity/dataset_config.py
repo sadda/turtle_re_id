@@ -32,6 +32,13 @@ class SimilarityDatasetConfig:
             for matching_part in self.matching_parts
         ]
 
+    @property
+    def database_query_matching(self) -> bool:
+        values = {splitter.database_query_matching for splitter in self.splitters}
+        if len(values) > 1:
+            raise ValueError(f"Splitters disagree on database_query_matching: {values}")
+        return next(iter(values))
+
 
 def get_similarity_dataset_config(dataset_name: str, B: int = 100, img_load: str = "bbox") -> SimilarityDatasetConfig:
     """
