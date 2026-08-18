@@ -63,6 +63,7 @@ root_similarity = resolve_path(paths["root_similarity"])
 os.makedirs(root_similarity, exist_ok=True)
 
 cache = SimilarityCache(root_similarity)
+run_specs = config.run_specs()
 
 for matching_part in config.matching_parts:
     wildlife_dataset = wildlife_datasets[matching_part]
@@ -71,12 +72,10 @@ for matching_part in config.matching_parts:
     grid = SimilarityGrid(
         matching_dataset=matching_dataset,
         wildlife_dataset=wildlife_dataset,
-        matching_part=matching_part,
         splitter=config.splitter,
-        pipeline_specs=config.pipeline_specs,
-        ignore_pairs_policies=config.ignore_pairs_policies,
+        run_specs=[run_spec for run_spec in run_specs if run_spec.matching_part == matching_part],
         cache=cache,
-        device=device,
         cache_prefix=cache_prefix,
+        device=device,
     )
     grid.run()
