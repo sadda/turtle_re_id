@@ -1,16 +1,36 @@
 import numpy as np
+from wildlife_tools.inference import TopkClassifier
 
 DEF_VALUES = [-np.inf, "", ""]
 
 
 class EncounterPredictions:
-    def __init__(self, scores: dict, predictions: dict, matching_parts: str | dict, k_max=None):
+    def __init__(self, similarity, query, database, encounter_col: str = "encounter_id", identity_col: str = "identity") -> None:
+        groups = query.metadata.groupby(encounter_col).indices
+        self.keys = list(groups.keys())
+        self.similarity_grouped = np.vstack([similarity[idx].max(axis=0) for idx in groups.values()])
+        self.identities_database = database.metadata[identity_col].to_numpy()
+
+    def classify(self, k_max: int, matching_part: str) -> None:
+        classifier = TopkClassifier(self.identities_database, k=k_max, return_all=True)
+        predictions, scores, _ = classifier(self.similarity_grouped)
+        scores_dict = dict(zip(self.keys, scores))
+        predictions_dict = dict(zip(self.keys, predictions))
+        self._init_from_dicts(scores_dict, predictions_dict, matching_part, k_max)
+
+    def _init_from_dicts(self, scores: dict, predictions: dict, matching_parts: str | dict, k_max=None):
         self.scores = scores
         self.predictions = predictions
 
         self._save_matching_part(matching_parts)
         if k_max is not None:
             self._extend_data(k_max)
+
+    @classmethod
+    def _from_dicts(cls, scores: dict, predictions: dict, matching_parts: str | dict, k_max=None) -> "EncounterPredictions":
+        obj = cls.__new__(cls)
+        obj._init_from_dicts(scores, predictions, matching_parts, k_max)
+        return obj
 
     def _extend_data(self, k_max):
         data = [self.scores, self.predictions, self.matching_parts]
@@ -93,4 +113,4 @@ def merge_data(data: dict[str, EncounterPredictions], k_max) -> EncounterPredict
         predictions_merged[encounter] = array_extend(pp, k_max, DEF_VALUES[1])[:k_max]
         parts_merged[encounter] = array_extend(qq, k_max, DEF_VALUES[2])[:k_max]
 
-    return EncounterPredictions(scores_merged, predictions_merged, parts_merged)
+    return EncounterPredictions._from_dicts(scores_merged, predictions_merged, parts_merged)
