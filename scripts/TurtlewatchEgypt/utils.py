@@ -5,7 +5,7 @@ import pandas as pd
 DEF_VALUES = [-np.inf, "", ""]
 
 
-class Data:
+class EncounterPredictions:
     def __init__(self, scores: dict, predictions: dict, matching_parts: str | dict, k_max=None):
         self.scores = scores
         self.predictions = predictions
@@ -56,7 +56,7 @@ def array_extend(x, n, fill_value):
     return x
 
 
-def merge_data(data: dict[str, Data], k_max) -> Data:
+def merge_data(data: dict[str, EncounterPredictions], k_max) -> EncounterPredictions:
     # Get all keys (encounters)
     matching_parts = data.keys()
     scores = [data[m].scores for m in matching_parts]
@@ -95,7 +95,7 @@ def merge_data(data: dict[str, Data], k_max) -> Data:
         predictions_merged[encounter] = array_extend(pp, k_max, DEF_VALUES[1])[:k_max]
         parts_merged[encounter] = array_extend(qq, k_max, DEF_VALUES[2])[:k_max]
 
-    return Data(scores_merged, predictions_merged, parts_merged)
+    return EncounterPredictions(scores_merged, predictions_merged, parts_merged)
 
 
 def get_info(dataset, split_years):
