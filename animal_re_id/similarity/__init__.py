@@ -11,4 +11,4 @@ from .jobs import SimilarityGrid, SimilarityJob
 from .pipeline_spec import PipelineSpec, SinglePipelineSpec, WildfusionPipelineSpec
 from .result import SimilarityResult
 from .run_spec import SimilarityRunSpec
-from .splitters import DiscoverySplitter, Split, Splitter, YearSplitter
+from .splitters import ClosedSetYearSplitter, DiscoverySplitter, OpenSetYearSplitter, Split, Splitter, YearSplitter

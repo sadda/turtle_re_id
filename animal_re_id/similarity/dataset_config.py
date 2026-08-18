@@ -12,7 +12,7 @@ from ..models import (
 from .ignore_pairs_policy import AllowAllPairsPolicy, CombinedIgnorePairsPolicy, IgnorePairsPolicy, MetadataIgnorePairsPolicy
 from .pipeline_spec import PipelineSpec, SinglePipelineSpec, WildfusionPipelineSpec
 from .run_spec import SimilarityRunSpec
-from .splitters import DiscoverySplitter, Splitter, YearSplitter
+from .splitters import ClosedSetYearSplitter, DiscoverySplitter, Splitter
 
 
 @dataclass
@@ -57,7 +57,7 @@ def get_similarity_dataset_config(dataset_name: str, B: int = 100, img_load: str
                 MetadataIgnorePairsPolicy(cache_key=False),
                 AllowAllPairsPolicy(cache_key=True),
             ],
-            splitters=[YearSplitter(int(split_year)) for split_year in np.arange(2018, 2026)],
+            splitters=[ClosedSetYearSplitter(int(split_year)) for split_year in np.arange(2018, 2026)],
             img_load=img_load,
         )
     elif dataset_name == "SeaTurtleID2022":
@@ -71,7 +71,7 @@ def get_similarity_dataset_config(dataset_name: str, B: int = 100, img_load: str
                 MetadataIgnorePairsPolicy(cache_key=False),
                 AllowAllPairsPolicy(cache_key=True),
             ],
-            splitters=[YearSplitter(int(split_year)) for split_year in np.arange(2011, 2023)],
+            splitters=[ClosedSetYearSplitter(int(split_year)) for split_year in np.arange(2011, 2023)],
             img_load=img_load,
         )
     elif dataset_name == "TurtlesOfSMSRC":
