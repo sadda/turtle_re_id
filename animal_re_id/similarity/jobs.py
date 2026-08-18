@@ -5,6 +5,7 @@ from .cache import SimilarityCache
 from .ignore_pairs_policy import IgnorePairsPolicy
 from .pipeline_spec import PipelineSpec
 from .result import SimilarityResult
+from .run_spec import SimilarityRunSpec
 from .splitters import Split, Splitter
 
 
@@ -13,41 +14,40 @@ class SimilarityJob:
         self,
         matching_dataset: MatchingDataset,
         wildlife_dataset: WildlifeDataset,
-        matching_part: str,
-        pipeline_spec: PipelineSpec,
-        ignore_policy: IgnorePairsPolicy,
         split: Split,
+        run_spec: SimilarityRunSpec,
         cache: SimilarityCache,
     ) -> None:
         self.matching_dataset = matching_dataset
         self.wildlife_dataset = wildlife_dataset
-        self.matching_part = matching_part
-        self.pipeline_spec = pipeline_spec
-        self.ignore_policy = ignore_policy
         self.split = split
+        self.run_spec = run_spec
         self.cache = cache
 
     def run(self) -> None:
-        img_load = self.wildlife_dataset.img_load
-        key_parts = self.cache.key_for(self.pipeline_spec, self.ignore_policy, self.split.name, img_load, self.matching_part)
+        key_parts = self.run_spec.key(self.cache)
         if self.cache.exists(key_parts):
             return
 
         database = self.split.database(self.wildlife_dataset)
         query = self.split.query(self.wildlife_dataset)
 
-        pair_selector = self.ignore_policy.get_pair_selector(self.matching_dataset, self.matching_part)
-        similarity = self.pipeline_spec.compute(query, database, pair_selector)
+        pipeline_spec = self.run_spec.pipeline_spec
+        ignore_policy = self.run_spec.ignore_policy
+        matching_part = self.run_spec.matching_part
+
+        pair_selector = ignore_policy.get_pair_selector(self.matching_dataset, matching_part)
+        similarity = pipeline_spec.compute(query, database, pair_selector)
 
         result = SimilarityResult(
             similarity=similarity,
             query=query,
             database=database,
-            name=self.pipeline_spec.name,
-            B=self.pipeline_spec.B,
-            img_load=img_load,
-            matching_part=self.matching_part,
-            match_opposite_sides=self.ignore_policy.cache_key,
+            name=pipeline_spec.name,
+            B=pipeline_spec.B,
+            img_load=self.run_spec.img_load,
+            matching_part=matching_part,
+            match_opposite_sides=ignore_policy.cache_key,
             split_year=self.split.name,
         )
         self.cache.save(key_parts, result.to_dict())
@@ -78,6 +78,7 @@ class SimilarityGrid:
 
     def run(self) -> None:
         splits = self.splitter.get_splits(self.wildlife_dataset.metadata)
+        img_load = self.wildlife_dataset.img_load
 
         for pipeline_spec in self.pipeline_specs:
             # TODO: this is a bit strange because it is significantly different from SimilarityJob
@@ -85,13 +86,12 @@ class SimilarityGrid:
 
             for ignore_policy in self.ignore_pairs_policies:
                 for split in splits:
+                    run_spec = SimilarityRunSpec(pipeline_spec, ignore_policy, split.name, self.matching_part, img_load)
                     job = SimilarityJob(
                         matching_dataset=self.matching_dataset,
                         wildlife_dataset=self.wildlife_dataset,
-                        matching_part=self.matching_part,
-                        pipeline_spec=pipeline_spec,
-                        ignore_policy=ignore_policy,
                         split=split,
+                        run_spec=run_spec,
                         cache=self.cache,
                     )
                     job.run()

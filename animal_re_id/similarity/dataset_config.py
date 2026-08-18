@@ -11,6 +11,7 @@ from ..models import (
 )
 from .ignore_pairs_policy import AllowAllPairsPolicy, CombinedIgnorePairsPolicy, IgnorePairsPolicy, MetadataIgnorePairsPolicy
 from .pipeline_spec import PipelineSpec, SinglePipelineSpec, WildfusionPipelineSpec
+from .run_spec import SimilarityRunSpec
 from .splitters import DiscoverySplitter, Splitter, YearSplitter
 
 
@@ -21,6 +22,15 @@ class SimilarityDatasetConfig:
     ignore_pairs_policies: list[IgnorePairsPolicy]
     splitter: Splitter
     img_load: str = "bbox"
+
+    def run_specs(self) -> list[SimilarityRunSpec]:
+        return [
+            SimilarityRunSpec(pipeline_spec, ignore_policy, split_name, matching_part, self.img_load)
+            for pipeline_spec in self.pipeline_specs
+            for ignore_policy in self.ignore_pairs_policies
+            for split_name in self.splitter.get_split_names()
+            for matching_part in self.matching_parts
+        ]
 
 
 def get_similarity_dataset_config(dataset_name: str, B: int = 100, img_load: str = "bbox") -> SimilarityDatasetConfig:
