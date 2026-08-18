@@ -15,6 +15,7 @@ class SimilarityCache:
         return os.path.exists(self.path(key_parts))
 
     def save(self, key_parts: list[Any], data: dict[str, Any]) -> None:
+        os.makedirs(self.root, exist_ok=True)
         with open(self.path(key_parts), "wb") as file:
             pickle.dump(data, file)
 
