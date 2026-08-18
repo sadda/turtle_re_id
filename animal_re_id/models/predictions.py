@@ -8,6 +8,7 @@ class EncounterPredictions:
     def __init__(self, similarity, query, database, encounter_col: str = "encounter_id", identity_col: str = "identity") -> None:
         groups = query.metadata.groupby(encounter_col).indices
         self.keys = list(groups.keys())
+        # TODO: this recomputes it every time
         self.similarity_grouped = np.vstack([similarity[idx].max(axis=0) for idx in groups.values()])
         self.identities_database = database.metadata[identity_col].to_numpy()
 
