@@ -13,4 +13,5 @@ from .pipelines import (
     get_pipeline_miew,
     get_pipeline_superpoint,
 )
+from .predictions import EncounterPredictions, merge_data
 from .utils import gather_df, plot_matches, visualise_match
