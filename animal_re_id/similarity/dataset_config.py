@@ -20,15 +20,15 @@ class SimilarityDatasetConfig:
     matching_parts: list[str]
     pipeline_specs: list[PipelineSpec]
     ignore_pairs_policies: list[IgnorePairsPolicy]
-    splitter: Splitter
+    splitters: list[Splitter]
     img_load: str = "bbox"
 
     def run_specs(self) -> list[SimilarityRunSpec]:
         return [
-            SimilarityRunSpec(pipeline_spec, ignore_policy, split_name, matching_part, self.img_load)
+            SimilarityRunSpec(pipeline_spec, ignore_policy, splitter, matching_part, self.img_load)
             for pipeline_spec in self.pipeline_specs
             for ignore_policy in self.ignore_pairs_policies
-            for split_name in self.splitter.get_split_names()
+            for splitter in self.splitters
             for matching_part in self.matching_parts
         ]
 
@@ -50,7 +50,7 @@ def get_similarity_dataset_config(dataset_name: str, B: int = 100, img_load: str
                 MetadataIgnorePairsPolicy(cache_key=False),
                 AllowAllPairsPolicy(cache_key=True),
             ],
-            splitter=YearSplitter(np.arange(2018, 2026).tolist()),
+            splitters=[YearSplitter(int(split_year)) for split_year in np.arange(2018, 2026)],
             img_load=img_load,
         )
     elif dataset_name == "SeaTurtleID2022":
@@ -64,7 +64,7 @@ def get_similarity_dataset_config(dataset_name: str, B: int = 100, img_load: str
                 MetadataIgnorePairsPolicy(cache_key=False),
                 AllowAllPairsPolicy(cache_key=True),
             ],
-            splitter=YearSplitter(np.arange(2011, 2023).tolist()),
+            splitters=[YearSplitter(int(split_year)) for split_year in np.arange(2011, 2023)],
             img_load=img_load,
         )
     elif dataset_name == "TurtlesOfSMSRC":
@@ -76,7 +76,7 @@ def get_similarity_dataset_config(dataset_name: str, B: int = 100, img_load: str
                 WildfusionPipelineSpec("miew-superpoint", get_pipeline_miew, get_pipeline_superpoint, B=B),
             ],
             ignore_pairs_policies=[CombinedIgnorePairsPolicy(cache_key=None)],
-            splitter=DiscoverySplitter(),
+            splitters=[DiscoverySplitter()],
             img_load=img_load,
         )
     else:

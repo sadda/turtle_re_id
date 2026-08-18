@@ -72,7 +72,6 @@ for matching_part in config.matching_parts:
     grid = SimilarityGrid(
         matching_dataset=matching_dataset,
         wildlife_dataset=wildlife_dataset,
-        splitter=config.splitter,
         run_specs=[run_spec for run_spec in run_specs if run_spec.matching_part == matching_part],
         cache=cache,
         cache_prefix=cache_prefix,

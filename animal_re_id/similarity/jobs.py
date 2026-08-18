@@ -4,7 +4,7 @@ from ..datasets.datasets import MatchingDataset
 from .cache import SimilarityCache
 from .result import SimilarityResult
 from .run_spec import SimilarityRunSpec
-from .splitters import Split, Splitter
+from .splitters import Split
 
 
 class SimilarityJob:
@@ -56,7 +56,6 @@ class SimilarityGrid:
         self,
         matching_dataset: MatchingDataset,
         wildlife_dataset: WildlifeDataset,
-        splitter: Splitter,
         run_specs: list[SimilarityRunSpec],
         cache: SimilarityCache,
         cache_prefix: str | None = None,
@@ -64,17 +63,16 @@ class SimilarityGrid:
     ) -> None:
         self.matching_dataset = matching_dataset
         self.wildlife_dataset = wildlife_dataset
-        self.splitter = splitter
         self.run_specs = run_specs
         self.cache = cache
         self.cache_prefix = cache_prefix
         self.device = device
 
     def run(self) -> None:
-        splits_by_name = {split.name: split for split in self.splitter.get_splits(self.wildlife_dataset.metadata)}
-
         # TODO: this is a bit strange because it is significantly different from SimilarityJob
         built_pipeline_specs: set[int] = set()
+        splits_by_splitter: dict[int, Split] = {}
+
         for run_spec in self.run_specs:
             pipeline_spec = run_spec.pipeline_spec
             # TODO: Potentially build and discard one by one, to save GPU memory
@@ -82,10 +80,15 @@ class SimilarityGrid:
                 pipeline_spec.build(self.device, self.cache_prefix)
                 built_pipeline_specs.add(id(pipeline_spec))
 
+            splitter_id = id(run_spec.splitter)
+            if splitter_id not in splits_by_splitter:
+                splits_by_splitter[splitter_id] = run_spec.splitter.get_split(self.wildlife_dataset.metadata)
+            split = splits_by_splitter[splitter_id]
+
             job = SimilarityJob(
                 matching_dataset=self.matching_dataset,
                 wildlife_dataset=self.wildlife_dataset,
-                split=splits_by_name[run_spec.split_name],
+                split=split,
                 run_spec=run_spec,
                 cache=self.cache,
             )

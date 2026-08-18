@@ -22,40 +22,37 @@ class Split:
 
 class Splitter(ABC):
     @abstractmethod
-    def get_splits(self, metadata: pd.DataFrame) -> list[Split]:
+    def get_split(self, metadata: pd.DataFrame) -> Split:
         raise NotImplementedError
 
     @abstractmethod
-    def get_split_names(self) -> list[str]:
-        """Names of the splits this splitter produces, without needing any metadata."""
+    def get_split_name(self) -> str:
+        """Name of the split this splitter produces, without needing any metadata."""
         raise NotImplementedError
 
 
 class YearSplitter(Splitter):
-    def __init__(self, split_years: list[int], year_col: str = "year", identity_col: str = "identity") -> None:
-        self.split_years = split_years
+    def __init__(self, split_year: int, year_col: str = "year", identity_col: str = "identity") -> None:
+        self.split_year = split_year
         self.year_col = year_col
         self.identity_col = identity_col
 
-    def get_splits(self, metadata: pd.DataFrame) -> list[Split]:
-        splits = []
-        for split_year in self.split_years:
-            # TODO: this removes new individuals. Should not be here
-            mask_database = metadata[self.year_col] < split_year
-            labels_database = metadata.loc[mask_database, self.identity_col].to_numpy()
-            mask_query = metadata[self.year_col] == split_year
-            mask_query = mask_query & metadata[self.identity_col].isin(np.unique(labels_database))
-            splits.append(Split(name=str(split_year), mask_database=mask_database, mask_query=mask_query))
-        return splits
+    def get_split(self, metadata: pd.DataFrame) -> Split:
+        # TODO: this removes new individuals. Should not be here
+        mask_database = metadata[self.year_col] < self.split_year
+        labels_database = metadata.loc[mask_database, self.identity_col].to_numpy()
+        mask_query = metadata[self.year_col] == self.split_year
+        mask_query = mask_query & metadata[self.identity_col].isin(np.unique(labels_database))
+        return Split(name=self.get_split_name(), mask_database=mask_database, mask_query=mask_query)
 
-    def get_split_names(self) -> list[str]:
-        return [str(split_year) for split_year in self.split_years]
+    def get_split_name(self) -> str:
+        return str(self.split_year)
 
 
 class DiscoverySplitter(Splitter):
-    def get_splits(self, metadata: pd.DataFrame) -> list[Split]:
+    def get_split(self, metadata: pd.DataFrame) -> Split:
         mask = pd.Series(True, index=metadata.index)
-        return [Split(name="discovery", mask_database=mask, mask_query=mask)]
+        return Split(name=self.get_split_name(), mask_database=mask, mask_query=mask)
 
-    def get_split_names(self) -> list[str]:
-        return ["discovery"]
+    def get_split_name(self) -> str:
+        return "discovery"
