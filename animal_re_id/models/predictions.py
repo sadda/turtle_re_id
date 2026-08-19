@@ -151,11 +151,12 @@ class EncounterPredictions:
         # Keep only one match between unique images (the two directions of a pair now collide)
         results = results.drop_duplicates(subset=["image_id1", "image_id2", "matching_part"]).reset_index(drop=True)
 
-        # Keep only at most max_per_identity matches per a pair of identities
-        pairs = results.apply(lambda r: frozenset((r["identity1"], r["identity2"])), axis=1)
+        # Keep only at most max_per_identity matches per a pair of identities (unordered)
+        identity_pair = results[["identity1", "identity2"]]
+        identity_lo, identity_hi = identity_pair.min(axis=1), identity_pair.max(axis=1)
         idx_remove = []
-        for pair, group in results.groupby(pairs, sort=False):
-            if unlimited_unknown and "unknown" in pair:
+        for (lo, hi), group in results.groupby([identity_lo, identity_hi], sort=False):
+            if unlimited_unknown and "unknown" in (lo, hi):
                 continue
             idx_remove.extend(group.index[max_per_identity:])
         results = results.drop(index=idx_remove)
