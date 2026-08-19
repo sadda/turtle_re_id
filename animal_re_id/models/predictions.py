@@ -98,7 +98,6 @@ class EncounterPredictions:
 
     def extract_highest_predictions(
         self,
-        matching_part: str,
         max_matches: int,
         max_per_identity: int,
         unlimited_unknown: bool = True,
@@ -106,13 +105,13 @@ class EncounterPredictions:
     ) -> pd.DataFrame:
         # Flatten scores/predictions/matching_parts/database_iloc/query_iloc (dict[encounter -> array])
         # into one row per (encounter, candidate identity).
-        encounters, scores, identities2, matchers, database_iloc, query_iloc = [], [], [], [], [], []
+        encounters, scores, identities2, matching_part, database_iloc, query_iloc = [], [], [], [], [], []
         for encounter in self.scores:
             n = len(self.scores[encounter])
             encounters.extend([encounter] * n)
             scores.extend(self.scores[encounter])
             identities2.extend(self.predictions[encounter])
-            matchers.extend(self.matching_parts[encounter])
+            matching_part.extend(self.matching_parts[encounter])
             database_iloc.extend(self.database_iloc[encounter])
             query_iloc.extend(self.query_iloc[encounter])
 
@@ -120,7 +119,7 @@ class EncounterPredictions:
             {
                 "encounter1": encounters,
                 "identity2": identities2,
-                "matcher": matchers,
+                "matching_part": matching_part,
                 "similarity_orig": scores,
                 "database_iloc": database_iloc,
                 "query_iloc": query_iloc,
@@ -157,9 +156,8 @@ class EncounterPredictions:
         # Keep only at most max_matches matches overall
         results = results.iloc[:max_matches]
 
-        # Normalize similarity per matcher (matching the old gather_df convention)
-        results["similarity"] = results.groupby("matcher")["similarity_orig"].transform(lambda s: s / s.max())
-        results["matching_part"] = matching_part
+        # Normalize similarity per matching_part (matching the old gather_df convention)
+        results["similarity"] = results.groupby("matching_part")["similarity_orig"].transform(lambda s: s / s.max())
 
         columns = [
             "encounter1",
@@ -169,7 +167,6 @@ class EncounterPredictions:
             "image_id1",
             "image_id2",
             "matching_part",
-            "matcher",
             "similarity",
             "similarity_orig",
         ]
@@ -243,7 +240,7 @@ def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
     # For each encounter, combine candidates from every source, then sort/dedupe/truncate to k_max
     scores_merged = {}
     predictions_merged = {}
-    sources_merged = {}
+    matching_parts_merged = {}
     database_iloc_merged = {}
     query_iloc_merged = {}
     for encounter in encounters:
@@ -280,12 +277,12 @@ def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
         # Extract the highest scores
         scores_merged[encounter] = array_extend(ss, k_max, DEF_VALUES[0])[:k_max]
         predictions_merged[encounter] = array_extend(pp, k_max, DEF_VALUES[1])[:k_max]
-        sources_merged[encounter] = array_extend(qq, k_max, DEF_VALUES[2])[:k_max]
+        matching_parts_merged[encounter] = array_extend(qq, k_max, DEF_VALUES[2])[:k_max]
         database_iloc_merged[encounter] = array_extend(rr, k_max, DEF_VALUES[3])[:k_max]
         query_iloc_merged[encounter] = array_extend(tt, k_max, DEF_VALUES[4])[:k_max]
 
     result = EncounterPredictions.__new__(EncounterPredictions)
     result.query = merged_query
     result.database = merged_database
-    result._set_predictions(scores_merged, predictions_merged, sources_merged, database_iloc_merged, query_iloc_merged, k_max)
+    result._set_predictions(scores_merged, predictions_merged, matching_parts_merged, database_iloc_merged, query_iloc_merged, k_max)
     return result
