@@ -6,27 +6,29 @@ DEF_VALUES = [-np.inf, "", "", -1, -1]
 
 class EncounterPredictions:
     def __init__(self, similarity, query, database, encounter_col: str = "encounter_id", identity_col: str = "identity") -> None:
-        groups = query.metadata.groupby(encounter_col).indices
-        self.keys = list(groups.keys())
+        encounter_groups = query.metadata.groupby(encounter_col).indices
+        self.encounter_ids = list(encounter_groups.keys())
         self.identities_database = database.metadata[identity_col].to_numpy()
 
         # TODO: this recomputes it every time
-        similarity_grouped, query_iloc_grouped = [], []
-        for idx in groups.values():
-            sub = similarity[idx]
+        similarity_by_encounter, query_iloc_by_encounter = [], []
+        for row_idx in encounter_groups.values():
+            sub = similarity[row_idx]
             argmax = sub.argmax(axis=0)
-            similarity_grouped.append(sub[argmax, np.arange(sub.shape[1])])
-            query_iloc_grouped.append(idx[argmax])
-        self.similarity_grouped = np.vstack(similarity_grouped)
-        self.query_iloc_grouped = np.vstack(query_iloc_grouped)
+            similarity_by_encounter.append(sub[argmax, np.arange(sub.shape[1])])
+            query_iloc_by_encounter.append(row_idx[argmax])
+        self.similarity_by_encounter = np.vstack(similarity_by_encounter)
+        self.query_iloc_by_encounter = np.vstack(query_iloc_by_encounter)
 
     def classify(self, k_max: int, matching_part: str) -> None:
         classifier = TopkClassifier(self.identities_database, k=k_max, return_all=True)
-        predictions, scores, database_iloc = classifier(self.similarity_grouped)
-        scores_dict = dict(zip(self.keys, scores))
-        predictions_dict = dict(zip(self.keys, predictions))
-        database_iloc_dict = dict(zip(self.keys, database_iloc))
-        query_iloc_dict = {key: self.query_iloc_grouped[i][database_iloc[i]] for i, key in enumerate(self.keys)}
+        predictions, scores, database_iloc = classifier(self.similarity_by_encounter)
+        scores_dict = dict(zip(self.encounter_ids, scores))
+        predictions_dict = dict(zip(self.encounter_ids, predictions))
+        database_iloc_dict = dict(zip(self.encounter_ids, database_iloc))
+        query_iloc_dict = {
+            encounter_id: self.query_iloc_by_encounter[i][database_iloc[i]] for i, encounter_id in enumerate(self.encounter_ids)
+        }
         self._set_predictions(scores_dict, predictions_dict, matching_part, database_iloc_dict, query_iloc_dict, k_max)
 
     def _set_predictions(
