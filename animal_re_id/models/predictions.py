@@ -1,24 +1,51 @@
 import numpy as np
+import pandas as pd
 from wildlife_tools.inference import TopkClassifier
+
+from .inference import best_matches_discovery as _best_matches_discovery
+from .inference import top_indices
+from .utils import gather_df
 
 DEF_VALUES = [-np.inf, "", "", -1, -1]
 
 
 class EncounterPredictions:
     def __init__(self, similarity, query, database, encounter_col: str = "encounter_id", identity_col: str = "identity") -> None:
-        encounter_groups = query.metadata.groupby(encounter_col).indices
+        self.similarity = similarity
+        self.query = query
+        self.database = database
+        self.encounter_col = encounter_col
+        self.identity_col = identity_col
+
+    def group_by_encounter(self) -> None:
+        encounter_groups = self.query.metadata.groupby(self.encounter_col).indices
         self.encounter_ids = list(encounter_groups.keys())
-        self.identities_database = database.metadata[identity_col].to_numpy()
+        self.identities_database = self.database.metadata[self.identity_col].to_numpy()
 
         # TODO: this recomputes it every time
         similarity_by_encounter, query_iloc_by_encounter = [], []
         for row_idx in encounter_groups.values():
-            sub = similarity[row_idx]
+            sub = self.similarity[row_idx]
             argmax = sub.argmax(axis=0)
             similarity_by_encounter.append(sub[argmax, np.arange(sub.shape[1])])
             query_iloc_by_encounter.append(row_idx[argmax])
         self.similarity_by_encounter = np.vstack(similarity_by_encounter)
         self.query_iloc_by_encounter = np.vstack(query_iloc_by_encounter)
+
+    def gather_matches(self, matching_part: str, name: str, ignore_diagonal: bool = False) -> pd.DataFrame:
+        # TODO: currently works on the original (ungrouped) similarity; should also support similarity_by_encounter
+        rows, cols = top_indices(self.similarity, ignore_diagonal=ignore_diagonal)
+        return gather_df(self.query, self.database, rows, cols, self.similarity, name, matching_part)
+
+    @staticmethod
+    def best_matches_discovery(
+        results: pd.DataFrame,
+        max_matches: int,
+        max_per_identity: int,
+        unlimited_unknown: bool = True,
+        min_similarity: float = 0,
+    ) -> pd.DataFrame:
+        return _best_matches_discovery(results, max_matches, max_per_identity, unlimited_unknown, min_similarity)
 
     def classify(self, k_max: int, matching_part: str) -> None:
         classifier = TopkClassifier(self.identities_database, k=k_max, return_all=True)
