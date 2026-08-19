@@ -28,7 +28,9 @@ class EncounterPredictions:
         self.similarity_by_encounter = np.vstack(similarity_by_encounter)
         self.query_iloc_by_encounter = np.vstack(query_iloc_by_encounter)
 
-    def classify(self, k_max: int, matching_part: str) -> None:
+    def classify(self, matching_part: str, k_max: int | None = None) -> None:
+        if k_max is None:
+            k_max = len(self.database)
         classifier = TopkClassifier(self.identities_database, k=k_max, return_all=True)
         predictions, scores, database_iloc = classifier(self.similarity_by_encounter)
         scores_dict = dict(zip(self.encounter_ids, scores))
@@ -46,16 +48,16 @@ class EncounterPredictions:
         matching_parts: str | dict,
         database_iloc: dict,
         query_iloc: dict,
-        k_max=None,
+        k_max: int,
     ) -> None:
         self.scores = scores
         self.predictions = predictions
         self.database_iloc = database_iloc
         self.query_iloc = query_iloc
+        self.k_max = k_max
 
         self._save_matching_part(matching_parts)
-        if k_max is not None:
-            self._extend_data(k_max)
+        self._extend_data(k_max)
 
     def _extend_data(self, k_max):
         data = [self.scores, self.predictions, self.matching_parts, self.database_iloc, self.query_iloc]
@@ -149,7 +151,21 @@ def array_extend(x, n, fill_value):
     return x
 
 
-def merge_data(data: list[EncounterPredictions], k_max) -> EncounterPredictions:
+def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
+    if not hasattr(data[0], "k_max"):
+        raise ValueError("All EncounterPredictions must be classified (via classify()) before merging")
+    k_max = data[0].k_max
+
+    for d in data:
+        if not hasattr(d, "k_max"):
+            raise ValueError("All EncounterPredictions must be classified (via classify()) before merging")
+        if d.k_max != k_max:
+            raise ValueError(f"All EncounterPredictions must already be padded/truncated to k_max={k_max}, got {d.k_max}")
+        if not d.query.metadata.equals(data[0].query.metadata):
+            raise ValueError("All EncounterPredictions must share the same query dataset")
+        if not d.database.metadata.equals(data[0].database.metadata):
+            raise ValueError("All EncounterPredictions must share the same database dataset")
+
     # Each instance already carries its own source label per encounter via .matching_parts
     # (set by classify()), so it's merged the same way as scores/predictions/etc below.
     scores = [d.scores for d in data]
@@ -206,5 +222,5 @@ def merge_data(data: list[EncounterPredictions], k_max) -> EncounterPredictions:
     result = EncounterPredictions.__new__(EncounterPredictions)
     result.query = data[0].query
     result.database = data[0].database
-    result._set_predictions(scores_merged, predictions_merged, sources_merged, database_iloc_merged, query_iloc_merged)
+    result._set_predictions(scores_merged, predictions_merged, sources_merged, database_iloc_merged, query_iloc_merged, k_max)
     return result
