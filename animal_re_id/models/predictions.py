@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 import pandas as pd
 from wildlife_tools.inference import TopkClassifier
@@ -181,6 +183,23 @@ def array_extend(x, n, fill_value):
     return x
 
 
+def _offset_iloc(iloc_dict: dict, offset: int) -> dict:
+    if offset == 0:
+        return iloc_dict
+    return {encounter: np.where(value == -1, -1, value + offset) for encounter, value in iloc_dict.items()}
+
+
+def _merge_wildlife_datasets(datasets: list):
+    first = datasets[0]
+    for dataset in datasets:
+        if dataset.root != first.root or dataset.img_load != first.img_load:
+            raise ValueError("All EncounterPredictions must share the same dataset root and img_load to be merged")
+
+    merged = deepcopy(first)
+    merged.df = pd.concat([dataset.metadata for dataset in datasets], ignore_index=True)
+    return merged
+
+
 def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
     if not hasattr(data[0], "k_max"):
         raise ValueError("All EncounterPredictions must be classified (via classify()) before merging")
@@ -191,18 +210,34 @@ def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
             raise ValueError("All EncounterPredictions must be classified (via classify()) before merging")
         if d.k_max != k_max:
             raise ValueError(f"All EncounterPredictions must already be padded/truncated to k_max={k_max}, got {d.k_max}")
-        if not d.query.metadata.equals(data[0].query.metadata):
-            raise ValueError("All EncounterPredictions must share the same query dataset")
-        if not d.database.metadata.equals(data[0].database.metadata):
-            raise ValueError("All EncounterPredictions must share the same database dataset")
+
+    # Different matching_parts use disjoint row subsets of the underlying dataset (see
+    # MatchingDataset.for_matching_part), so query/database - and the iloc positions recorded
+    # against them - can legitimately differ between instances. When they do, combine them into
+    # one dataset and shift each instance's ilocs into that combined dataset's index space.
+    same_query = all(d.query.metadata.equals(data[0].query.metadata) for d in data)
+    if same_query:
+        merged_query = data[0].query
+        query_offsets = [0] * len(data)
+    else:
+        merged_query = _merge_wildlife_datasets([d.query for d in data])
+        query_offsets = np.cumsum([0] + [len(d.query.metadata) for d in data])[:-1]
+
+    same_database = all(d.database.metadata.equals(data[0].database.metadata) for d in data)
+    if same_database:
+        merged_database = data[0].database
+        database_offsets = [0] * len(data)
+    else:
+        merged_database = _merge_wildlife_datasets([d.database for d in data])
+        database_offsets = np.cumsum([0] + [len(d.database.metadata) for d in data])[:-1]
 
     # Each instance already carries its own source label per encounter via .matching_parts
     # (set by classify()), so it's merged the same way as scores/predictions/etc below.
     scores = [d.scores for d in data]
     predictions = [d.predictions for d in data]
     matching_parts = [d.matching_parts for d in data]
-    database_iloc = [d.database_iloc for d in data]
-    query_iloc = [d.query_iloc for d in data]
+    database_iloc = [_offset_iloc(d.database_iloc, database_offsets[i]) for i, d in enumerate(data)]
+    query_iloc = [_offset_iloc(d.query_iloc, query_offsets[i]) for i, d in enumerate(data)]
     encounters = set().union(*scores)
 
     # For each encounter, combine candidates from every source, then sort/dedupe/truncate to k_max
@@ -250,7 +285,7 @@ def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
         query_iloc_merged[encounter] = array_extend(tt, k_max, DEF_VALUES[4])[:k_max]
 
     result = EncounterPredictions.__new__(EncounterPredictions)
-    result.query = data[0].query
-    result.database = data[0].database
+    result.query = merged_query
+    result.database = merged_database
     result._set_predictions(scores_merged, predictions_merged, sources_merged, database_iloc_merged, query_iloc_merged, k_max)
     return result
