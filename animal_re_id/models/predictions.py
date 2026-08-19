@@ -127,8 +127,13 @@ class EncounterPredictions:
                 "query_iloc": query_iloc,
             }
         )
-        results = results[results["similarity_orig"] > min_similarity]
-        results = results.sort_values("similarity_orig", ascending=False).reset_index(drop=True)
+
+        # Normalize similarity per (matching_part, matcher) (matching the old gather_df convention).
+        # Sorting/filtering/capping below all use this normalized value, exactly as the old code did.
+        results["similarity"] = results.groupby(["matching_part", "matcher"])["similarity_orig"].transform(lambda s: s / s.max())
+
+        results = results[results["similarity"] > min_similarity]
+        results = results.sort_values("similarity", ascending=False).reset_index(drop=True)
 
         results["identity1"] = self.query.metadata["identity"].to_numpy()[results["query_iloc"]]
         results["encounter2"] = self.database.metadata["encounter_id"].to_numpy()[results["database_iloc"]]
@@ -157,9 +162,6 @@ class EncounterPredictions:
 
         # Keep only at most max_matches matches overall
         results = results.iloc[:max_matches]
-
-        # Normalize similarity per (matching_part, matcher) (matching the old gather_df convention)
-        results["similarity"] = results.groupby(["matching_part", "matcher"])["similarity_orig"].transform(lambda s: s / s.max())
 
         columns = [
             "encounter1",
