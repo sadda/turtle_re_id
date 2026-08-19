@@ -8,44 +8,10 @@ DEF_VALUES = [-np.inf, "", "", "", -1, -1]
 
 
 class EncounterPredictions:
-    def __init__(self, similarity, query, database, encounter_col: str = "encounter_id", identity_col: str = "identity") -> None:
-        self.similarity = similarity
-        self.query = query
-        self.database = database
-        self.encounter_col = encounter_col
-        self.identity_col = identity_col
-
-    def group_by_encounter(self) -> None:
-        encounter_groups = self.query.metadata.groupby(self.encounter_col).indices
-        self.encounter_ids = list(encounter_groups.keys())
-        self.identities_database = self.database.metadata[self.identity_col].to_numpy()
-
-        # TODO: this recomputes it every time
-        similarity_by_encounter, query_iloc_by_encounter = [], []
-        for row_idx in encounter_groups.values():
-            sub = self.similarity[row_idx]
-            argmax = sub.argmax(axis=0)
-            similarity_by_encounter.append(sub[argmax, np.arange(sub.shape[1])])
-            query_iloc_by_encounter.append(row_idx[argmax])
-        self.similarity_by_encounter = np.vstack(similarity_by_encounter)
-        self.query_iloc_by_encounter = np.vstack(query_iloc_by_encounter)
-
-    def classify(self, matching_part: str, matcher: str, k_max: int | None = None) -> None:
-        if k_max is None:
-            k_max = len(self.database)
-        classifier = TopkClassifier(self.identities_database, k=k_max, return_all=True)
-        predictions, scores, database_iloc = classifier(self.similarity_by_encounter)
-        scores = scores.astype(np.float64)
-        scores_dict = dict(zip(self.encounter_ids, scores))
-        predictions_dict = dict(zip(self.encounter_ids, predictions))
-        database_iloc_dict = dict(zip(self.encounter_ids, database_iloc))
-        query_iloc_dict = {
-            encounter_id: self.query_iloc_by_encounter[i][database_iloc[i]] for i, encounter_id in enumerate(self.encounter_ids)
-        }
-        self._set_predictions(scores_dict, predictions_dict, matching_part, matcher, database_iloc_dict, query_iloc_dict, k_max)
-
-    def _set_predictions(
+    def __init__(
         self,
+        query,
+        database,
         scores: dict,
         predictions: dict,
         matching_parts: str | dict,
@@ -54,6 +20,8 @@ class EncounterPredictions:
         query_iloc: dict,
         k_max: int,
     ) -> None:
+        self.query = query
+        self.database = database
         self.scores = scores
         self.predictions = predictions
         self.database_iloc = database_iloc
@@ -63,6 +31,44 @@ class EncounterPredictions:
         self.matching_parts = self._resolve_tag(matching_parts)
         self.matchers = self._resolve_tag(matchers)
         self._extend_data(k_max)
+
+    @classmethod
+    def classify(
+        cls,
+        similarity: np.ndarray,
+        query,
+        database,
+        matching_part: str,
+        matcher: str,
+        k_max: int | None = None,
+        encounter_col: str = "encounter_id",
+        identity_col: str = "identity",
+    ) -> "EncounterPredictions":
+        encounter_groups = query.metadata.groupby(encounter_col).indices
+        encounter_ids = list(encounter_groups.keys())
+        identities_database = database.metadata[identity_col].to_numpy()
+
+        similarity_by_encounter, query_iloc_by_encounter = [], []
+        for row_idx in encounter_groups.values():
+            sub = similarity[row_idx]
+            argmax = sub.argmax(axis=0)
+            similarity_by_encounter.append(sub[argmax, np.arange(sub.shape[1])])
+            query_iloc_by_encounter.append(row_idx[argmax])
+        similarity_by_encounter = np.vstack(similarity_by_encounter)
+        query_iloc_by_encounter = np.vstack(query_iloc_by_encounter)
+
+        if k_max is None:
+            k_max = len(database)
+        classifier = TopkClassifier(identities_database, k=k_max, return_all=True)
+        predictions, scores, database_iloc = classifier(similarity_by_encounter)
+        scores = scores.astype(np.float64)
+        scores_dict = dict(zip(encounter_ids, scores))
+        predictions_dict = dict(zip(encounter_ids, predictions))
+        database_iloc_dict = dict(zip(encounter_ids, database_iloc))
+        query_iloc_dict = {
+            encounter_id: query_iloc_by_encounter[i][database_iloc[i]] for i, encounter_id in enumerate(encounter_ids)
+        }
+        return cls(query, database, scores_dict, predictions_dict, matching_part, matcher, database_iloc_dict, query_iloc_dict, k_max)
 
     def _extend_data(self, k_max):
         data = [self.scores, self.predictions, self.matching_parts, self.matchers, self.database_iloc, self.query_iloc]
@@ -203,13 +209,8 @@ def _merge_wildlife_datasets(datasets: list):
 
 
 def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
-    if not hasattr(data[0], "k_max"):
-        raise ValueError("All EncounterPredictions must be classified (via classify()) before merging")
     k_max = data[0].k_max
-
     for d in data:
-        if not hasattr(d, "k_max"):
-            raise ValueError("All EncounterPredictions must be classified (via classify()) before merging")
         if d.k_max != k_max:
             raise ValueError(f"All EncounterPredictions must already be padded/truncated to k_max={k_max}, got {d.k_max}")
 
@@ -269,8 +270,14 @@ def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
             merged_field[encounter] = array_extend(array, k_max, fill_value)[:k_max]
     scores_merged, predictions_merged, matching_parts_merged, matchers_merged, database_iloc_merged, query_iloc_merged = merged
 
-    result = EncounterPredictions.__new__(EncounterPredictions)
-    result.query = merged_query
-    result.database = merged_database
-    result._set_predictions(scores_merged, predictions_merged, matching_parts_merged, matchers_merged, database_iloc_merged, query_iloc_merged, k_max)
-    return result
+    return EncounterPredictions(
+        merged_query,
+        merged_database,
+        scores_merged,
+        predictions_merged,
+        matching_parts_merged,
+        matchers_merged,
+        database_iloc_merged,
+        query_iloc_merged,
+        k_max,
+    )
