@@ -2,10 +2,6 @@ import numpy as np
 import pandas as pd
 from wildlife_tools.inference import TopkClassifier
 
-from .inference import best_matches_discovery as _best_matches_discovery
-from .inference import top_indices
-from .utils import gather_df
-
 DEF_VALUES = [-np.inf, "", "", -1, -1]
 
 
@@ -31,21 +27,6 @@ class EncounterPredictions:
             query_iloc_by_encounter.append(row_idx[argmax])
         self.similarity_by_encounter = np.vstack(similarity_by_encounter)
         self.query_iloc_by_encounter = np.vstack(query_iloc_by_encounter)
-
-    def gather_matches(self, matching_part: str, name: str, ignore_diagonal: bool = False) -> pd.DataFrame:
-        # TODO: currently works on the original (ungrouped) similarity; should also support similarity_by_encounter
-        rows, cols = top_indices(self.similarity, ignore_diagonal=ignore_diagonal)
-        return gather_df(self.query, self.database, rows, cols, self.similarity, name, matching_part)
-
-    @staticmethod
-    def best_matches_discovery(
-        results: pd.DataFrame,
-        max_matches: int,
-        max_per_identity: int,
-        unlimited_unknown: bool = True,
-        min_similarity: float = 0,
-    ) -> pd.DataFrame:
-        return _best_matches_discovery(results, max_matches, max_per_identity, unlimited_unknown, min_similarity)
 
     def classify(self, k_max: int, matching_part: str) -> None:
         classifier = TopkClassifier(self.identities_database, k=k_max, return_all=True)
@@ -110,6 +91,56 @@ class EncounterPredictions:
             raise NotImplementedError("Not yet implemented")
         return results
 
+    def extract_highest_predictions(
+        self,
+        max_matches: int,
+        max_per_identity: int,
+        unlimited_unknown: bool = True,
+        min_similarity: float = 0,
+    ) -> pd.DataFrame:
+        # Flatten scores/predictions/matching_parts/database_iloc/query_iloc (dict[encounter -> array])
+        # into one row per (encounter, candidate identity).
+        encounters, scores, identities2, matching_parts, database_iloc, query_iloc = [], [], [], [], [], []
+        for encounter in self.scores:
+            n = len(self.scores[encounter])
+            encounters.extend([encounter] * n)
+            scores.extend(self.scores[encounter])
+            identities2.extend(self.predictions[encounter])
+            matching_parts.extend(self.matching_parts[encounter])
+            database_iloc.extend(self.database_iloc[encounter])
+            query_iloc.extend(self.query_iloc[encounter])
+
+        results = pd.DataFrame(
+            {
+                "encounter1": encounters,
+                "identity2": identities2,
+                "matcher": matching_parts,
+                "similarity": scores,
+                "database_iloc": database_iloc,
+                "query_iloc": query_iloc,
+            }
+        )
+        results = results[results["similarity"] > min_similarity]
+        results = results.sort_values("similarity", ascending=False).reset_index(drop=True)
+
+        results["identity1"] = self.query.metadata["identity"].to_numpy()[results["query_iloc"]]
+        results["encounter2"] = self.database.metadata["encounter_id"].to_numpy()[results["database_iloc"]]
+        results["image_id1"] = self.query.metadata["image_id"].to_numpy()[results["query_iloc"]]
+        results["image_id2"] = self.database.metadata["image_id"].to_numpy()[results["database_iloc"]]
+
+        # Keep only at most max_per_identity matches per a pair of identities
+        pairs = results.apply(lambda r: frozenset((r["identity1"], r["identity2"])), axis=1)
+        idx_remove = []
+        for pair, group in results.groupby(pairs, sort=False):
+            if unlimited_unknown and "unknown" in pair:
+                continue
+            idx_remove.extend(group.index[max_per_identity:])
+        results = results.drop(index=idx_remove)
+
+        # Keep only at most max_matches matches overall
+        results = results.iloc[:max_matches]
+        return results.drop(columns=["database_iloc", "query_iloc"]).reset_index(drop=True)
+
 
 def array_extend(x, n, fill_value):
     n_missing = n - len(x)
@@ -172,5 +203,8 @@ def merge_data(data: dict[str, EncounterPredictions], k_max) -> EncounterPredict
         query_iloc_merged[encounter] = array_extend(tt, k_max, DEF_VALUES[4])[:k_max]
 
     result = EncounterPredictions.__new__(EncounterPredictions)
+    first = next(iter(data.values()))
+    result.query = first.query
+    result.database = first.database
     result._set_predictions(scores_merged, predictions_merged, parts_merged, database_iloc_merged, query_iloc_merged)
     return result
