@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from wildlife_tools.inference import TopkClassifier
 
-DEF_VALUES = [-np.inf, "", "", -1, -1]
+DEF_VALUES = [-np.inf, "", "", "", -1, -1]
 
 
 class EncounterPredictions:
@@ -30,7 +30,7 @@ class EncounterPredictions:
         self.similarity_by_encounter = np.vstack(similarity_by_encounter)
         self.query_iloc_by_encounter = np.vstack(query_iloc_by_encounter)
 
-    def classify(self, matching_part: str, k_max: int | None = None) -> None:
+    def classify(self, matching_part: str, matcher: str, k_max: int | None = None) -> None:
         if k_max is None:
             k_max = len(self.database)
         classifier = TopkClassifier(self.identities_database, k=k_max, return_all=True)
@@ -42,13 +42,14 @@ class EncounterPredictions:
         query_iloc_dict = {
             encounter_id: self.query_iloc_by_encounter[i][database_iloc[i]] for i, encounter_id in enumerate(self.encounter_ids)
         }
-        self._set_predictions(scores_dict, predictions_dict, matching_part, database_iloc_dict, query_iloc_dict, k_max)
+        self._set_predictions(scores_dict, predictions_dict, matching_part, matcher, database_iloc_dict, query_iloc_dict, k_max)
 
     def _set_predictions(
         self,
         scores: dict,
         predictions: dict,
         matching_parts: str | dict,
+        matchers: str | dict,
         database_iloc: dict,
         query_iloc: dict,
         k_max: int,
@@ -59,24 +60,23 @@ class EncounterPredictions:
         self.query_iloc = query_iloc
         self.k_max = k_max
 
-        self._save_matching_part(matching_parts)
+        self.matching_parts = self._resolve_tag(matching_parts)
+        self.matchers = self._resolve_tag(matchers)
         self._extend_data(k_max)
 
     def _extend_data(self, k_max):
-        data = [self.scores, self.predictions, self.matching_parts, self.database_iloc, self.query_iloc]
+        data = [self.scores, self.predictions, self.matching_parts, self.matchers, self.database_iloc, self.query_iloc]
         for var, fill_value in zip(data, DEF_VALUES):
             for encounter, value in var.items():
                 var[encounter] = array_extend(value, k_max, fill_value)
 
-    def _save_matching_part(self, matching_parts):
-        if isinstance(matching_parts, str):
-            self.matching_parts = {}
-            for encounter, score in self.scores.items():
-                self.matching_parts[encounter] = np.full(len(score), matching_parts)
-        elif isinstance(matching_parts, dict):
-            self.matching_parts = matching_parts
+    def _resolve_tag(self, tag: str | dict) -> dict:
+        if isinstance(tag, str):
+            return {encounter: np.full(len(score), tag) for encounter, score in self.scores.items()}
+        elif isinstance(tag, dict):
+            return tag
         else:
-            raise ValueError("matching_part must be str or dict")
+            raise ValueError("tag must be str or dict")
 
     def compute_matches(self, k: int, identities: dict[str, str]) -> int:
         if k == 1:
@@ -103,15 +103,16 @@ class EncounterPredictions:
         unlimited_unknown: bool = True,
         min_similarity: float = 0,
     ) -> pd.DataFrame:
-        # Flatten scores/predictions/matching_parts/database_iloc/query_iloc (dict[encounter -> array])
+        # Flatten scores/predictions/matching_parts/matchers/database_iloc/query_iloc (dict[encounter -> array])
         # into one row per (encounter, candidate identity).
-        encounters, scores, identities2, matching_part, database_iloc, query_iloc = [], [], [], [], [], []
+        encounters, scores, identities2, matching_part, matcher, database_iloc, query_iloc = [], [], [], [], [], [], []
         for encounter in self.scores:
             n = len(self.scores[encounter])
             encounters.extend([encounter] * n)
             scores.extend(self.scores[encounter])
             identities2.extend(self.predictions[encounter])
             matching_part.extend(self.matching_parts[encounter])
+            matcher.extend(self.matchers[encounter])
             database_iloc.extend(self.database_iloc[encounter])
             query_iloc.extend(self.query_iloc[encounter])
 
@@ -120,6 +121,7 @@ class EncounterPredictions:
                 "encounter1": encounters,
                 "identity2": identities2,
                 "matching_part": matching_part,
+                "matcher": matcher,
                 "similarity_orig": scores,
                 "database_iloc": database_iloc,
                 "query_iloc": query_iloc,
@@ -156,8 +158,8 @@ class EncounterPredictions:
         # Keep only at most max_matches matches overall
         results = results.iloc[:max_matches]
 
-        # Normalize similarity per matching_part (matching the old gather_df convention)
-        results["similarity"] = results.groupby("matching_part")["similarity_orig"].transform(lambda s: s / s.max())
+        # Normalize similarity per (matching_part, matcher) (matching the old gather_df convention)
+        results["similarity"] = results.groupby(["matching_part", "matcher"])["similarity_orig"].transform(lambda s: s / s.max())
 
         columns = [
             "encounter1",
@@ -167,6 +169,7 @@ class EncounterPredictions:
             "image_id1",
             "image_id2",
             "matching_part",
+            "matcher",
             "similarity",
             "similarity_orig",
         ]
@@ -228,11 +231,12 @@ def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
         merged_database = _merge_wildlife_datasets([d.database for d in data])
         database_offsets = np.cumsum([0] + [len(d.database.metadata) for d in data])[:-1]
 
-    # Each instance already carries its own source label per encounter via .matching_parts
-    # (set by classify()), so it's merged the same way as scores/predictions/etc below.
+    # Each instance already carries its own source label per encounter via .matching_parts/.matchers
+    # (set by classify()), so both are merged the same way as scores/predictions/etc below.
     scores = [d.scores for d in data]
     predictions = [d.predictions for d in data]
     matching_parts = [d.matching_parts for d in data]
+    matchers = [d.matchers for d in data]
     database_iloc = [_offset_iloc(d.database_iloc, database_offsets[i]) for i, d in enumerate(data)]
     query_iloc = [_offset_iloc(d.query_iloc, query_offsets[i]) for i, d in enumerate(data)]
     encounters = set().union(*scores)
@@ -241,20 +245,23 @@ def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
     scores_merged = {}
     predictions_merged = {}
     matching_parts_merged = {}
+    matchers_merged = {}
     database_iloc_merged = {}
     query_iloc_merged = {}
     for encounter in encounters:
         ss = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[0])) for s in scores]).flatten()
         pp = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[1])) for s in predictions]).flatten()
         qq = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[2])) for s in matching_parts]).flatten()
-        rr = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[3])) for s in database_iloc]).flatten()
-        tt = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[4])) for s in query_iloc]).flatten()
+        uu = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[3])) for s in matchers]).flatten()
+        rr = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[4])) for s in database_iloc]).flatten()
+        tt = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[5])) for s in query_iloc]).flatten()
 
         # Sort the values starting with highest scores
         idx = np.argsort(ss)[::-1]
         ss = ss[idx]
         pp = pp[idx]
         qq = qq[idx]
+        uu = uu[idx]
         rr = rr[idx]
         tt = tt[idx]
 
@@ -263,6 +270,7 @@ def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
         ss = ss[idx]
         pp = pp[idx]
         qq = qq[idx]
+        uu = uu[idx]
         rr = rr[idx]
         tt = tt[idx]
 
@@ -271,6 +279,7 @@ def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
         ss = ss[idx]
         pp = pp[idx]
         qq = qq[idx]
+        uu = uu[idx]
         rr = rr[idx]
         tt = tt[idx]
 
@@ -278,11 +287,12 @@ def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
         scores_merged[encounter] = array_extend(ss, k_max, DEF_VALUES[0])[:k_max]
         predictions_merged[encounter] = array_extend(pp, k_max, DEF_VALUES[1])[:k_max]
         matching_parts_merged[encounter] = array_extend(qq, k_max, DEF_VALUES[2])[:k_max]
-        database_iloc_merged[encounter] = array_extend(rr, k_max, DEF_VALUES[3])[:k_max]
-        query_iloc_merged[encounter] = array_extend(tt, k_max, DEF_VALUES[4])[:k_max]
+        matchers_merged[encounter] = array_extend(uu, k_max, DEF_VALUES[3])[:k_max]
+        database_iloc_merged[encounter] = array_extend(rr, k_max, DEF_VALUES[4])[:k_max]
+        query_iloc_merged[encounter] = array_extend(tt, k_max, DEF_VALUES[5])[:k_max]
 
     result = EncounterPredictions.__new__(EncounterPredictions)
     result.query = merged_query
     result.database = merged_database
-    result._set_predictions(scores_merged, predictions_merged, matching_parts_merged, database_iloc_merged, query_iloc_merged, k_max)
+    result._set_predictions(scores_merged, predictions_merged, matching_parts_merged, matchers_merged, database_iloc_merged, query_iloc_merged, k_max)
     return result
