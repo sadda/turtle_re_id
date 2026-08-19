@@ -24,6 +24,15 @@ def best_matches_matching(results, max_per_encounter, min_similarity=0):
 
 def best_matches_discovery(results, max_matches, max_per_identity, unlimited_unknown=True, min_similarity=0):
 
+    # Canonicalize pair order (image_id1 < image_id2) so that an asymmetric similarity's two
+    # directions of the same physical pair collapse into a single row instead of double-counting.
+    results = results.copy()
+    swap = results["image_id1"] > results["image_id2"]
+    sided_cols = [col[:-1] for col in results.columns if col.endswith("1") and f"{col[:-1]}2" in results.columns]
+    for col in sided_cols:
+        col1, col2 = f"{col}1", f"{col}2"
+        results.loc[swap, [col1, col2]] = results.loc[swap, [col2, col1]].to_numpy()
+
     # Sort the similarity and keep only one match between unique images (bounding boxes)
     results = results[results["similarity"] > min_similarity]
     results = results.sort_values("similarity", ascending=False)
@@ -47,9 +56,9 @@ def best_matches_discovery(results, max_matches, max_per_identity, unlimited_unk
     return results.reset_index(drop=True)
 
 
-def top_indices(similarity, ignore_lower_diagonal=False):
-    if ignore_lower_diagonal:
-        similarity[np.tril_indices_from(similarity)] = -np.inf
+def top_indices(similarity, ignore_diagonal=False):
+    if ignore_diagonal:
+        similarity[np.diag_indices_from(similarity)] = -np.inf
     flat_arr = similarity.flatten()
     top_flat_indices = np.argsort(-flat_arr)
     return np.unravel_index(top_flat_indices, similarity.shape)

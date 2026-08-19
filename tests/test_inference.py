@@ -174,7 +174,7 @@ class TestTopIndices:
         rows, cols = top_indices(similarity)
         assert (rows[0], cols[0]) == (0, 1)
 
-    def test_ignore_lower_diagonal_excludes_lower_triangle(self) -> None:
+    def test_ignore_diagonal_excludes_only_diagonal(self) -> None:
         original = np.array(
             [
                 [0.1, 0.9, 0.8],
@@ -183,12 +183,12 @@ class TestTopIndices:
             ]
         )
         working_copy = original.copy()
-        rows, cols = top_indices(working_copy, ignore_lower_diagonal=True)
-        # tril_indices_from zeroes out the lower triangle *and* the diagonal,
-        # so only the strict upper triangle (row < col) remains finite.
+        rows, cols = top_indices(working_copy, ignore_diagonal=True)
+        # diag_indices_from zeroes out only the diagonal (row == col),
+        # so every off-diagonal entry remains finite.
         finite_mask = working_copy[rows, cols] != -np.inf
-        assert all(r < c for r, c in zip(rows[finite_mask], cols[finite_mask]))
-        assert finite_mask.sum() == 3
+        assert all(r != c for r, c in zip(rows[finite_mask], cols[finite_mask]))
+        assert finite_mask.sum() == 6
 
     def test_returns_all_positions(self) -> None:
         similarity = np.array([[1.0, 2.0], [3.0, 4.0]])
