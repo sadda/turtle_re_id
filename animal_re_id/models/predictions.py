@@ -33,6 +33,7 @@ class EncounterPredictions:
             k_max = len(self.database)
         classifier = TopkClassifier(self.identities_database, k=k_max, return_all=True)
         predictions, scores, database_iloc = classifier(self.similarity_by_encounter)
+        scores = scores.astype(np.float64)
         scores_dict = dict(zip(self.encounter_ids, scores))
         predictions_dict = dict(zip(self.encounter_ids, predictions))
         database_iloc_dict = dict(zip(self.encounter_ids, database_iloc))
@@ -95,6 +96,7 @@ class EncounterPredictions:
 
     def extract_highest_predictions(
         self,
+        matching_part: str,
         max_matches: int,
         max_per_identity: int,
         unlimited_unknown: bool = True,
@@ -102,13 +104,13 @@ class EncounterPredictions:
     ) -> pd.DataFrame:
         # Flatten scores/predictions/matching_parts/database_iloc/query_iloc (dict[encounter -> array])
         # into one row per (encounter, candidate identity).
-        encounters, scores, identities2, matching_parts, database_iloc, query_iloc = [], [], [], [], [], []
+        encounters, scores, identities2, matchers, database_iloc, query_iloc = [], [], [], [], [], []
         for encounter in self.scores:
             n = len(self.scores[encounter])
             encounters.extend([encounter] * n)
             scores.extend(self.scores[encounter])
             identities2.extend(self.predictions[encounter])
-            matching_parts.extend(self.matching_parts[encounter])
+            matchers.extend(self.matching_parts[encounter])
             database_iloc.extend(self.database_iloc[encounter])
             query_iloc.extend(self.query_iloc[encounter])
 
@@ -116,19 +118,30 @@ class EncounterPredictions:
             {
                 "encounter1": encounters,
                 "identity2": identities2,
-                "matcher": matching_parts,
-                "similarity": scores,
+                "matcher": matchers,
+                "similarity_orig": scores,
                 "database_iloc": database_iloc,
                 "query_iloc": query_iloc,
             }
         )
-        results = results[results["similarity"] > min_similarity]
-        results = results.sort_values("similarity", ascending=False).reset_index(drop=True)
+        results = results[results["similarity_orig"] > min_similarity]
+        results = results.sort_values("similarity_orig", ascending=False).reset_index(drop=True)
 
         results["identity1"] = self.query.metadata["identity"].to_numpy()[results["query_iloc"]]
         results["encounter2"] = self.database.metadata["encounter_id"].to_numpy()[results["database_iloc"]]
         results["image_id1"] = self.query.metadata["image_id"].to_numpy()[results["query_iloc"]]
         results["image_id2"] = self.database.metadata["image_id"].to_numpy()[results["database_iloc"]]
+
+        # Canonicalize pair order (image_id1 < image_id2) so an asymmetric similarity's two
+        # directions of the same physical pair present consistently rather than as separate rows.
+        swap = results["image_id1"] > results["image_id2"]
+        sided_cols = [col[:-1] for col in results.columns if col.endswith("1") and f"{col[:-1]}2" in results.columns]
+        for col in sided_cols:
+            col1, col2 = f"{col}1", f"{col}2"
+            results.loc[swap, [col1, col2]] = results.loc[swap, [col2, col1]].to_numpy()
+
+        # Keep only one match between unique images (the two directions of a pair now collide)
+        results = results.drop_duplicates(subset=["image_id1", "image_id2"]).reset_index(drop=True)
 
         # Keep only at most max_per_identity matches per a pair of identities
         pairs = results.apply(lambda r: frozenset((r["identity1"], r["identity2"])), axis=1)
@@ -141,7 +154,24 @@ class EncounterPredictions:
 
         # Keep only at most max_matches matches overall
         results = results.iloc[:max_matches]
-        return results.drop(columns=["database_iloc", "query_iloc"]).reset_index(drop=True)
+
+        # Normalize similarity per matcher (matching the old gather_df convention)
+        results["similarity"] = results.groupby("matcher")["similarity_orig"].transform(lambda s: s / s.max())
+        results["matching_part"] = matching_part
+
+        columns = [
+            "encounter1",
+            "encounter2",
+            "identity1",
+            "identity2",
+            "image_id1",
+            "image_id2",
+            "matching_part",
+            "matcher",
+            "similarity",
+            "similarity_orig",
+        ]
+        return results[columns].reset_index(drop=True)
 
 
 def array_extend(x, n, fill_value):
