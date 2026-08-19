@@ -149,25 +149,26 @@ def array_extend(x, n, fill_value):
     return x
 
 
-def merge_data(data: dict[str, EncounterPredictions], k_max) -> EncounterPredictions:
-    # Get all keys (encounters)
-    matching_parts = data.keys()
-    scores = [data[m].scores for m in matching_parts]
-    predictions = [data[m].predictions for m in matching_parts]
-    database_iloc = [data[m].database_iloc for m in matching_parts]
-    query_iloc = [data[m].query_iloc for m in matching_parts]
+def merge_data(data: list[EncounterPredictions], k_max) -> EncounterPredictions:
+    # Each instance already carries its own source label per encounter via .matching_parts
+    # (set by classify()), so it's merged the same way as scores/predictions/etc below.
+    scores = [d.scores for d in data]
+    predictions = [d.predictions for d in data]
+    matching_parts = [d.matching_parts for d in data]
+    database_iloc = [d.database_iloc for d in data]
+    query_iloc = [d.query_iloc for d in data]
     encounters = set().union(*scores)
 
-    # Find the index for the matching part with the largest score
+    # For each encounter, combine candidates from every source, then sort/dedupe/truncate to k_max
     scores_merged = {}
     predictions_merged = {}
-    parts_merged = {}
+    sources_merged = {}
     database_iloc_merged = {}
     query_iloc_merged = {}
     for encounter in encounters:
         ss = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[0])) for s in scores]).flatten()
         pp = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[1])) for s in predictions]).flatten()
-        qq = np.vstack([np.full(k_max, matching_part) for matching_part in matching_parts]).flatten()
+        qq = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[2])) for s in matching_parts]).flatten()
         rr = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[3])) for s in database_iloc]).flatten()
         tt = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[4])) for s in query_iloc]).flatten()
 
@@ -198,13 +199,12 @@ def merge_data(data: dict[str, EncounterPredictions], k_max) -> EncounterPredict
         # Extract the highest scores
         scores_merged[encounter] = array_extend(ss, k_max, DEF_VALUES[0])[:k_max]
         predictions_merged[encounter] = array_extend(pp, k_max, DEF_VALUES[1])[:k_max]
-        parts_merged[encounter] = array_extend(qq, k_max, DEF_VALUES[2])[:k_max]
+        sources_merged[encounter] = array_extend(qq, k_max, DEF_VALUES[2])[:k_max]
         database_iloc_merged[encounter] = array_extend(rr, k_max, DEF_VALUES[3])[:k_max]
         query_iloc_merged[encounter] = array_extend(tt, k_max, DEF_VALUES[4])[:k_max]
 
     result = EncounterPredictions.__new__(EncounterPredictions)
-    first = next(iter(data.values()))
-    result.query = first.query
-    result.database = first.database
-    result._set_predictions(scores_merged, predictions_merged, parts_merged, database_iloc_merged, query_iloc_merged)
+    result.query = data[0].query
+    result.database = data[0].database
+    result._set_predictions(scores_merged, predictions_merged, sources_merged, database_iloc_merged, query_iloc_merged)
     return result
