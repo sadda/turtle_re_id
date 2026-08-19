@@ -244,54 +244,30 @@ def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
     encounters = set().union(*scores)
 
     # For each encounter, combine candidates from every source, then sort/dedupe/truncate to k_max
-    scores_merged = {}
-    predictions_merged = {}
-    matching_parts_merged = {}
-    matchers_merged = {}
-    database_iloc_merged = {}
-    query_iloc_merged = {}
+    fields = [scores, predictions, matching_parts, matchers, database_iloc, query_iloc]
+    merged = [{} for _ in fields]
     for encounter in encounters:
-        ss = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[0])) for s in scores]).flatten()
-        pp = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[1])) for s in predictions]).flatten()
-        qq = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[2])) for s in matching_parts]).flatten()
-        uu = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[3])) for s in matchers]).flatten()
-        rr = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[4])) for s in database_iloc]).flatten()
-        tt = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[5])) for s in query_iloc]).flatten()
+        arrays = [
+            np.concatenate([source.get(encounter, np.full(k_max, fill_value)) for source in field])
+            for field, fill_value in zip(fields, DEF_VALUES)
+        ]
 
         # Sort the values starting with highest scores
-        idx = np.argsort(ss)[::-1]
-        ss = ss[idx]
-        pp = pp[idx]
-        qq = qq[idx]
-        uu = uu[idx]
-        rr = rr[idx]
-        tt = tt[idx]
+        idx = np.argsort(arrays[0])[::-1]
+        arrays = [a[idx] for a in arrays]
 
         # Keep only unique predictions
-        _, idx = np.unique(pp, return_index=True)
-        ss = ss[idx]
-        pp = pp[idx]
-        qq = qq[idx]
-        uu = uu[idx]
-        rr = rr[idx]
-        tt = tt[idx]
+        _, idx = np.unique(arrays[1], return_index=True)
+        arrays = [a[idx] for a in arrays]
 
-        # Sort them again because numpy sort does something strange
-        idx = np.argsort(ss)[::-1]
-        ss = ss[idx]
-        pp = pp[idx]
-        qq = qq[idx]
-        uu = uu[idx]
-        rr = rr[idx]
-        tt = tt[idx]
+        # Sort again by score, since np.unique reorders by value rather than by score
+        idx = np.argsort(arrays[0])[::-1]
+        arrays = [a[idx] for a in arrays]
 
         # Extract the highest scores
-        scores_merged[encounter] = array_extend(ss, k_max, DEF_VALUES[0])[:k_max]
-        predictions_merged[encounter] = array_extend(pp, k_max, DEF_VALUES[1])[:k_max]
-        matching_parts_merged[encounter] = array_extend(qq, k_max, DEF_VALUES[2])[:k_max]
-        matchers_merged[encounter] = array_extend(uu, k_max, DEF_VALUES[3])[:k_max]
-        database_iloc_merged[encounter] = array_extend(rr, k_max, DEF_VALUES[4])[:k_max]
-        query_iloc_merged[encounter] = array_extend(tt, k_max, DEF_VALUES[5])[:k_max]
+        for merged_field, array, fill_value in zip(merged, arrays, DEF_VALUES):
+            merged_field[encounter] = array_extend(array, k_max, fill_value)[:k_max]
+    scores_merged, predictions_merged, matching_parts_merged, matchers_merged, database_iloc_merged, query_iloc_merged = merged
 
     result = EncounterPredictions.__new__(EncounterPredictions)
     result.query = merged_query
