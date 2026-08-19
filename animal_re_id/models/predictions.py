@@ -143,8 +143,7 @@ class EncounterPredictions:
         # Canonicalize pair order (image_id1 < image_id2) so an asymmetric similarity's two
         # directions of the same physical pair present consistently rather than as separate rows.
         swap = results["image_id1"] > results["image_id2"]
-        sided_cols = [col[:-1] for col in results.columns if col.endswith("1") and f"{col[:-1]}2" in results.columns]
-        for col in sided_cols:
+        for col in ["encounter", "identity", "image_id"]:
             col1, col2 = f"{col}1", f"{col}2"
             results.loc[swap, [col1, col2]] = results.loc[swap, [col2, col1]].to_numpy()
 
