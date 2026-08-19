@@ -1,14 +1,5 @@
-import numpy as np
-import pandas as pd
 from wildlife_tools.similarity import CollectAll, MatchLightGlue
 from wildlife_tools.similarity.pairwise.utils import visualise_matches
-
-
-def extract_column(df, col):
-    if col in df.columns:
-        return df[col].to_numpy()
-    else:
-        return np.full(len(df), None)
 
 
 def extract_features(dataset, pipeline, i):
@@ -19,31 +10,6 @@ def extract_features(dataset, pipeline, i):
     dataset.transform = pipeline.transform
     features = pipeline.extractor(dataset)
     return img, features
-
-
-def gather_df(dataset_q, dataset_d, i_sort, j_sort, similarity, name, matching_part):
-
-    image_ids_q = extract_column(dataset_q.df, "image_id")
-    identities_q = extract_column(dataset_q.df, "identity")
-    encounters_q = extract_column(dataset_q.df, "encounter_id")
-    image_ids_d = extract_column(dataset_d.df, "image_id")
-    identities_d = extract_column(dataset_d.df, "identity")
-    encounters_d = extract_column(dataset_d.df, "encounter_id")
-    result = pd.DataFrame(
-        {
-            "encounter1": encounters_q[i_sort],
-            "encounter2": encounters_d[j_sort],
-            "identity1": identities_q[i_sort],
-            "identity2": identities_d[j_sort],
-            "image_id1": image_ids_q[i_sort],
-            "image_id2": image_ids_d[j_sort],
-            "matching_part": matching_part,
-            "matcher": name,
-            "similarity": similarity[i_sort, j_sort] / similarity.max(),
-            "similarity_orig": similarity[i_sort, j_sort],
-        }
-    )
-    return result
 
 
 def get_index(dataset, image_id):

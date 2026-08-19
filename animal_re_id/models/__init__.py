@@ -1,9 +1,4 @@
 from .detector import turtle_detector
-from .inference import (
-    best_matches_discovery,
-    best_matches_matching,
-    top_indices,
-)
 from .pipelines import (
     Wildfusion_Similarity,
     get_pipeline_aliked,
@@ -14,4 +9,4 @@ from .pipelines import (
     get_pipeline_superpoint,
 )
 from .predictions import EncounterPredictions, merge_data
-from .utils import gather_df, plot_matches, visualise_match
+from .utils import plot_matches, visualise_match
