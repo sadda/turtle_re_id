@@ -149,7 +149,7 @@ class EncounterPredictions:
             results.loc[swap, [col1, col2]] = results.loc[swap, [col2, col1]].to_numpy()
 
         # Keep only one match between unique images (the two directions of a pair now collide)
-        results = results.drop_duplicates(subset=["image_id1", "image_id2"]).reset_index(drop=True)
+        results = results.drop_duplicates(subset=["image_id1", "image_id2", "matching_part"]).reset_index(drop=True)
 
         # Keep only at most max_per_identity matches per a pair of identities
         pairs = results.apply(lambda r: frozenset((r["identity1"], r["identity2"])), axis=1)
