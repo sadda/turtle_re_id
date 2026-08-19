@@ -1,34 +1,54 @@
 import numpy as np
 from wildlife_tools.inference import TopkClassifier
 
-DEF_VALUES = [-np.inf, "", ""]
+DEF_VALUES = [-np.inf, "", "", -1, -1]
 
 
 class EncounterPredictions:
     def __init__(self, similarity, query, database, encounter_col: str = "encounter_id", identity_col: str = "identity") -> None:
         groups = query.metadata.groupby(encounter_col).indices
         self.keys = list(groups.keys())
-        # TODO: this recomputes it every time
-        self.similarity_grouped = np.vstack([similarity[idx].max(axis=0) for idx in groups.values()])
         self.identities_database = database.metadata[identity_col].to_numpy()
+
+        # TODO: this recomputes it every time
+        similarity_grouped, query_iloc_grouped = [], []
+        for idx in groups.values():
+            sub = similarity[idx]
+            argmax = sub.argmax(axis=0)
+            similarity_grouped.append(sub[argmax, np.arange(sub.shape[1])])
+            query_iloc_grouped.append(idx[argmax])
+        self.similarity_grouped = np.vstack(similarity_grouped)
+        self.query_iloc_grouped = np.vstack(query_iloc_grouped)
 
     def classify(self, k_max: int, matching_part: str) -> None:
         classifier = TopkClassifier(self.identities_database, k=k_max, return_all=True)
-        predictions, scores, _ = classifier(self.similarity_grouped)
+        predictions, scores, database_iloc = classifier(self.similarity_grouped)
         scores_dict = dict(zip(self.keys, scores))
         predictions_dict = dict(zip(self.keys, predictions))
-        self._set_predictions(scores_dict, predictions_dict, matching_part, k_max)
+        database_iloc_dict = dict(zip(self.keys, database_iloc))
+        query_iloc_dict = {key: self.query_iloc_grouped[i][database_iloc[i]] for i, key in enumerate(self.keys)}
+        self._set_predictions(scores_dict, predictions_dict, matching_part, database_iloc_dict, query_iloc_dict, k_max)
 
-    def _set_predictions(self, scores: dict, predictions: dict, matching_parts: str | dict, k_max=None) -> None:
+    def _set_predictions(
+        self,
+        scores: dict,
+        predictions: dict,
+        matching_parts: str | dict,
+        database_iloc: dict,
+        query_iloc: dict,
+        k_max=None,
+    ) -> None:
         self.scores = scores
         self.predictions = predictions
+        self.database_iloc = database_iloc
+        self.query_iloc = query_iloc
 
         self._save_matching_part(matching_parts)
         if k_max is not None:
             self._extend_data(k_max)
 
     def _extend_data(self, k_max):
-        data = [self.scores, self.predictions, self.matching_parts]
+        data = [self.scores, self.predictions, self.matching_parts, self.database_iloc, self.query_iloc]
         for var, fill_value in zip(data, DEF_VALUES):
             for encounter, value in var.items():
                 var[encounter] = array_extend(value, k_max, fill_value)
@@ -74,40 +94,54 @@ def merge_data(data: dict[str, EncounterPredictions], k_max) -> EncounterPredict
     matching_parts = data.keys()
     scores = [data[m].scores for m in matching_parts]
     predictions = [data[m].predictions for m in matching_parts]
+    database_iloc = [data[m].database_iloc for m in matching_parts]
+    query_iloc = [data[m].query_iloc for m in matching_parts]
     encounters = set().union(*scores)
 
     # Find the index for the matching part with the largest score
     scores_merged = {}
     predictions_merged = {}
     parts_merged = {}
+    database_iloc_merged = {}
+    query_iloc_merged = {}
     for encounter in encounters:
         ss = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[0])) for s in scores]).flatten()
         pp = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[1])) for s in predictions]).flatten()
         qq = np.vstack([np.full(k_max, matching_part) for matching_part in matching_parts]).flatten()
+        rr = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[3])) for s in database_iloc]).flatten()
+        tt = np.vstack([s.get(encounter, np.full(k_max, DEF_VALUES[4])) for s in query_iloc]).flatten()
 
         # Sort the values starting with highest scores
         idx = np.argsort(ss)[::-1]
         ss = ss[idx]
         pp = pp[idx]
         qq = qq[idx]
+        rr = rr[idx]
+        tt = tt[idx]
 
         # Keep only unique predictions
         _, idx = np.unique(pp, return_index=True)
         ss = ss[idx]
         pp = pp[idx]
         qq = qq[idx]
+        rr = rr[idx]
+        tt = tt[idx]
 
         # Sort them again because numpy sort does something strange
         idx = np.argsort(ss)[::-1]
         ss = ss[idx]
         pp = pp[idx]
         qq = qq[idx]
+        rr = rr[idx]
+        tt = tt[idx]
 
         # Extract the highest scores
         scores_merged[encounter] = array_extend(ss, k_max, DEF_VALUES[0])[:k_max]
         predictions_merged[encounter] = array_extend(pp, k_max, DEF_VALUES[1])[:k_max]
         parts_merged[encounter] = array_extend(qq, k_max, DEF_VALUES[2])[:k_max]
+        database_iloc_merged[encounter] = array_extend(rr, k_max, DEF_VALUES[3])[:k_max]
+        query_iloc_merged[encounter] = array_extend(tt, k_max, DEF_VALUES[4])[:k_max]
 
     result = EncounterPredictions.__new__(EncounterPredictions)
-    result._set_predictions(scores_merged, predictions_merged, parts_merged)
+    result._set_predictions(scores_merged, predictions_merged, parts_merged, database_iloc_merged, query_iloc_merged)
     return result
