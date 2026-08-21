@@ -1,6 +1,5 @@
 /data/
 /scripts/LOC
-plot_matches.ipynb
 
 /scripts/SMSRC/hidden
 verification_data_*.csv
