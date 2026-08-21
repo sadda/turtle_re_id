@@ -1,37 +1,64 @@
+from abc import ABC, abstractmethod
 from collections import defaultdict
 
 import pandas as pd
+from PIL import Image
 from wildlife_datasets.datasets import SeaTurtleID2022 as wd_SeaTurtleID2022
+from wildlife_datasets.datasets import WildlifeDataset
 
 from animal_re_id.config import resolve_path
 from animal_re_id.datasets import TurtlewatchEgypt_New, combine_datasets_twe_from_paths
 
 
-class SeaTurtleID2022:
-    def __init__(self, paths):
-        self.paths = paths
+class Analysis(ABC):
+    def __init__(self, paths) -> None:
+        self.dataset: WildlifeDataset
 
+        self.paths = paths
+        self._load_dataset()        
+
+    @abstractmethod
+    def _load_dataset(self) -> None:
+        pass
+
+    @abstractmethod
+    def get_summary(self) -> pd.DataFrame:
+        pass
+
+    def make_prediction(self, model, i):
+        path = self.dataset.metadata["path"].iloc[i]
+        file_name = self.dataset.get_absolute_path(path)
+
+        img_array = model.predict(source=file_name, device="-1")[0].plot()
+        img = Image.fromarray(img_array)
+
+        return img
+
+
+class SeaTurtleID2022(Analysis):
     def _get_counts(self, dataset):
         counts = defaultdict(int)
         for key, df in dataset.metadata.groupby(["identity", "date"]):
             counts[key] += len(df)
         return counts
 
-    def get_summary(self):
+    def _load_dataset(self) -> None:
         root = resolve_path(self.paths["root"])
-        dataset_heads = wd_SeaTurtleID2022(root, category_name="head")
+        self.dataset = wd_SeaTurtleID2022(root)
+        self.dataset_heads = wd_SeaTurtleID2022(root, category_name="head")
         dataset_flippers = wd_SeaTurtleID2022(root, category_name="flipper")
 
         mask1 = ~dataset_flippers.metadata["orientation"].isnull()
         mask2 = dataset_flippers.metadata["orientation"].str.startswith("front")
         mask3 = dataset_flippers.metadata["orientation"].str.startswith("rear")
 
-        dataset_front = dataset_flippers.get_subset(mask1 & mask2)
-        dataset_rear = dataset_flippers.get_subset(mask1 & mask3)
+        self.dataset_front = dataset_flippers.get_subset(mask1 & mask2)
+        self.dataset_rear = dataset_flippers.get_subset(mask1 & mask3)
 
-        counts_h = self._get_counts(dataset_heads)
-        counts_f = self._get_counts(dataset_front)
-        counts_r = self._get_counts(dataset_rear)
+    def get_summary(self) -> pd.DataFrame:
+        counts_h = self._get_counts(self.dataset_heads)
+        counts_f = self._get_counts(self.dataset_front)
+        counts_r = self._get_counts(self.dataset_rear)
         keys = set().union(counts_h, counts_f, counts_r)
 
         summary = {}
@@ -48,20 +75,18 @@ class SeaTurtleID2022:
         return pd.DataFrame(summary).T
 
 
-class TurtlewatchEgypt:
-    def __init__(self, paths):
-        self.paths = paths
+class TurtlewatchEgypt(Analysis):
+    def _load_dataset(self) -> None:
+        self.dataset = combine_datasets_twe_from_paths(self.paths, load_segmentation=False)
+        mask1 = self.dataset.metadata["identity"] != "unknown"
+        mask2 = ~self.dataset.metadata["identity"].isnull()
+        self.dataset = self.dataset.get_subset(mask1 & mask2)
+        self.dataset.metadata["year"] = self.dataset.metadata["path"].str[:4].astype(int)
 
-    def get_summary(self):
-        dataset_true = combine_datasets_twe_from_paths(self.paths, load_segmentation=False)
-        mask1 = dataset_true.metadata["identity"] != "unknown"
-        mask2 = ~dataset_true.metadata["identity"].isnull()
-        dataset_true = dataset_true.get_subset(mask1 & mask2)
-        dataset_true.metadata["year"] = dataset_true.metadata["path"].str[:4].astype(int)
-
-        encounters_id = dataset_true.metadata["encounter_id"].unique().tolist()
+    def get_summary(self) -> pd.DataFrame:
+        encounters_id = self.dataset.metadata["encounter_id"].unique().tolist()
         summary = {encounter_id: {} for encounter_id in encounters_id}
-        for encounter_id, df_encounter in dataset_true.metadata.groupby("encounter_id"):
+        for encounter_id, df_encounter in self.dataset.metadata.groupby("encounter_id"):
             identity = df_encounter["identity"].unique().tolist()
             year = df_encounter["year"].unique().tolist()
             for arr in [identity, year]:
