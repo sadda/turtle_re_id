@@ -15,7 +15,7 @@ class Analysis(ABC):
         self.dataset: WildlifeDataset
 
         self.paths = paths
-        self._load_dataset()        
+        self._load_dataset()
 
     @abstractmethod
     def _load_dataset(self) -> None:

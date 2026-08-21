@@ -107,12 +107,7 @@ class TestSimilarityGrid:
         for i, splitter in enumerate(splitters):
             splitter.get_split.return_value = MagicMock(name=f"split{i}")
 
-        run_specs = [
-            SimilarityRunSpec(pipeline_spec, ignore_policy, splitter, matching_part, "bbox")
-            for pipeline_spec in pipeline_specs
-            for ignore_policy in ignore_policies
-            for splitter in splitters
-        ]
+        run_specs = [SimilarityRunSpec(pipeline_spec, ignore_policy, splitter, matching_part, "bbox") for pipeline_spec in pipeline_specs for ignore_policy in ignore_policies for splitter in splitters]
         return run_specs, pipeline_specs, ignore_policies, splitters
 
     def _make_grid(

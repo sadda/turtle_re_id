@@ -34,9 +34,7 @@ class TestForMatchingPart:
 
     def test_supports_multiple_labels_for_a_matching_part(self) -> None:
         metadata = pd.DataFrame({"label": ["flipper_fl", "flipper_fr", "flipper_hl"]})
-        matching_dataset = FakeMatchingDataset(
-            FakeWildlifeDataset(metadata), {"front flippers": {"labels": ["flipper_fl", "flipper_fr"]}}
-        )
+        matching_dataset = FakeMatchingDataset(FakeWildlifeDataset(metadata), {"front flippers": {"labels": ["flipper_fl", "flipper_fr"]}})
 
         result = matching_dataset.for_matching_part("front flippers")
         assert list(result.wildlife_dataset.metadata["label"]) == ["flipper_fl", "flipper_fr"]

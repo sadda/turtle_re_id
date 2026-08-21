@@ -65,9 +65,7 @@ class EncounterPredictions:
         scores_dict = dict(zip(encounter_ids, scores))
         predictions_dict = dict(zip(encounter_ids, predictions))
         database_iloc_dict = dict(zip(encounter_ids, database_iloc))
-        query_iloc_dict = {
-            encounter_id: query_iloc_by_encounter[i][database_iloc[i]] for i, encounter_id in enumerate(encounter_ids)
-        }
+        query_iloc_dict = {encounter_id: query_iloc_by_encounter[i][database_iloc[i]] for i, encounter_id in enumerate(encounter_ids)}
         return cls(query, database, scores_dict, predictions_dict, matching_part, matcher, database_iloc_dict, query_iloc_dict, k_max)
 
     def _extend_data(self, k_max):
@@ -244,10 +242,7 @@ def merge_data(data: list[EncounterPredictions]) -> EncounterPredictions:
     fields = [scores, predictions, matching_parts, matchers, database_iloc, query_iloc]
     merged = [{} for _ in fields]
     for encounter in encounters:
-        arrays = [
-            np.concatenate([source.get(encounter, np.full(k_max, fill_value)) for source in field])
-            for field, fill_value in zip(fields, DEF_VALUES)
-        ]
+        arrays = [np.concatenate([source.get(encounter, np.full(k_max, fill_value)) for source in field]) for field, fill_value in zip(fields, DEF_VALUES)]
 
         # Sort the values starting with highest scores
         idx = np.argsort(arrays[0])[::-1]
