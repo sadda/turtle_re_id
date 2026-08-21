@@ -146,15 +146,11 @@ class EncounterPredictions:
         results["image_id1"] = self.query.metadata["image_id"].to_numpy()[results["query_iloc"]]
         results["image_id2"] = self.database.metadata["image_id"].to_numpy()[results["database_iloc"]]
 
-        # Canonicalize pair order (image_id1 < image_id2) so an asymmetric similarity's two
-        # directions of the same physical pair present consistently rather than as separate rows.
-        swap = results["image_id1"] > results["image_id2"]
-        for col in ["encounter", "identity", "image_id"]:
-            col1, col2 = f"{col}1", f"{col}2"
-            results.loc[swap, [col1, col2]] = results.loc[swap, [col2, col1]].to_numpy()
-
         # Keep only one match between unique images (the two directions of a pair now collide)
-        results = results.drop_duplicates(subset=["image_id1", "image_id2", "matching_part"]).reset_index(drop=True)
+        image_id_min = results[["image_id1", "image_id2"]].min(axis=1)
+        image_id_max = results[["image_id1", "image_id2"]].max(axis=1)
+        results["key"] = image_id_min + "_" + image_id_max
+        results = results.drop_duplicates(subset=["key", "matching_part"]).reset_index(drop=True)
 
         # Keep only at most max_per_identity matches per a pair of identities (unordered)
         identity_pair = results[["identity1", "identity2"]]
