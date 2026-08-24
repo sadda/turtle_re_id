@@ -67,11 +67,11 @@ def get_matching_dataset(dataset_name, paths, config):
     return matching_dataset_class.from_paths(paths, config.database_query_matching, dataset_kwargs=dataset_kwargs)
 
 
-dataset_names = ["TurtlewatchEgypt", "SeaTurtleID2022", "TurtlesOfSMSRC"]
+dataset_names = ["TurtlewatchEgypt", "SeaTurtleID2022"]
 devices = ["cuda", "cpu"]
 
 B = 100
-n_samples = 16
+n_samples = 64
 
 local_path = "config/paths.json"
 
