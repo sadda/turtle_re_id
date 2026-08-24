@@ -35,6 +35,19 @@ def get_subset(matching_dataset, idx, transform):
     return wildlife_dataset
 
 
+class PreloadedDataset:
+    def __init__(self, wildlife_dataset) -> None:
+        self.metadata = wildlife_dataset.metadata
+        self.col_label = wildlife_dataset.col_label
+        self.items = [wildlife_dataset[i] for i in range(len(wildlife_dataset))]
+
+    def __len__(self) -> int:
+        return len(self.items)
+
+    def __getitem__(self, idx: int):
+        return self.items[idx]
+
+
 def get_matching_dataset(dataset_name, paths, config):
     if dataset_name == "TurtlewatchEgypt":
         matching_dataset_class = TurtlewatchEgypt_New
@@ -89,15 +102,16 @@ for dataset_name in dataset_names:
             pipeline.extractor(warmup)
 
             with Timer(device) as timer:
-                for i in range(len(query)):
-                    query[i]
-                for i in range(len(database)):
-                    database[i]
+                query_loaded = PreloadedDataset(query)
+                database_loaded = PreloadedDataset(database)
             row["image_load"] = timer.elapsed / (len(query) + len(database))
 
+            # Data is already in memory, so a worker process would only add fork overhead.
+            pipeline.extractor.num_workers = 0
+
             with Timer(device) as timer:
-                query_features = pipeline.extractor(query)
-                database_features = pipeline.extractor(database)
+                query_features = pipeline.extractor(query_loaded)
+                database_features = pipeline.extractor(database_loaded)
             row["extract"] = timer.elapsed / (len(query) + len(database))
 
             with Timer(device) as timer:
@@ -107,6 +121,5 @@ for dataset_name in dataset_names:
             rows.append(row)
 
 results = pd.DataFrame(rows).set_index(["dataset", "device", "pipeline"])
-results["extract_compute"] = results["extract"] - results["image_load"]
-results = results[["image_load", "extract_compute", "match"]]
+results = results[["image_load", "extract", "match"]]
 print(results.to_latex())
