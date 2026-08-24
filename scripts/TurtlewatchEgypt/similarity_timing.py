@@ -121,5 +121,6 @@ for dataset_name in dataset_names:
             rows.append(row)
 
 results = pd.DataFrame(rows).set_index(["dataset", "device", "pipeline"])
+results["image_load"] = results.groupby("dataset")["image_load"].transform("mean")
 results = results[["image_load", "extract", "match"]]
 print(results.to_latex())
