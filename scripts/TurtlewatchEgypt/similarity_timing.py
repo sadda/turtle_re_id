@@ -93,10 +93,13 @@ for dataset_name in dataset_names:
     detector_images = [image for image, _ in detector_loaded.items]
 
     for device in devices:
-        detector_model.predict(source=detector_images[0], device=device, verbose=False, save=False, show=False)  # warm up
+        # Ultralytics setting for a proper timing
+        torch_device = torch.device(device)
+        detector_model.predictor = None
+        detector_model.predict(source=detector_images[0], device=torch_device, verbose=False, save=False, show=False)  # warm up
 
         with Timer(device) as timer:
-            detector_model.predict(source=detector_images, device=device, verbose=False, save=False, show=False)
+            detector_model.predict(source=detector_images, device=torch_device, verbose=False, save=False, show=False)
 
         detector_rows.append(
             {
