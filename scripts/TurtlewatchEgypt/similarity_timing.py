@@ -7,6 +7,7 @@ import torch
 
 from animal_re_id.config import load_paths
 from animal_re_id.datasets import SeaTurtleID2022, TurtlesOfSMSRC, TurtlewatchEgypt_New
+from animal_re_id.models import turtle_detector
 from animal_re_id.similarity import SinglePipelineSpec, WildfusionPipelineSpec, get_similarity_dataset_config
 
 warnings.filterwarnings("ignore")
@@ -18,14 +19,14 @@ class Timer:
         self.elapsed = 0.0
 
     def __enter__(self) -> "Timer":
-        if self.device == "cuda":
-            torch.cuda.synchronize()
+        if self.device.startswith("cuda"):
+            torch.cuda.synchronize(self.device)
         self.start = time.perf_counter()
         return self
 
     def __exit__(self, *exc_info: object) -> None:
-        if self.device == "cuda":
-            torch.cuda.synchronize()
+        if self.device.startswith("cuda"):
+            torch.cuda.synchronize(self.device)
         self.elapsed = time.perf_counter() - self.start
 
 
@@ -48,19 +49,21 @@ class PreloadedDataset:
         return self.items[idx]
 
 
-def get_matching_dataset(dataset_name, paths, config):
+def get_matching_dataset(dataset_name, paths, config, img_load=None):
+    img_load = img_load or config.img_load
+
     if dataset_name == "TurtlewatchEgypt":
         matching_dataset_class = TurtlewatchEgypt_New
-        dataset_kwargs = {"img_load": config.img_load, "remove_unknown": True}
+        dataset_kwargs = {"img_load": img_load, "remove_unknown": True}
     elif dataset_name == "SeaTurtleID2022":
         matching_dataset_class = SeaTurtleID2022
-        dataset_kwargs = {"img_load": config.img_load}
+        dataset_kwargs = {"img_load": img_load}
     elif dataset_name == "TurtlesOfSMSRC":
         with open("scripts/SMSRC/hidden/matched_encounters.txt") as file:
             replace_identity = ast.literal_eval(file.read())
 
         matching_dataset_class = TurtlesOfSMSRC
-        dataset_kwargs = {"img_load": config.img_load, "replace_identity": replace_identity}
+        dataset_kwargs = {"img_load": img_load, "replace_identity": replace_identity}
     else:
         raise ValueError("Dataset now known")
 
@@ -76,9 +79,34 @@ n_samples = 64
 local_path = "config/paths.json"
 
 rows = []
+detector_rows = []
+detector_model = turtle_detector()
 for dataset_name in dataset_names:
     paths = load_paths(dataset_name, local_path=local_path)
     config = get_similarity_dataset_config(dataset_name, B=B)
+
+    detector_dataset = get_subset(get_matching_dataset(dataset_name, paths, config, img_load="full"), range(n_samples), None)
+
+    with Timer("cpu") as timer:
+        detector_loaded = PreloadedDataset(detector_dataset)
+    detector_image_load = timer.elapsed / len(detector_loaded)
+    detector_images = [image for image, _ in detector_loaded.items]
+
+    for device in devices:
+        detector_model.predict(source=detector_images[0], device=device, verbose=False, save=False, show=False)  # warm up
+
+        with Timer(device) as timer:
+            detector_model.predict(source=detector_images, device=device, verbose=False, save=False, show=False)
+
+        detector_rows.append(
+            {
+                "dataset": dataset_name,
+                "device": device,
+                "image_load": detector_image_load,
+                "detect": timer.elapsed / len(detector_loaded),
+            }
+        )
+
     matching_dataset = get_matching_dataset(dataset_name, paths, config)
 
     for device in devices:
@@ -124,3 +152,7 @@ results = pd.DataFrame(rows).set_index(["dataset", "device", "pipeline"])
 results["image_load"] = results.groupby("dataset")["image_load"].transform("mean")
 results = (results[["image_load", "extract", "match"]] * 1000).round(0).astype(int)
 print(results.to_latex())
+
+detector_results = pd.DataFrame(detector_rows).set_index(["dataset", "device"])
+detector_results = (detector_results * 1000).round(0).astype(int)
+print(detector_results.to_latex())
