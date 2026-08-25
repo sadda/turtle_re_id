@@ -2,6 +2,8 @@ import ast
 import time
 import warnings
 
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import torch
 
@@ -70,8 +72,13 @@ def get_matching_dataset(dataset_name, paths, config, img_load=None):
     return matching_dataset_class.from_paths(paths, config.database_query_matching, dataset_kwargs=dataset_kwargs)
 
 
+def images_per_hour(time_per_image_ms):
+    return 3600 / (time_per_image_ms / 1000)
+
+
 dataset_names = ["TurtlewatchEgypt", "SeaTurtleID2022"]
 devices = ["cuda", "cpu"]
+device_to_name = {"cuda": "GPU", "cuda:2": "GPU", "cpu": "CPU"}
 
 B = 100
 n_samples = 64
@@ -104,7 +111,7 @@ for dataset_name in dataset_names:
         detector_rows.append(
             {
                 "dataset": dataset_name,
-                "device": device,
+                "device": device_to_name[device],
                 "image_load": detector_image_load,
                 "detect": timer.elapsed / len(detector_loaded),
             }
@@ -114,7 +121,7 @@ for dataset_name in dataset_names:
 
     for device in devices:
         for pipeline_spec in config.pipeline_specs:
-            row = {"dataset": dataset_name, "device": device, "pipeline": pipeline_spec.name}
+            row = {"dataset": dataset_name, "device": device_to_name, "pipeline": pipeline_spec.name}
 
             with Timer(device) as timer:
                 pipeline_spec.build(device, None)
@@ -153,9 +160,34 @@ for dataset_name in dataset_names:
 
 results = pd.DataFrame(rows).set_index(["dataset", "device", "pipeline"])
 results["image_load"] = results.groupby("dataset")["image_load"].transform("mean")
-results = (results[["image_load", "extract", "match"]] * 1000).round(0).astype(int)
-print(results.to_latex())
+results_print = (results[["image_load", "extract", "match"]] * 1000).round(0).astype(int)
+print(results_print.to_latex())
 
 detector_results = pd.DataFrame(detector_rows).set_index(["dataset", "device"])
-detector_results = (detector_results * 1000).round(0).astype(int)
-print(detector_results.to_latex())
+detector_results_print = (detector_results * 1000).round(0).astype(int)
+print(detector_results_print.to_latex())
+
+raw_results = pd.DataFrame(rows).set_index(["dataset", "device", "pipeline"])[["image_load", "extract", "match"]] * 1000
+
+Bs = np.arange(1, 101)
+
+for method_name, dataset_name in zip(["miew", "dino"], dataset_names):
+    plt.figure(figsize=(5, 3))
+    for device in devices:
+        device_name = device_to_name[device]
+        dino_row = raw_results.loc[(dataset_name, device_name, method_name)]
+        aliked_row = raw_results.loc[(dataset_name, device_name, f"{method_name}-aliked")]
+
+        dino_only_time = dino_row["image_load"] + dino_row["extract"]
+        wildfusion_time = dino_only_time + aliked_row["image_load"] + aliked_row["extract"] + Bs * aliked_row["match"]
+
+        line, = plt.plot(Bs, images_per_hour(wildfusion_time), label=f"{method_name.upper()}-ALIKED ({device_name})")
+        plt.axhline(images_per_hour(dino_only_time), color=line.get_color(), linestyle="--", label=f"{method_name.upper()} only ({device_name})")
+
+    plt.legend(loc="upper right")
+    plt.grid(alpha=0.7)
+    plt.xlim(0, Bs.max())
+    plt.xlabel("B")
+    plt.ylabel("processed images per hour")
+    plt.title(dataset_name)
+    plt.savefig(f"{dataset_name}_time.png", dpi=300, bbox_inches="tight")
