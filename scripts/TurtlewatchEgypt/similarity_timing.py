@@ -121,7 +121,7 @@ for dataset_name in dataset_names:
 
     for device in devices:
         for pipeline_spec in config.pipeline_specs:
-            row = {"dataset": dataset_name, "device": device_to_name, "pipeline": pipeline_spec.name}
+            row = {"dataset": dataset_name, "device": device_to_name[device], "pipeline": pipeline_spec.name}
 
             with Timer(device) as timer:
                 pipeline_spec.build(device, None)
@@ -137,15 +137,15 @@ for dataset_name in dataset_names:
             query = get_subset(matching_dataset, range(n_samples), pipeline.transform)
             database = get_subset(matching_dataset, range(n_samples, 2 * n_samples), pipeline.transform)
             warmup = get_subset(matching_dataset, range(1), pipeline.transform)
+
+            # Data is already in memory, so a worker process would only add fork overhead.
+            pipeline.extractor.num_workers = 0
             pipeline.extractor(warmup)
 
             with Timer(device) as timer:
                 query_loaded = PreloadedDataset(query)
                 database_loaded = PreloadedDataset(database)
             row["image_load"] = timer.elapsed / (len(query) + len(database))
-
-            # Data is already in memory, so a worker process would only add fork overhead.
-            pipeline.extractor.num_workers = 0
 
             with Timer(device) as timer:
                 query_features = pipeline.extractor(query_loaded)
