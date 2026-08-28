@@ -80,6 +80,17 @@ class OpenSetYearSplitter(YearSplitter):
         return f"{self.split_year}-open"
 
 
+class DisjointSetYearSplitter(YearSplitter):
+    """Query only includes identities never seen in the database."""
+
+    def _filter_query(self, mask_query: pd.Series, mask_database: pd.Series, metadata: pd.DataFrame) -> pd.Series:
+        labels_database = metadata.loc[mask_database, self.identity_col].to_numpy()
+        return mask_query & (~metadata[self.identity_col].isin(np.unique(labels_database)))
+
+    def get_split_name(self) -> str:
+        return f"{self.split_year}-disjoint"
+
+
 class DiscoverySplitter(Splitter):
     database_query_matching = False
 
