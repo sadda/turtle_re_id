@@ -1,2 +1,4 @@
+<!-- TODO: finish -->
+
 - login to DINOv3
 - a check will be needed with a fresh environement (add accelerate)
