@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from animal_re_id.config import DEFAULT_PATHS_FILE, _deep_merge, load_paths, resolve_path
+from animal_re_id.config.paths import DEFAULT_PATHS_FILE, _deep_merge, load_paths, resolve_path
 
 
 class TestDeepMerge:
