@@ -19,6 +19,7 @@ models = [
     "torchvision",
     "timm",
     "transformers",
+    "accelerate",
     "ultralytics",
     "huggingface_hub",
 ]
