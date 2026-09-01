@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 PACKAGE_DIR = Path(__file__).resolve().parent
-DEFAULT_PATHS_FILE = PACKAGE_DIR / "data" / "paths.json"
+DEFAULT_PATHS_FILE = PACKAGE_DIR / "paths.json"
 
 
 def _deep_merge(base: dict, override: dict) -> dict:

@@ -1,54 +1,47 @@
-from wildlife_datasets.datasets import WildlifeDataset
-
 from ..datasets.datasets import MatchingDataset
 from .cache import SimilarityCache
-from .ignore_pairs_policy import IgnorePairsPolicy
-from .pipeline_spec import PipelineSpec
 from .result import SimilarityResult
-from .splitters import Split, Splitter
+from .run_spec import SimilarityRunSpec
+from .splitters import Split
 
 
 class SimilarityJob:
     def __init__(
         self,
         matching_dataset: MatchingDataset,
-        wildlife_dataset: WildlifeDataset,
-        matching_part: str,
-        pipeline_spec: PipelineSpec,
-        ignore_policy: IgnorePairsPolicy,
         split: Split,
+        run_spec: SimilarityRunSpec,
         cache: SimilarityCache,
     ) -> None:
         self.matching_dataset = matching_dataset
-        self.wildlife_dataset = wildlife_dataset
-        self.matching_part = matching_part
-        self.pipeline_spec = pipeline_spec
-        self.ignore_policy = ignore_policy
         self.split = split
+        self.run_spec = run_spec
         self.cache = cache
 
     def run(self) -> None:
-        img_load = self.wildlife_dataset.img_load
-        key_parts = self.cache.key_for(self.pipeline_spec, self.ignore_policy, self.split, img_load, self.matching_part)
+        key_parts = self.run_spec.key_parts()
         if self.cache.exists(key_parts):
             return
 
-        database = self.split.database(self.wildlife_dataset)
-        query = self.split.query(self.wildlife_dataset)
+        database = self.split.database(self.matching_dataset.wildlife_dataset)
+        query = self.split.query(self.matching_dataset.wildlife_dataset)
 
-        pair_selector = self.ignore_policy.get_pair_selector(self.matching_dataset, self.matching_part)
-        ignore_mask = self.ignore_policy.get_ignore_mask(self.matching_dataset, self.matching_part, query, database)
-        similarity = self.pipeline_spec.compute(query, database, pair_selector, ignore_mask)
+        pipeline_spec = self.run_spec.pipeline_spec
+        ignore_policy = self.run_spec.ignore_policy
+        matching_part = self.run_spec.matching_part
+
+        pair_selector = ignore_policy.get_pair_selector(self.matching_dataset, matching_part)
+        similarity = pipeline_spec.compute(query, database, pair_selector)
 
         result = SimilarityResult(
             similarity=similarity,
             query=query,
             database=database,
-            name=self.pipeline_spec.name,
-            B=self.pipeline_spec.B,
-            img_load=img_load,
-            matching_part=self.matching_part,
-            match_opposite_sides=self.ignore_policy.cache_key,
+            name=pipeline_spec.name,
+            B=pipeline_spec.B,
+            img_load=self.run_spec.img_load,
+            matching_part=matching_part,
+            match_opposite_sides=ignore_policy.cache_key,
             split_year=self.split.name,
         )
         self.cache.save(key_parts, result.to_dict())
@@ -58,40 +51,44 @@ class SimilarityGrid:
     def __init__(
         self,
         matching_dataset: MatchingDataset,
-        wildlife_dataset: WildlifeDataset,
-        matching_part: str,
-        splitter: Splitter,
-        pipeline_specs: list[PipelineSpec],
-        ignore_pairs_policies: list[IgnorePairsPolicy],
+        run_specs: list[SimilarityRunSpec],
         cache: SimilarityCache,
-        device: str = "cuda",
         cache_prefix: str | None = None,
+        device: str = "cuda",
     ) -> None:
         self.matching_dataset = matching_dataset
-        self.wildlife_dataset = wildlife_dataset
-        self.matching_part = matching_part
-        self.splitter = splitter
-        self.pipeline_specs = pipeline_specs
-        self.ignore_pairs_policies = ignore_pairs_policies
+        self.run_specs = run_specs
         self.cache = cache
-        self.device = device
         self.cache_prefix = cache_prefix
+        self.device = device
 
     def run(self) -> None:
-        splits = self.splitter.get_splits(self.wildlife_dataset.metadata)
+        if not self.run_specs:
+            return
 
-        for pipeline_spec in self.pipeline_specs:
-            pipeline_spec.build(self.device, self.cache_prefix)
+        matching_parts = {run_spec.matching_part for run_spec in self.run_specs}
+        if len(matching_parts) > 1:
+            raise ValueError(f"SimilarityGrid requires all run_specs to share the same matching_part, got: {matching_parts}")
 
-            for ignore_policy in self.ignore_pairs_policies:
-                for split in splits:
-                    job = SimilarityJob(
-                        matching_dataset=self.matching_dataset,
-                        wildlife_dataset=self.wildlife_dataset,
-                        matching_part=self.matching_part,
-                        pipeline_spec=pipeline_spec,
-                        ignore_policy=ignore_policy,
-                        split=split,
-                        cache=self.cache,
-                    )
-                    job.run()
+        built_pipeline_specs: set[int] = set()
+        splits_by_splitter: dict[int, Split] = {}
+
+        for run_spec in self.run_specs:
+            pipeline_spec = run_spec.pipeline_spec
+            # TODO: Potentially build and discard one by one, to save GPU memory
+            if id(pipeline_spec) not in built_pipeline_specs:
+                pipeline_spec.build(self.device, self.cache_prefix)
+                built_pipeline_specs.add(id(pipeline_spec))
+
+            splitter_id = id(run_spec.splitter)
+            if splitter_id not in splits_by_splitter:
+                splits_by_splitter[splitter_id] = run_spec.splitter.get_split(self.matching_dataset.wildlife_dataset.metadata)
+            split = splits_by_splitter[splitter_id]
+
+            job = SimilarityJob(
+                matching_dataset=self.matching_dataset,
+                split=split,
+                run_spec=run_spec,
+                cache=self.cache,
+            )
+            job.run()

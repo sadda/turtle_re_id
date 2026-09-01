@@ -116,8 +116,8 @@ def get_pipeline_aliked(device="cpu", cache_prefix=None, use_calibration=False) 
 
 def get_pipeline_disk(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
     return SimilarityPipeline(
-        matcher=MatchLightGlue(features="disk"),
-        extractor=DiskExtractor(cache_path=f"{cache_prefix}_disk.lmdb" if cache_prefix else None),
+        matcher=MatchLightGlue(features="disk", device=device),
+        extractor=DiskExtractor(cache_path=f"{cache_prefix}_disk.lmdb" if cache_prefix else None, device=device),
         transform=T.Compose([T.Resize([512, 512]), T.ToTensor()]),
         calibration=get_calibration(use_calibration),
     )

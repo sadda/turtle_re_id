@@ -1,5 +1,6 @@
 import os
 from abc import ABC, abstractmethod
+from copy import deepcopy
 
 import pandas as pd
 from wildlife_datasets import datasets as wd_datasets
@@ -95,6 +96,15 @@ class MatchingDataset(ABC):
     def keep_only_unknown(self):
         mask = self.wildlife_dataset.metadata["identity"] == "unknown"
         self.wildlife_dataset = self.wildlife_dataset.get_subset(mask)
+
+    def for_matching_part(self, matching_part):
+        labels = self.matching_parts[matching_part]["labels"]
+        mask = self.wildlife_dataset.metadata["label"].isin(labels)
+        wildlife_dataset = self.wildlife_dataset.get_subset(mask)
+
+        narrowed = deepcopy(self)
+        narrowed.wildlife_dataset = wildlife_dataset
+        return narrowed
 
 
 def _build_matching_parts(front_labels, hind_labels, database_query_matching):
@@ -221,6 +231,7 @@ class TurtlewatchEgypt_New(TurtleDetectorSegmented):
             load_label=load_label,
             **dataset_kwargs,
         )
+        wildlife_dataset.metadata["year"] = wildlife_dataset.metadata["path"].str[:4].astype(int)
         super().__init__(wildlife_dataset, is_database)
         self.select_subset(**subset_kwargs)
 

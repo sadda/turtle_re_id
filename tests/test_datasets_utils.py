@@ -1,68 +1,57 @@
 from pathlib import Path
-from types import SimpleNamespace
-from typing import cast
 
 import pandas as pd
 from PIL import Image
 from PIL.Image import Image as PILImage
-from wildlife_datasets.datasets import WildlifeDataset
 
 from animal_re_id.datasets.datasets import MatchingDataset
-from animal_re_id.datasets.utils import add_date_exif, get_wildlife_dataset
+from animal_re_id.datasets.utils import add_date_exif
 
 
-class TestGetWildlifeDataset:
+class FakeWildlifeDataset:
+    def __init__(self, metadata: pd.DataFrame) -> None:
+        self.metadata = metadata
+
+    def get_subset(self, mask: pd.Series) -> "FakeWildlifeDataset":
+        return FakeWildlifeDataset(self.metadata[mask].reset_index(drop=True))
+
+
+class FakeMatchingDataset(MatchingDataset):
+    @classmethod
+    def from_paths(cls, paths, *args, **kwargs):
+        raise NotImplementedError
+
+
+class TestForMatchingPart:
     def test_returns_subset_matching_labels(self) -> None:
         metadata = pd.DataFrame({"label": ["head", "flipper_fl", "turtle", "head"]})
-        wildlife_dataset = SimpleNamespace(metadata=metadata)
-        subset_calls: dict[str, pd.Series] = {}
+        matching_dataset = FakeMatchingDataset(FakeWildlifeDataset(metadata), {"heads": {"labels": ["head"]}})
 
-        def get_subset(mask: pd.Series) -> WildlifeDataset:
-            subset_calls["mask"] = mask
-            return cast(WildlifeDataset, SimpleNamespace(metadata=metadata[mask]))
+        result = matching_dataset.for_matching_part("heads")
 
-        wildlife_dataset.get_subset = get_subset
-        matching_dataset = cast(
-            MatchingDataset,
-            SimpleNamespace(
-                matching_parts={"heads": {"labels": ["head"]}},
-                wildlife_dataset=wildlife_dataset,
-            ),
-        )
-
-        result = get_wildlife_dataset(matching_dataset, "heads")
-        assert list(subset_calls["mask"]) == [True, False, False, True]
-        assert list(result.metadata["label"]) == ["head", "head"]
+        assert isinstance(result, FakeMatchingDataset)
+        assert list(result.wildlife_dataset.metadata["label"]) == ["head", "head"]
 
     def test_supports_multiple_labels_for_a_matching_part(self) -> None:
         metadata = pd.DataFrame({"label": ["flipper_fl", "flipper_fr", "flipper_hl"]})
-        wildlife_dataset = SimpleNamespace(metadata=metadata)
-        wildlife_dataset.get_subset = lambda mask: SimpleNamespace(metadata=metadata[mask])
-        matching_dataset = cast(
-            MatchingDataset,
-            SimpleNamespace(
-                matching_parts={"front flippers": {"labels": ["flipper_fl", "flipper_fr"]}},
-                wildlife_dataset=wildlife_dataset,
-            ),
-        )
+        matching_dataset = FakeMatchingDataset(FakeWildlifeDataset(metadata), {"front flippers": {"labels": ["flipper_fl", "flipper_fr"]}})
 
-        result = get_wildlife_dataset(matching_dataset, "front flippers")
-        assert list(result.metadata["label"]) == ["flipper_fl", "flipper_fr"]
+        result = matching_dataset.for_matching_part("front flippers")
+        assert list(result.wildlife_dataset.metadata["label"]) == ["flipper_fl", "flipper_fr"]
 
     def test_no_matching_labels_returns_empty(self) -> None:
         metadata = pd.DataFrame({"label": ["turtle"]})
-        wildlife_dataset = SimpleNamespace(metadata=metadata)
-        wildlife_dataset.get_subset = lambda mask: SimpleNamespace(metadata=metadata[mask])
-        matching_dataset = cast(
-            MatchingDataset,
-            SimpleNamespace(
-                matching_parts={"heads": {"labels": ["head"]}},
-                wildlife_dataset=wildlife_dataset,
-            ),
-        )
+        matching_dataset = FakeMatchingDataset(FakeWildlifeDataset(metadata), {"heads": {"labels": ["head"]}})
 
-        result = get_wildlife_dataset(matching_dataset, "heads")
-        assert len(result.metadata) == 0
+        result = matching_dataset.for_matching_part("heads")
+        assert len(result.wildlife_dataset.metadata) == 0
+
+    def test_original_matching_dataset_is_unaffected(self) -> None:
+        metadata = pd.DataFrame({"label": ["head", "turtle"]})
+        matching_dataset = FakeMatchingDataset(FakeWildlifeDataset(metadata), {"heads": {"labels": ["head"]}})
+
+        matching_dataset.for_matching_part("heads")
+        assert len(matching_dataset.wildlife_dataset.metadata) == 2
 
 
 class FakeImageDataset:

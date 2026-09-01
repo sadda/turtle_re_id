@@ -8,12 +8,6 @@ from wildlife_tools.similarity import PairSelector, SimilarityPipeline
 from ..models import Wildfusion_Similarity
 
 
-def _apply_ignore_mask(similarity: np.ndarray, ignore_mask: np.ndarray | None) -> np.ndarray:
-    if ignore_mask is not None and ignore_mask.any():
-        similarity[ignore_mask] = -np.inf
-    return similarity
-
-
 class PipelineSpec(ABC):
     def __init__(self, name: str, B: int | None = None) -> None:
         self.name = name
@@ -29,7 +23,6 @@ class PipelineSpec(ABC):
         query: WildlifeDataset,
         database: WildlifeDataset,
         pair_selector: PairSelector,
-        ignore_mask: np.ndarray | None,
     ) -> np.ndarray:
         raise NotImplementedError
 
@@ -48,12 +41,17 @@ class SinglePipelineSpec(PipelineSpec):
         query: WildlifeDataset,
         database: WildlifeDataset,
         pair_selector: PairSelector,
-        ignore_mask: np.ndarray | None,
     ) -> np.ndarray:
         if self.pipeline is None:
             raise RuntimeError(f"{self.name}: call build() before compute()")
         similarity = self.pipeline(query, database)
-        return _apply_ignore_mask(similarity, ignore_mask)
+
+        # SinglePipelineSpec computes the full similarity matrix (no shortlisting), so the
+        # ignore mask has to be applied here explicitly instead of via pair_selector.
+        if hasattr(pair_selector, "get_ignore_mask"):
+            ignore_mask = pair_selector.get_ignore_mask(query, database)
+            similarity[ignore_mask] = -np.inf
+        return similarity
 
 
 class WildfusionPipelineSpec(PipelineSpec):
@@ -79,10 +77,8 @@ class WildfusionPipelineSpec(PipelineSpec):
         query: WildlifeDataset,
         database: WildlifeDataset,
         pair_selector: PairSelector,
-        ignore_mask: np.ndarray | None,
     ) -> np.ndarray:
         if self.wildfusion_similarity is None:
             raise RuntimeError(f"{self.name}: call build() before compute()")
         self.wildfusion_similarity.set_pair_selector(pair_selector)
-        similarity = self.wildfusion_similarity(query, database)
-        return _apply_ignore_mask(similarity, ignore_mask)
+        return self.wildfusion_similarity(query, database)

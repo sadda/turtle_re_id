@@ -2,31 +2,10 @@ import os
 import pickle
 from typing import Any
 
-from .ignore_pairs_policy import IgnorePairsPolicy
-from .pipeline_spec import PipelineSpec
-from .splitters import Split
-
 
 class SimilarityCache:
     def __init__(self, root: str) -> None:
         self.root = root
-
-    def key_for(
-        self,
-        pipeline_spec: PipelineSpec,
-        ignore_policy: IgnorePairsPolicy,
-        split: Split,
-        img_load: str,
-        matching_part: str,
-    ) -> list[Any]:
-        return [
-            pipeline_spec.name,
-            pipeline_spec.B,
-            img_load,
-            matching_part,
-            ignore_policy.cache_key,
-            split.name,
-        ]
 
     def path(self, key_parts: list[Any]) -> str:
         file_name = "_".join(str(part) for part in key_parts)
@@ -36,6 +15,7 @@ class SimilarityCache:
         return os.path.exists(self.path(key_parts))
 
     def save(self, key_parts: list[Any], data: dict[str, Any]) -> None:
+        os.makedirs(self.root, exist_ok=True)
         with open(self.path(key_parts), "wb") as file:
             pickle.dump(data, file)
 
