@@ -181,7 +181,7 @@ for method_name, dataset_name in zip(["miew", "dino"], dataset_names):
         dino_only_time = dino_row["image_load"] + dino_row["extract"]
         wildfusion_time = dino_only_time + aliked_row["image_load"] + aliked_row["extract"] + Bs * aliked_row["match"]
 
-        line, = plt.plot(Bs, images_per_hour(wildfusion_time), label=f"{method_name.upper()}-ALIKED ({device_name})")
+        (line,) = plt.plot(Bs, images_per_hour(wildfusion_time), label=f"{method_name.upper()}-ALIKED ({device_name})")
         plt.axhline(images_per_hour(dino_only_time), color=line.get_color(), linestyle="--", label=f"{method_name.upper()} only ({device_name})")
 
     plt.legend(loc="upper right")
