@@ -7,6 +7,7 @@ from animal_re_id.similarity import SimilarityCache, SimilarityGrid, get_similar
 
 warnings.filterwarnings("ignore")
 
+
 def get_matching_dataset(dataset_name, paths, config):
     if dataset_name == "TurtlewatchEgypt":
         matching_dataset_class = TurtlewatchEgypt_New
