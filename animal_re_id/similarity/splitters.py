@@ -1,9 +1,13 @@
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from wildlife_datasets.datasets import WildlifeDataset
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -89,6 +93,35 @@ class DisjointSetYearSplitter(YearSplitter):
 
     def get_split_name(self) -> str:
         return f"{self.split_year}-disjoint"
+
+
+class ColumnValueSplitter(Splitter):
+    """Splits by a metadata column: rows matching query_value go to query, rows matching database_value go to database."""
+
+    database_query_matching = True
+
+    def __init__(self, column_name: str, query_value: Any, database_value: Any) -> None:
+        self.column_name = column_name
+        self.query_value = query_value
+        self.database_value = database_value
+
+    def get_split(self, metadata: pd.DataFrame) -> Split:
+        column = metadata[self.column_name]
+        other_values = set(column.unique()) - {self.query_value, self.database_value}
+        if other_values or column.isnull().any():
+            logger.warning(
+                "Column %r has values outside {%r, %r}, excluded from the split: %s",
+                self.column_name,
+                self.query_value,
+                self.database_value,
+                sorted(other_values),
+            )
+        mask_query = column == self.query_value
+        mask_database = column == self.database_value
+        return Split(name=self.get_split_name(), mask_database=mask_database, mask_query=mask_query)
+
+    def get_split_name(self) -> str:
+        return f"{self.column_name}:{self.query_value}-vs-{self.database_value}"
 
 
 class DiscoverySplitter(Splitter):
