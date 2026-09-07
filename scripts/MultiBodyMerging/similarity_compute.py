@@ -1,4 +1,5 @@
 import ast
+import os
 import warnings
 
 from animal_re_id.config import load_paths, resolve_path
@@ -8,6 +9,11 @@ from animal_re_id.similarity import SimilarityCache, SimilarityGrid, get_similar
 warnings.filterwarnings("ignore")
 
 
+def in_intervals(x, intervals):
+    return any(lo <= x <= hi for lo, hi in intervals)
+
+
+# TODO: there are two functions get_matching_dataset
 def get_matching_dataset(dataset_name, paths, config):
     if dataset_name == "TurtlewatchEgypt":
         matching_dataset_class = TurtlewatchEgypt_New
@@ -24,7 +30,20 @@ def get_matching_dataset(dataset_name, paths, config):
     else:
         raise ValueError("Dataset now known")
 
-    return matching_dataset_class.from_paths(paths, config.database_query_matching, dataset_kwargs=dataset_kwargs)
+    matching_dataset = matching_dataset_class.from_paths(paths, config.database_query_matching, dataset_kwargs=dataset_kwargs)
+
+    # TODO: this should be moved somewhere else
+    rescue_centers_path = "scripts/SMSRC/hidden/rescue_centers.txt"
+    if dataset_name == "TurtlesOfSMSRC" and os.path.exists(rescue_centers_path):
+        with open(rescue_centers_path) as file:
+            rescue_centers = ast.literal_eval(file.read())
+
+        metadata = matching_dataset.wildlife_dataset.metadata
+        metadata["environment"] = metadata["encounter_id"].apply(
+            lambda x: "abovewater" if in_intervals(x, rescue_centers) else "underwater"
+        )
+
+    return matching_dataset
 
 
 dataset_name = "TurtlewatchEgypt"
