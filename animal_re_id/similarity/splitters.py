@@ -6,6 +6,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from wildlife_datasets.datasets import WildlifeDataset
+from wildlife_datasets.splits import ClosedSetSplit
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +123,41 @@ class ColumnValueSplitter(Splitter):
 
     def get_split_name(self) -> str:
         return f"{self.column_name}:{self.query_value}-vs-{self.database_value}"
+
+
+class ClosedSetSplitter(Splitter):
+    """Random closed-set split via wildlife_datasets' ClosedSetSplit: query only includes identities also in the database."""
+
+    database_query_matching = True
+
+    def __init__(self, ratio_train: float, seed: int = 666, identity_col: str = "identity") -> None:
+        self.ratio_train = ratio_train
+        self.seed = seed
+        self.identity_col = identity_col
+
+    def get_split(self, metadata: pd.DataFrame) -> Split:
+        splitter = ClosedSetSplit(self.ratio_train, seed=self.seed, col_label=self.identity_col)
+        mask_database, mask_query = splitter.split(metadata)[0]
+        return Split(name=self.get_split_name(), mask_database=mask_database, mask_query=mask_query)
+
+    def get_split_name(self) -> str:
+        return f"closed-{self.ratio_train}-{self.seed}"
+
+
+class MultiSeedClosedSetSplitter:
+    """Builds several ClosedSetSplitter instances with the same ratio but different seeds."""
+
+    def __init__(self, ratio_train: float, n_splits: int, seed: int = 666, identity_col: str = "identity") -> None:
+        self.ratio_train = ratio_train
+        self.n_splits = n_splits
+        self.seed = seed
+        self.identity_col = identity_col
+
+    def build(self) -> list[ClosedSetSplitter]:
+        return [
+            ClosedSetSplitter(self.ratio_train, seed=self.seed + i, identity_col=self.identity_col)
+            for i in range(self.n_splits)
+        ]
 
 
 class DiscoverySplitter(Splitter):

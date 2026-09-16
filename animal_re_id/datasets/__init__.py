@@ -1,5 +1,6 @@
 from .datasets import (
     SeaTurtleID2022,
+    StripeSpotter,
     TurtlesOfSMSRC,
     TurtlewatchEgypt_Citizen,
     TurtlewatchEgypt_Combined,

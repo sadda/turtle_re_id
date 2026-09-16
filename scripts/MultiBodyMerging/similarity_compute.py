@@ -3,7 +3,7 @@ import os
 import warnings
 
 from animal_re_id.config import load_paths, resolve_path
-from animal_re_id.datasets import SeaTurtleID2022, TurtlesOfSMSRC, TurtlewatchEgypt_New
+from animal_re_id.datasets import SeaTurtleID2022, StripeSpotter, TurtlesOfSMSRC, TurtlewatchEgypt_New
 from animal_re_id.similarity import SimilarityCache, SimilarityGrid, get_similarity_dataset_config
 
 warnings.filterwarnings("ignore")
@@ -27,6 +27,9 @@ def get_matching_dataset(dataset_name, paths, config):
 
         matching_dataset_class = TurtlesOfSMSRC
         dataset_kwargs = {"img_load": config.img_load, "replace_identity": replace_identity}
+    elif dataset_name == "StripeSpotter":
+        matching_dataset_class = StripeSpotter
+        dataset_kwargs = {}
     else:
         raise ValueError("Dataset now known")
 
