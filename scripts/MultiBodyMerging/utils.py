@@ -1,38 +1,21 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 
 
-def get_info(dataset, split_years):
-    summary = []
+def get_info(dataset, splitters):
+    identities = {}
     for encounter_id, df_encounter in dataset.metadata.groupby("encounter_id"):
         identity = df_encounter["identity"].unique().tolist()
-        year = df_encounter["year"].unique().tolist()
         if len(identity) != 1:
             raise ValueError("Multiple identities for encounter")
-        if len(year) != 1:
-            raise ValueError("Multiple years for encounter")
-        summary.append({"encounter": encounter_id, "identity": identity[0], "year": year[0]})
+        identities[encounter_id] = identity[0]
 
-    identities = {s["encounter"]: s["identity"] for s in summary}
-    summary_df = pd.DataFrame(summary)
-    n_encounters_all = {}
-    n_encounters_known = {}
-    for split_year in split_years:
-        mask_now = summary_df["year"] == split_year
-        mask_before = summary_df["year"] < split_year
+    n_encounters = {}
+    for splitter in splitters:
+        split = splitter.get_split(dataset.metadata)
+        n_encounters[split.name] = dataset.metadata.loc[split.mask_query, "encounter_id"].nunique()
 
-        summary_now = summary_df[mask_now]
-        summary_before = summary_df[mask_before]
-
-        identities_known = summary_before["identity"].unique()
-        mask_known = summary_now["identity"].isin(identities_known)
-        summary_now_known = summary_now[mask_known]
-
-        n_encounters_all[split_year] = summary_now["encounter"].nunique()
-        n_encounters_known[split_year] = summary_now_known["encounter"].nunique()
-
-    return identities, n_encounters_all, n_encounters_known
+    return identities, n_encounters
 
 
 def plot_best_scores(best_scores, matching_parts, y_max=None, use_title=True):
