@@ -399,7 +399,7 @@ class StripeSpotter(MatchingDataset):
         matching_parts = {
             "full": {"labels": ["full"], "cols_equal": [], "cols_unequal": []},
             "bodies": {"labels": ["body"], "cols_equal": [], "cols_unequal": []},
-        }        
+        }
 
         dataset_kwargs = dataset_kwargs or {}
         load_label = dataset_kwargs.pop("load_label", True)
@@ -414,10 +414,9 @@ class StripeSpotter(MatchingDataset):
 
         metadata = pd.concat((metadata_bodies, metadata_full))
         wildlife_dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load="bbox", load_label=load_label)
-        
+
         super().__init__(wildlife_dataset, matching_parts)
 
     @classmethod
     def from_paths(cls, paths, database_query_matching, dataset_kwargs=None):
         return cls(resolve_path(paths["root"]), database_query_matching, dataset_kwargs=dataset_kwargs)
-

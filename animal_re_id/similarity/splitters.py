@@ -154,10 +154,7 @@ class MultiSeedClosedSetSplitter:
         self.identity_col = identity_col
 
     def build(self) -> list[ClosedSetSplitter]:
-        return [
-            ClosedSetSplitter(self.ratio_train, seed=self.seed + i, identity_col=self.identity_col)
-            for i in range(self.n_splits)
-        ]
+        return [ClosedSetSplitter(self.ratio_train, seed=self.seed + i, identity_col=self.identity_col) for i in range(self.n_splits)]
 
 
 class DiscoverySplitter(Splitter):

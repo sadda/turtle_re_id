@@ -42,9 +42,7 @@ def get_matching_dataset(dataset_name, paths, config):
             rescue_centers = ast.literal_eval(file.read())
 
         metadata = matching_dataset.wildlife_dataset.metadata
-        metadata["environment"] = metadata["encounter_id"].apply(
-            lambda x: "abovewater" if in_intervals(x, rescue_centers) else "underwater"
-        )
+        metadata["environment"] = metadata["encounter_id"].apply(lambda x: "abovewater" if in_intervals(x, rescue_centers) else "underwater")
 
     return matching_dataset
 
