@@ -31,5 +31,10 @@
     "root": "data/TurtlesOfSMSRC",
     "root_features": "features/TurtlesOfSMSRC",
     "root_similarity": "similarity/TurtlesOfSMSRC"
+  },
+  "StripeSpotter": {
+    "root": "data/StripeSpotter",
+    "root_features": "features/StripeSpotter",
+    "root_similarity": "similarity/StripeSpotter"
   }
 }

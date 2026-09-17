@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -12,15 +13,15 @@ from ..models import (
 from .ignore_pairs_policy import AllowAllPairsPolicy, CombinedIgnorePairsPolicy, IgnorePairsPolicy, MetadataIgnorePairsPolicy
 from .pipeline_spec import PipelineSpec, SinglePipelineSpec, WildfusionPipelineSpec
 from .run_spec import SimilarityRunSpec
-from .splitters import ClosedSetYearSplitter, DiscoverySplitter, Splitter
+from .splitters import ClosedSetYearSplitter, DiscoverySplitter, MultiSeedClosedSetSplitter, Splitter
 
 
 @dataclass
 class SimilarityDatasetConfig:
-    matching_parts: list[str]
-    pipeline_specs: list[PipelineSpec]
-    ignore_pairs_policies: list[IgnorePairsPolicy]
-    splitters: list[Splitter]
+    matching_parts: Sequence[str]
+    pipeline_specs: Sequence[PipelineSpec]
+    ignore_pairs_policies: Sequence[IgnorePairsPolicy]
+    splitters: Sequence[Splitter]
     img_load: str = "bbox"
 
     def run_specs(self) -> list[SimilarityRunSpec]:
@@ -84,6 +85,17 @@ def get_similarity_dataset_config(dataset_name: str, B: int = 100, img_load: str
             ],
             ignore_pairs_policies=[CombinedIgnorePairsPolicy(cache_key=None)],
             splitters=[DiscoverySplitter()],
+            img_load=img_load,
+        )
+    elif dataset_name == "StripeSpotter":
+        return SimilarityDatasetConfig(
+            matching_parts=["full", "bodies"],
+            pipeline_specs=[
+                SinglePipelineSpec("dino", get_pipeline_dino, B=B),
+                WildfusionPipelineSpec("dino-aliked", get_pipeline_dino, get_pipeline_aliked, B=B),
+            ],
+            ignore_pairs_policies=[AllowAllPairsPolicy(cache_key=None)],
+            splitters=MultiSeedClosedSetSplitter(0.5, seed=666, n_splits=5).build(),
             img_load=img_load,
         )
     else:
