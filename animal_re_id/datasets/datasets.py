@@ -406,7 +406,7 @@ class StripeSpotter(MatchingDataset):
 
         metadata_bodies = wd_datasets.StripeSpotter(root).metadata
         metadata_bodies["encounter_id"] = range(len(metadata_bodies))
-        metadata_bodies["year"] = 2010
+        metadata_bodies["year"] = 2011
         metadata_bodies["label"] = "body"
         metadata_full = metadata_bodies.copy()
         metadata_full["label"] = "full"
