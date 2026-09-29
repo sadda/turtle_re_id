@@ -105,13 +105,16 @@ def get_pipeline_miew(device="cpu", cache_prefix=None, use_calibration=False, im
     )
 
 
-def get_pipeline_lightglue(features, extractor_class, device="cpu", cache_prefix=None, use_calibration=False, img_size=512) -> SimilarityPipeline:
+def get_pipeline_lightglue(
+    features, extractor_class, device="cpu", cache_prefix=None, use_calibration=False, img_size=512, cache_scores_only=True
+) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=MatchLightGlue(
             features=features,
             device=device,
             cache_path=f"{cache_prefix}_{features}_lightglue-{img_size}.lmdb" if cache_prefix else None,
             config_tag=f"{features}_resize{img_size}",
+            cache_scores_only=cache_scores_only,
         ),
         extractor=extractor_class(
             cache_path=f"{cache_prefix}_{features}-{img_size}.lmdb" if cache_prefix else None,
