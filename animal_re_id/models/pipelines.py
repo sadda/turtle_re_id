@@ -104,7 +104,11 @@ def get_pipeline_miew(device="cpu", cache_prefix=None, use_calibration=False) ->
 
 def get_pipeline_aliked(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
     return SimilarityPipeline(
-        matcher=MatchLightGlue(features="aliked", device=device),
+        matcher=MatchLightGlue(
+            features="aliked",
+            device=device,
+            cache_path=f"{cache_prefix}_aliked_lightglue.lmdb" if cache_prefix else None,
+        ),
         extractor=AlikedExtractor(
             cache_path=f"{cache_prefix}_aliked.lmdb" if cache_prefix else None,
             device=device,
@@ -116,7 +120,11 @@ def get_pipeline_aliked(device="cpu", cache_prefix=None, use_calibration=False) 
 
 def get_pipeline_disk(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
     return SimilarityPipeline(
-        matcher=MatchLightGlue(features="disk", device=device),
+        matcher=MatchLightGlue(
+            features="disk",
+            device=device,
+            cache_path=f"{cache_prefix}_disk_lightglue.lmdb" if cache_prefix else None,
+        ),
         extractor=DiskExtractor(cache_path=f"{cache_prefix}_disk.lmdb" if cache_prefix else None, device=device),
         transform=T.Compose([T.Resize([512, 512]), T.ToTensor()]),
         calibration=get_calibration(use_calibration),
@@ -125,7 +133,11 @@ def get_pipeline_disk(device="cpu", cache_prefix=None, use_calibration=False) ->
 
 def get_pipeline_superpoint(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
     return SimilarityPipeline(
-        matcher=MatchLightGlue(features="superpoint", device=device),
+        matcher=MatchLightGlue(
+            features="superpoint",
+            device=device,
+            cache_path=f"{cache_prefix}_superpoint_lightglue.lmdb" if cache_prefix else None,
+        ),
         extractor=SuperPointExtractor(
             cache_path=f"{cache_prefix}_superpoint.lmdb" if cache_prefix else None,
             device=device,
