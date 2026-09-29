@@ -56,6 +56,7 @@ def get_pipeline_dino(
             device=device,
             batch_size=8,
             cache_path=f"{cache_prefix}_{output_name}.lmdb" if cache_prefix else None,
+            config_tag="hf_processor",
         ),
         transform=None,
         calibration=get_calibration(use_calibration),
@@ -69,7 +70,8 @@ def get_pipeline_mega(device="cpu", cache_prefix=None, use_calibration=False) ->
             model=timm.create_model("hf-hub:BVRA/MegaDescriptor-L-384", pretrained=True).eval(),
             device=device,
             batch_size=8,
-            cache_path=f"{cache_prefix}_md.lmdb" if cache_prefix else None,
+            cache_path=f"{cache_prefix}_md-l-384.lmdb" if cache_prefix else None,
+            config_tag="resize384_imagenet-norm",
         ),
         transform=T.Compose(
             [
@@ -82,18 +84,19 @@ def get_pipeline_mega(device="cpu", cache_prefix=None, use_calibration=False) ->
     )
 
 
-def get_pipeline_miew(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
+def get_pipeline_miew(device="cpu", cache_prefix=None, use_calibration=False, img_size=512) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=CosineSimilarity(),
         extractor=DeepFeatures(
             model=AutoModel.from_pretrained("conservationxlabs/miewid-msv3", trust_remote_code=True),
             device=device,
             batch_size=8,
-            cache_path=f"{cache_prefix}_miew.lmdb" if cache_prefix else None,
+            cache_path=f"{cache_prefix}_miewid3-{img_size}.lmdb" if cache_prefix else None,
+            config_tag=f"resize{img_size}_imagenet-norm",
         ),
         transform=T.Compose(
             [
-                T.Resize(size=(512, 512)),
+                T.Resize(size=(img_size, img_size)),
                 T.ToTensor(),
                 T.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
             ]
@@ -102,46 +105,55 @@ def get_pipeline_miew(device="cpu", cache_prefix=None, use_calibration=False) ->
     )
 
 
-def get_pipeline_aliked(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
+def get_pipeline_aliked(device="cpu", cache_prefix=None, use_calibration=False, img_size=512) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=MatchLightGlue(
             features="aliked",
             device=device,
-            cache_path=f"{cache_prefix}_aliked_lightglue.lmdb" if cache_prefix else None,
+            cache_path=f"{cache_prefix}_aliked_lightglue-{img_size}.lmdb" if cache_prefix else None,
+            config_tag=f"aliked_resize{img_size}",
         ),
         extractor=AlikedExtractor(
-            cache_path=f"{cache_prefix}_aliked.lmdb" if cache_prefix else None,
+            cache_path=f"{cache_prefix}_aliked-{img_size}.lmdb" if cache_prefix else None,
+            config_tag=f"resize{img_size}",
             device=device,
         ),
-        transform=T.Compose([T.Resize([512, 512]), T.ToTensor()]),
+        transform=T.Compose([T.Resize([img_size, img_size]), T.ToTensor()]),
         calibration=get_calibration(use_calibration),
     )
 
 
-def get_pipeline_disk(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
+def get_pipeline_disk(device="cpu", cache_prefix=None, use_calibration=False, img_size=512) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=MatchLightGlue(
             features="disk",
             device=device,
-            cache_path=f"{cache_prefix}_disk_lightglue.lmdb" if cache_prefix else None,
+            cache_path=f"{cache_prefix}_disk_lightglue-{img_size}.lmdb" if cache_prefix else None,
+            config_tag=f"disk_resize{img_size}",
         ),
-        extractor=DiskExtractor(cache_path=f"{cache_prefix}_disk.lmdb" if cache_prefix else None, device=device),
-        transform=T.Compose([T.Resize([512, 512]), T.ToTensor()]),
+        extractor=DiskExtractor(
+            cache_path=f"{cache_prefix}_disk-{img_size}.lmdb" if cache_prefix else None,
+            config_tag=f"resize{img_size}",
+            device=device,
+        ),
+        transform=T.Compose([T.Resize([img_size, img_size]), T.ToTensor()]),
         calibration=get_calibration(use_calibration),
     )
 
 
-def get_pipeline_superpoint(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
+def get_pipeline_superpoint(device="cpu", cache_prefix=None, use_calibration=False, img_size=512) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=MatchLightGlue(
             features="superpoint",
             device=device,
-            cache_path=f"{cache_prefix}_superpoint_lightglue.lmdb" if cache_prefix else None,
+            cache_path=f"{cache_prefix}_superpoint_lightglue-{img_size}.lmdb" if cache_prefix else None,
+            config_tag=f"superpoint_resize{img_size}",
         ),
         extractor=SuperPointExtractor(
-            cache_path=f"{cache_prefix}_superpoint.lmdb" if cache_prefix else None,
+            cache_path=f"{cache_prefix}_superpoint-{img_size}.lmdb" if cache_prefix else None,
+            config_tag=f"resize{img_size}",
             device=device,
         ),
-        transform=T.Compose([T.Resize([512, 512]), T.ToTensor()]),
+        transform=T.Compose([T.Resize([img_size, img_size]), T.ToTensor()]),
         calibration=get_calibration(use_calibration),
     )
