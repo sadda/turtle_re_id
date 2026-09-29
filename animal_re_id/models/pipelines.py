@@ -105,16 +105,16 @@ def get_pipeline_miew(device="cpu", cache_prefix=None, use_calibration=False, im
     )
 
 
-def get_pipeline_aliked(device="cpu", cache_prefix=None, use_calibration=False, img_size=512) -> SimilarityPipeline:
+def get_pipeline_lightglue(features, extractor_class, device="cpu", cache_prefix=None, use_calibration=False, img_size=512) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=MatchLightGlue(
-            features="aliked",
+            features=features,
             device=device,
-            cache_path=f"{cache_prefix}_aliked_lightglue-{img_size}.lmdb" if cache_prefix else None,
-            config_tag=f"aliked_resize{img_size}",
+            cache_path=f"{cache_prefix}_{features}_lightglue-{img_size}.lmdb" if cache_prefix else None,
+            config_tag=f"{features}_resize{img_size}",
         ),
-        extractor=AlikedExtractor(
-            cache_path=f"{cache_prefix}_aliked-{img_size}.lmdb" if cache_prefix else None,
+        extractor=extractor_class(
+            cache_path=f"{cache_prefix}_{features}-{img_size}.lmdb" if cache_prefix else None,
             config_tag=f"resize{img_size}",
             device=device,
         ),
@@ -123,37 +123,13 @@ def get_pipeline_aliked(device="cpu", cache_prefix=None, use_calibration=False, 
     )
 
 
-def get_pipeline_disk(device="cpu", cache_prefix=None, use_calibration=False, img_size=512) -> SimilarityPipeline:
-    return SimilarityPipeline(
-        matcher=MatchLightGlue(
-            features="disk",
-            device=device,
-            cache_path=f"{cache_prefix}_disk_lightglue-{img_size}.lmdb" if cache_prefix else None,
-            config_tag=f"disk_resize{img_size}",
-        ),
-        extractor=DiskExtractor(
-            cache_path=f"{cache_prefix}_disk-{img_size}.lmdb" if cache_prefix else None,
-            config_tag=f"resize{img_size}",
-            device=device,
-        ),
-        transform=T.Compose([T.Resize([img_size, img_size]), T.ToTensor()]),
-        calibration=get_calibration(use_calibration),
-    )
+def get_pipeline_aliked(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("aliked", AlikedExtractor, **kwargs)
 
 
-def get_pipeline_superpoint(device="cpu", cache_prefix=None, use_calibration=False, img_size=512) -> SimilarityPipeline:
-    return SimilarityPipeline(
-        matcher=MatchLightGlue(
-            features="superpoint",
-            device=device,
-            cache_path=f"{cache_prefix}_superpoint_lightglue-{img_size}.lmdb" if cache_prefix else None,
-            config_tag=f"superpoint_resize{img_size}",
-        ),
-        extractor=SuperPointExtractor(
-            cache_path=f"{cache_prefix}_superpoint-{img_size}.lmdb" if cache_prefix else None,
-            config_tag=f"resize{img_size}",
-            device=device,
-        ),
-        transform=T.Compose([T.Resize([img_size, img_size]), T.ToTensor()]),
-        calibration=get_calibration(use_calibration),
-    )
+def get_pipeline_disk(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("disk", DiskExtractor, **kwargs)
+
+
+def get_pipeline_superpoint(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("superpoint", SuperPointExtractor, **kwargs)
