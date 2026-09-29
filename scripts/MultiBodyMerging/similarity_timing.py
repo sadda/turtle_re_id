@@ -1,4 +1,3 @@
-import ast
 import time
 import warnings
 
@@ -8,7 +7,7 @@ import pandas as pd
 import torch
 
 from animal_re_id.config import load_paths
-from animal_re_id.datasets import SeaTurtleID2022, TurtlesOfSMSRC, TurtlewatchEgypt_New
+from animal_re_id.datasets import get_matching_dataset
 from animal_re_id.models import turtle_detector
 from animal_re_id.similarity import SinglePipelineSpec, WildfusionPipelineSpec, get_similarity_dataset_config
 
@@ -51,27 +50,6 @@ class PreloadedDataset:
         return self.items[idx]
 
 
-def get_matching_dataset(dataset_name, paths, config, img_load=None):
-    img_load = img_load or config.img_load
-
-    if dataset_name == "TurtlewatchEgypt":
-        matching_dataset_class = TurtlewatchEgypt_New
-        dataset_kwargs = {"img_load": img_load, "remove_unknown": True}
-    elif dataset_name == "SeaTurtleID2022":
-        matching_dataset_class = SeaTurtleID2022
-        dataset_kwargs = {"img_load": img_load}
-    elif dataset_name == "TurtlesOfSMSRC":
-        with open("scripts/SMSRC/hidden/matched_encounters.txt") as file:
-            replace_identity = ast.literal_eval(file.read())
-
-        matching_dataset_class = TurtlesOfSMSRC
-        dataset_kwargs = {"img_load": img_load, "replace_identity": replace_identity}
-    else:
-        raise ValueError("Dataset now known")
-
-    return matching_dataset_class.from_paths(paths, config.database_query_matching, dataset_kwargs=dataset_kwargs)
-
-
 def images_per_hour(time_per_image_ms):
     return 3600 / (time_per_image_ms / 1000)
 
@@ -92,7 +70,7 @@ for dataset_name in dataset_names:
     paths = load_paths(dataset_name, local_path=local_path)
     config = get_similarity_dataset_config(dataset_name, B=B)
 
-    detector_dataset = get_subset(get_matching_dataset(dataset_name, paths, config, img_load="full"), range(n_samples), None)
+    detector_dataset = get_subset(get_matching_dataset(dataset_name, paths, config.database_query_matching, img_load="full"), range(n_samples), None)
 
     with Timer("cpu") as timer:
         detector_loaded = PreloadedDataset(detector_dataset)
@@ -117,7 +95,7 @@ for dataset_name in dataset_names:
             }
         )
 
-    matching_dataset = get_matching_dataset(dataset_name, paths, config)
+    matching_dataset = get_matching_dataset(dataset_name, paths, config.database_query_matching, img_load=config.img_load)
 
     for device in devices:
         for pipeline_spec in config.pipeline_specs:

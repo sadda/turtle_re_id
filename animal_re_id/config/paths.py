@@ -23,7 +23,10 @@ def load_paths(dataset: str, local_path: str | Path | None = None) -> dict:
     with open(DEFAULT_PATHS_FILE) as file:
         paths = json.load(file)
 
-    if local_path is not None and Path(local_path).exists():
+    if local_path is not None:
+        if not Path(local_path).exists():
+            raise FileNotFoundError(f"Config path {local_path} does not exist.")
+
         with open(local_path) as file:
             paths = _deep_merge(paths, json.load(file))
 
