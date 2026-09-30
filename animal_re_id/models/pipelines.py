@@ -105,9 +105,7 @@ def get_pipeline_miew(device="cpu", cache_prefix=None, use_calibration=False, im
     )
 
 
-def get_pipeline_lightglue(
-    features, extractor_class, device="cpu", cache_prefix=None, use_calibration=False, img_size=512, cache_scores_only=True
-) -> SimilarityPipeline:
+def get_pipeline_lightglue(features, extractor_class, device="cpu", cache_prefix=None, use_calibration=False, img_size=512, cache_scores_only=True) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=MatchLightGlue(
             features=features,
