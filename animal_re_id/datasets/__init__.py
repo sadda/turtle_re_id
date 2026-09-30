@@ -10,4 +10,5 @@ from .datasets import (
     combine_datasets_twe,
     combine_datasets_twe_from_paths,
 )
+from .factory import get_matching_dataset
 from .utils import add_date_exif

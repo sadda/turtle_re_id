@@ -83,11 +83,10 @@ class TestLoadPaths:
             if key != "root":
                 assert paths[key] == defaults["SeaTurtleID2022"][key]
 
-    def test_nonexistent_local_path_is_ignored(self, tmp_path: Path) -> None:
+    def test_nonexistent_local_path_raises(self, tmp_path: Path) -> None:
         missing = tmp_path / "does_not_exist.json"
-        paths = load_paths("SeaTurtleID2022", local_path=missing)
-        default_paths = load_paths("SeaTurtleID2022")
-        assert paths == default_paths
+        with pytest.raises(FileNotFoundError):
+            load_paths("SeaTurtleID2022", local_path=missing)
 
     def test_local_path_can_add_new_dataset(self, tmp_path: Path) -> None:
         local_file = tmp_path / "local_paths.json"

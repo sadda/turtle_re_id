@@ -89,7 +89,7 @@ def get_similarity_dataset_config(dataset_name: str, B: int = 100, img_load: str
         )
     elif dataset_name == "StripeSpotter":
         return SimilarityDatasetConfig(
-            matching_parts=["full", "bodies"],
+            matching_parts=["bodies", "flanks"],
             pipeline_specs=[
                 SinglePipelineSpec("dino", get_pipeline_dino, B=B),
                 WildfusionPipelineSpec("dino-aliked", get_pipeline_dino, get_pipeline_aliked, B=B),

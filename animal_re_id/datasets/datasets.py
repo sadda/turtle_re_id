@@ -1,3 +1,4 @@
+import ast
 import os
 from abc import ABC, abstractmethod
 from copy import deepcopy
@@ -76,6 +77,15 @@ def combine_matching_parts(matching_parts1, matching_parts2):
             value = list(set(value1).union(set(value2)))
             matching_parts[key1][key2] = value
     return matching_parts
+
+
+def _in_intervals(x, intervals) -> bool:
+    return any(lo <= x <= hi for lo, hi in intervals)
+
+
+def _read_literal(file_name: str):
+    with open(file_name) as file:
+        return ast.literal_eval(file.read())
 
 
 class MatchingDataset(ABC):
@@ -167,6 +177,7 @@ class TurtlesOfSMSRC(TurtleDetectorSegmented):
 
         img_load = dataset_kwargs.pop("img_load", "bbox")
         load_label = dataset_kwargs.pop("load_label", True)
+        rescue_centers = dataset_kwargs.pop("rescue_centers", None)
 
         wildlife_dataset = wd_datasets.TurtlesOfSMSRC(
             root,
@@ -175,11 +186,21 @@ class TurtlesOfSMSRC(TurtleDetectorSegmented):
             load_label=load_label,
             **dataset_kwargs,
         )
+        if rescue_centers is not None:
+            metadata = wildlife_dataset.metadata
+            metadata["environment"] = metadata["encounter_id"].apply(lambda x: "abovewater" if _in_intervals(x, rescue_centers) else "underwater")
         super().__init__(wildlife_dataset, is_database)
         self.select_subset(**subset_kwargs)
 
     @classmethod
     def from_paths(cls, paths, is_database, dataset_kwargs=None, subset_kwargs=None):
+        dataset_kwargs = dict(dataset_kwargs or {})
+        if "file_name_replace_identity" in paths and "replace_identity" not in dataset_kwargs:
+            dataset_kwargs["replace_identity"] = _read_literal(resolve_path(paths["file_name_replace_identity"]))
+        if "file_name_rescue_centers" in paths and "rescue_centers" not in dataset_kwargs:
+            file_name = resolve_path(paths["file_name_rescue_centers"])
+            if os.path.exists(file_name):
+                dataset_kwargs["rescue_centers"] = _read_literal(file_name)
         return cls(resolve_path(paths["root"]), is_database, dataset_kwargs=dataset_kwargs, subset_kwargs=subset_kwargs)
 
 
@@ -397,22 +418,22 @@ class TurtlewatchEgypt_Combined(MatchingDataset):
 class StripeSpotter(MatchingDataset):
     def __init__(self, root, database_query_matching, dataset_kwargs=None):
         matching_parts = {
-            "full": {"labels": ["full"], "cols_equal": [], "cols_unequal": []},
             "bodies": {"labels": ["body"], "cols_equal": [], "cols_unequal": []},
+            "flanks": {"labels": ["flank"], "cols_equal": [], "cols_unequal": []},
         }
 
         dataset_kwargs = dataset_kwargs or {}
         load_label = dataset_kwargs.pop("load_label", True)
 
-        metadata_bodies = wd_datasets.StripeSpotter(root).metadata
-        metadata_bodies["encounter_id"] = range(len(metadata_bodies))
-        metadata_bodies["year"] = 2011
+        metadata_flanks = wd_datasets.StripeSpotter(root).metadata
+        metadata_flanks["encounter_id"] = range(len(metadata_flanks))
+        metadata_flanks["year"] = 2011
+        metadata_flanks["label"] = "flank"
+        metadata_bodies = metadata_flanks.copy()
         metadata_bodies["label"] = "body"
-        metadata_full = metadata_bodies.copy()
-        metadata_full["label"] = "full"
-        metadata_full["bbox"] = None
+        metadata_bodies["bbox"] = None
 
-        metadata = pd.concat((metadata_bodies, metadata_full))
+        metadata = pd.concat((metadata_flanks, metadata_bodies))
         wildlife_dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load="bbox", load_label=load_label)
 
         super().__init__(wildlife_dataset, matching_parts)
