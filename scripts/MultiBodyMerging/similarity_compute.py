@@ -7,8 +7,9 @@ from animal_re_id.similarity import SimilarityCache, SimilarityGrid, get_similar
 warnings.filterwarnings("ignore")
 
 
-dataset_name = "TurtlewatchEgypt"
 # dataset_name = "SeaTurtleID2022"
+# dataset_name = "StripeSpotter"
+dataset_name = "TurtlewatchEgypt"
 # dataset_name = "TurtlesOfSMSRC"
 
 B = 100
