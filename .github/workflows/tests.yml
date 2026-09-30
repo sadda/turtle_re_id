@@ -19,10 +19,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
+
+      - name: Install CPU-only PyTorch
+        run: pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
       - name: Install package with model and dev dependencies
-        run: pip install -e ".[models,dev]"
+        run: pip install --no-cache-dir -e ".[models,dev]"
 
       - name: Run tests
         run: pytest
