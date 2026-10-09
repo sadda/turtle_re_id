@@ -8,7 +8,6 @@ from ..models import (
     get_pipeline_dino,
     get_pipeline_disk,
     get_pipeline_miew,
-    get_pipeline_superpoint,
 )
 from .ignore_pairs_policy import AllowAllPairsPolicy, CombinedIgnorePairsPolicy, IgnorePairsPolicy, MetadataIgnorePairsPolicy
 from .pipeline_spec import PipelineSpec, SinglePipelineSpec, WildfusionPipelineSpec
@@ -81,7 +80,6 @@ def get_similarity_dataset_config(dataset_name: str, B: int = 100, img_load: str
             pipeline_specs=[
                 WildfusionPipelineSpec("miew-aliked", get_pipeline_miew, get_pipeline_aliked, B=B),
                 WildfusionPipelineSpec("miew-disk", get_pipeline_miew, get_pipeline_disk, B=B),
-                WildfusionPipelineSpec("miew-superpoint", get_pipeline_miew, get_pipeline_superpoint, B=B),
             ],
             ignore_pairs_policies=[CombinedIgnorePairsPolicy(cache_key=None)],
             splitters=[DiscoverySplitter()],

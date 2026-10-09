@@ -7,7 +7,6 @@ from wildlife_tools.features import (
     DeepFeatures,
     DinoFeatures,
     DiskExtractor,
-    SuperPointExtractor,
 )
 from wildlife_tools.similarity import CosineSimilarity, MatchLightGlue, PairSelector
 from wildlife_tools.similarity.calibration import IsotonicCalibration
@@ -130,7 +129,3 @@ def get_pipeline_aliked(**kwargs) -> SimilarityPipeline:
 
 def get_pipeline_disk(**kwargs) -> SimilarityPipeline:
     return get_pipeline_lightglue("disk", DiskExtractor, **kwargs)
-
-
-def get_pipeline_superpoint(**kwargs) -> SimilarityPipeline:
-    return get_pipeline_lightglue("superpoint", SuperPointExtractor, **kwargs)
