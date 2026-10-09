@@ -6,9 +6,13 @@ import torchvision.transforms as T
 from transformers import AutoImageProcessor, AutoModel
 from wildlife_tools.features import (
     AlikedExtractor,
+    DeDoDeExtractor,
     DeepFeatures,
     DinoFeatures,
     DiskExtractor,
+    DoGHardNetExtractor,
+    KeyNetAffNetHardNetExtractor,
+    XFeatExtractor,
 )
 from wildlife_tools.similarity import CosineSimilarity, MatchLightGlue, PairSelector
 from wildlife_tools.similarity.calibration import IsotonicCalibration
@@ -130,3 +134,27 @@ def get_pipeline_aliked(**kwargs) -> SimilarityPipeline:
 
 def get_pipeline_disk(**kwargs) -> SimilarityPipeline:
     return get_pipeline_lightglue("disk", DiskExtractor, **kwargs)
+
+
+def get_pipeline_xfeat(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("xfeat", XFeatExtractor, **kwargs)
+
+
+def get_pipeline_dedodeb(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("dedodeb", functools.partial(DeDoDeExtractor, descriptor="B"), **kwargs)
+
+
+def get_pipeline_dedodeg(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("dedodeg", functools.partial(DeDoDeExtractor, descriptor="G"), **kwargs)
+
+
+def get_pipeline_doghardnet(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("doghardnet", DoGHardNetExtractor, **kwargs)
+
+
+def get_pipeline_dog_affnet_hardnet(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("dog_affnet_hardnet", functools.partial(DoGHardNetExtractor, affnet=True), **kwargs)
+
+
+def get_pipeline_keynet_affnet_hardnet(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("keynet_affnet_hardnet", KeyNetAffNetHardNetExtractor, **kwargs)
