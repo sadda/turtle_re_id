@@ -1,3 +1,5 @@
+import functools
+
 import numpy as np
 import timm
 import torchvision.transforms as T
@@ -45,13 +47,12 @@ def get_pipeline_dino(
 ):
 
     processor = AutoImageProcessor.from_pretrained(model_name)
-    model = AutoModel.from_pretrained(model_name, device_map=device)
 
     return SimilarityPipeline(
         matcher=CosineSimilarity(),
-        extractor=DinoFeatures(
-            model,
-            processor,
+        extractor=DinoFeatures.lazy_load(
+            functools.partial(AutoModel.from_pretrained, model_name, device_map=device),
+            processor=processor,
             device=device,
             batch_size=8,
             cache_path=f"{cache_prefix}_{output_name}.lmdb" if cache_prefix else None,
@@ -65,8 +66,8 @@ def get_pipeline_dino(
 def get_pipeline_mega(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=CosineSimilarity(),
-        extractor=DeepFeatures(
-            model=timm.create_model("hf-hub:BVRA/MegaDescriptor-L-384", pretrained=True).eval(),
+        extractor=DeepFeatures.lazy_load(
+            functools.partial(timm.create_model, "hf-hub:BVRA/MegaDescriptor-L-384", pretrained=True),
             device=device,
             batch_size=8,
             cache_path=f"{cache_prefix}_md-l-384.lmdb" if cache_prefix else None,
@@ -86,8 +87,8 @@ def get_pipeline_mega(device="cpu", cache_prefix=None, use_calibration=False) ->
 def get_pipeline_miew(device="cpu", cache_prefix=None, use_calibration=False, img_size=512) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=CosineSimilarity(),
-        extractor=DeepFeatures(
-            model=AutoModel.from_pretrained("conservationxlabs/miewid-msv3", trust_remote_code=True),
+        extractor=DeepFeatures.lazy_load(
+            functools.partial(AutoModel.from_pretrained, "conservationxlabs/miewid-msv3", trust_remote_code=True),
             device=device,
             batch_size=8,
             cache_path=f"{cache_prefix}_miewid3-{img_size}.lmdb" if cache_prefix else None,
