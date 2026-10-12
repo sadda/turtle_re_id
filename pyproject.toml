@@ -14,7 +14,7 @@ dependencies = [
 
 [project.optional-dependencies]
 models = [
-    "wildlife-tools @ git+https://github.com/WildlifeDatasets/wildlife-tools",
+    "wildlife-tools @ git+https://github.com/WildlifeDatasets/wildlife-tools@features",
     "torch",
     "torchvision",
     "timm",
