@@ -1,13 +1,18 @@
+import functools
+
 import numpy as np
 import timm
 import torchvision.transforms as T
 from transformers import AutoImageProcessor, AutoModel
 from wildlife_tools.features import (
     AlikedExtractor,
+    DeDoDeExtractor,
     DeepFeatures,
     DinoFeatures,
     DiskExtractor,
-    SuperPointExtractor,
+    DoGHardNetExtractor,
+    KeyNetAffNetHardNetExtractor,
+    XFeatExtractor,
 )
 from wildlife_tools.similarity import CosineSimilarity, MatchLightGlue, PairSelector
 from wildlife_tools.similarity.calibration import IsotonicCalibration
@@ -46,13 +51,12 @@ def get_pipeline_dino(
 ):
 
     processor = AutoImageProcessor.from_pretrained(model_name)
-    model = AutoModel.from_pretrained(model_name, device_map=device)
 
     return SimilarityPipeline(
         matcher=CosineSimilarity(),
-        extractor=DinoFeatures(
-            model,
-            processor,
+        extractor=DinoFeatures.lazy_load(
+            functools.partial(AutoModel.from_pretrained, model_name, device_map=device),
+            processor=processor,
             device=device,
             batch_size=8,
             cache_path=f"{cache_prefix}_{output_name}.lmdb" if cache_prefix else None,
@@ -66,8 +70,8 @@ def get_pipeline_dino(
 def get_pipeline_mega(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=CosineSimilarity(),
-        extractor=DeepFeatures(
-            model=timm.create_model("hf-hub:BVRA/MegaDescriptor-L-384", pretrained=True).eval(),
+        extractor=DeepFeatures.lazy_load(
+            functools.partial(timm.create_model, "hf-hub:BVRA/MegaDescriptor-L-384", pretrained=True),
             device=device,
             batch_size=8,
             cache_path=f"{cache_prefix}_md-l-384.lmdb" if cache_prefix else None,
@@ -87,8 +91,8 @@ def get_pipeline_mega(device="cpu", cache_prefix=None, use_calibration=False) ->
 def get_pipeline_miew(device="cpu", cache_prefix=None, use_calibration=False, img_size=512) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=CosineSimilarity(),
-        extractor=DeepFeatures(
-            model=AutoModel.from_pretrained("conservationxlabs/miewid-msv3", trust_remote_code=True),
+        extractor=DeepFeatures.lazy_load(
+            functools.partial(AutoModel.from_pretrained, "conservationxlabs/miewid-msv3", trust_remote_code=True),
             device=device,
             batch_size=8,
             cache_path=f"{cache_prefix}_miewid3-{img_size}.lmdb" if cache_prefix else None,
@@ -132,5 +136,25 @@ def get_pipeline_disk(**kwargs) -> SimilarityPipeline:
     return get_pipeline_lightglue("disk", DiskExtractor, **kwargs)
 
 
-def get_pipeline_superpoint(**kwargs) -> SimilarityPipeline:
-    return get_pipeline_lightglue("superpoint", SuperPointExtractor, **kwargs)
+def get_pipeline_xfeat(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("xfeat", XFeatExtractor, **kwargs)
+
+
+def get_pipeline_dedodeb(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("dedodeb", functools.partial(DeDoDeExtractor, descriptor="B"), **kwargs)
+
+
+def get_pipeline_dedodeg(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("dedodeg", functools.partial(DeDoDeExtractor, descriptor="G"), **kwargs)
+
+
+def get_pipeline_doghardnet(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("doghardnet", DoGHardNetExtractor, **kwargs)
+
+
+def get_pipeline_dog_affnet_hardnet(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("dog_affnet_hardnet", functools.partial(DoGHardNetExtractor, affnet=True), **kwargs)
+
+
+def get_pipeline_keynet_affnet_hardnet(**kwargs) -> SimilarityPipeline:
+    return get_pipeline_lightglue("keynet_affnet_hardnet", KeyNetAffNetHardNetExtractor, **kwargs)

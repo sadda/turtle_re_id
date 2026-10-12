@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "animal-re-id"
 version = "0.1.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "numpy",
     "pandas",
@@ -14,7 +14,7 @@ dependencies = [
 
 [project.optional-dependencies]
 models = [
-    "wildlife-tools @ git+https://github.com/WildlifeDatasets/wildlife-tools",
+    "wildlife-tools @ git+https://github.com/WildlifeDatasets/wildlife-tools@features",
     "torch",
     "torchvision",
     "timm",
