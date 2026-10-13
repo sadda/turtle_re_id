@@ -172,8 +172,8 @@ class TurtlesFlippersMerged(MatchingDataset):
 
 class TurtlesOfSMSRC(TurtleDetectorSegmented):
     def __init__(self, root, is_database, dataset_kwargs=None, subset_kwargs=None):
-        dataset_kwargs = dataset_kwargs or {}
-        subset_kwargs = subset_kwargs or {}
+        dataset_kwargs = dict(dataset_kwargs or {})
+        subset_kwargs = dict(subset_kwargs or {})
 
         img_load = dataset_kwargs.pop("img_load", "bbox")
         load_label = dataset_kwargs.pop("load_label", True)
@@ -206,8 +206,8 @@ class TurtlesOfSMSRC(TurtleDetectorSegmented):
 
 class TurtlewatchEgypt_Citizen(TurtleDetectorSegmented):
     def __init__(self, root, is_database, dataset_kwargs=None, subset_kwargs=None):
-        dataset_kwargs = dataset_kwargs or {}
-        subset_kwargs = subset_kwargs or {}
+        dataset_kwargs = dict(dataset_kwargs or {})
+        subset_kwargs = dict(subset_kwargs or {})
 
         img_load = dataset_kwargs.pop("img_load", "bbox")
         load_label = dataset_kwargs.pop("load_label", True)
@@ -237,8 +237,8 @@ class TurtlewatchEgypt_New(TurtleDetectorSegmented):
         dataset_kwargs=None,
         subset_kwargs=None,
     ):
-        dataset_kwargs = dataset_kwargs or {}
-        subset_kwargs = subset_kwargs or {}
+        dataset_kwargs = dict(dataset_kwargs or {})
+        subset_kwargs = dict(subset_kwargs or {})
 
         img_load = dataset_kwargs.pop("img_load", "bbox")
         load_label = dataset_kwargs.pop("load_label", True)
@@ -270,7 +270,7 @@ class TurtlewatchEgypt_New(TurtleDetectorSegmented):
 
 class SeaTurtleID2022(TurtlesFlippersMerged):
     def __init__(self, root, database_query_matching, dataset_kwargs=None):
-        dataset_kwargs = dataset_kwargs or {}
+        dataset_kwargs = dict(dataset_kwargs or {})
         img_load = dataset_kwargs.pop("img_load", "bbox")
         load_label = dataset_kwargs.pop("load_label", True)
 
@@ -313,7 +313,7 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
         dataset_kwargs=None,
         score_min=SCORE_THRESHOLD,
     ):
-        dataset_kwargs = dataset_kwargs or {}
+        dataset_kwargs = dict(dataset_kwargs or {})
         load_label = dataset_kwargs.pop("load_label", True)
 
         metadata_h = wd_datasets.TurtlewatchEgypt_Master(root_heads, file_name=file_name, load_segmentation=True, **dataset_kwargs).metadata
@@ -370,8 +370,8 @@ class TurtlewatchEgypt_Combined(MatchingDataset):
         dataset_kwargs=None,
         subset_kwargs=None,
     ):
-        dataset_kwargs = dataset_kwargs or {}
-        subset_kwargs = subset_kwargs or {}
+        dataset_kwargs = dict(dataset_kwargs or {})
+        subset_kwargs = dict(subset_kwargs or {})
 
         load_label = dataset_kwargs.pop("load_label", True)
         score_min = subset_kwargs.pop("score_min", SCORE_MIN)
@@ -422,7 +422,7 @@ class StripeSpotter(MatchingDataset):
             "flanks": {"labels": ["flank"], "cols_equal": [], "cols_unequal": []},
         }
 
-        dataset_kwargs = dataset_kwargs or {}
+        dataset_kwargs = dict(dataset_kwargs or {})
         load_label = dataset_kwargs.pop("load_label", True)
 
         metadata_flanks = wd_datasets.StripeSpotter(root).metadata
