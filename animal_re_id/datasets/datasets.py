@@ -99,14 +99,6 @@ class MatchingDataset(ABC):
     def from_paths(cls, paths, *args, **kwargs):
         raise NotImplementedError
 
-    def remove_unknown(self):
-        mask = self.wildlife_dataset.metadata["identity"] != "unknown"
-        self.wildlife_dataset = self.wildlife_dataset.get_subset(mask)
-
-    def keep_only_unknown(self):
-        mask = self.wildlife_dataset.metadata["identity"] == "unknown"
-        self.wildlife_dataset = self.wildlife_dataset.get_subset(mask)
-
     def for_matching_part(self, matching_part):
         labels = self.matching_parts[matching_part]["labels"]
         mask = self.wildlife_dataset.metadata["label"].isin(labels)
@@ -126,57 +118,47 @@ def _build_matching_parts(front_labels, hind_labels):
     }
 
 
-class TurtleDetectorSegmented(MatchingDataset):
-    def __init__(self, wildlife_dataset):
-        matching_parts = _build_matching_parts(["flipper_fl", "flipper_fr"], ["flipper_hl", "flipper_hr"])
-        super().__init__(wildlife_dataset, matching_parts)
-
-    @staticmethod
-    def _load_segmented(loader, *args, dataset_kwargs=None) -> wd_datasets.WildlifeDataset:
-        kwargs = {"img_load": "bbox", "load_label": True, **(dataset_kwargs or {}), "load_segmentation": True}
-        return loader(*args, **kwargs)
-
-    def select_subset(
-        self,
-        score_threshold=SCORE_THRESHOLD,
-        score_min=SCORE_MIN,
-        max_per_encounter=MAX_PER_ENCOUNTER,
-        min_per_encounter=MIN_PER_ENCOUNTER,
-    ):
-
-        mask = []
-        for _, df_label in self.wildlife_dataset.metadata.groupby("label"):
-            for _, df_encounter in df_label.groupby("encounter_id"):
-                df_encounter = df_encounter.sort_values("score", ascending=False)
-                df_encounter = df_encounter.iloc[:max_per_encounter]
-                df_encounter = df_encounter[df_encounter["score"] >= score_min]
-                n_above = (df_encounter["score"] >= score_threshold).sum()
-                if n_above >= min_per_encounter:
-                    df_encounter = df_encounter.iloc[:n_above]
-                else:
-                    df_encounter = df_encounter.iloc[:min_per_encounter]
-                mask.extend(df_encounter.index)
-
-        self.wildlife_dataset = self.wildlife_dataset.get_subset(mask)
+DETECTOR_PARTS = _build_matching_parts(["flipper_fl", "flipper_fr"], ["flipper_hl", "flipper_hr"])
+MERGED_FLIPPER_PARTS = _build_matching_parts(["front flipper"], ["hind flipper"])
 
 
-class TurtlesFlippersMerged(MatchingDataset):
-    def __init__(self, wildlife_dataset):
-        matching_parts = _build_matching_parts(["front flipper"], ["hind flipper"])
-        super().__init__(wildlife_dataset, matching_parts)
+def _load_segmented(loader, *args, dataset_kwargs=None) -> wd_datasets.WildlifeDataset:
+    kwargs = {"img_load": "bbox", "load_label": True, **(dataset_kwargs or {}), "load_segmentation": True}
+    return loader(*args, **kwargs)
 
 
-class TurtlesOfSMSRC(TurtleDetectorSegmented):
+def select_detections(
+    wildlife_dataset,
+    score_threshold=SCORE_THRESHOLD,
+    score_min=SCORE_MIN,
+    max_per_encounter=MAX_PER_ENCOUNTER,
+    min_per_encounter=MIN_PER_ENCOUNTER,
+) -> wd_datasets.WildlifeDataset:
+    mask = []
+    for _, df_label in wildlife_dataset.metadata.groupby("label"):
+        for _, df_encounter in df_label.groupby("encounter_id"):
+            df_encounter = df_encounter.sort_values("score", ascending=False)
+            df_encounter = df_encounter.iloc[:max_per_encounter]
+            df_encounter = df_encounter[df_encounter["score"] >= score_min]
+            n_above = (df_encounter["score"] >= score_threshold).sum()
+            if n_above >= min_per_encounter:
+                df_encounter = df_encounter.iloc[:n_above]
+            else:
+                df_encounter = df_encounter.iloc[:min_per_encounter]
+            mask.extend(df_encounter.index)
+    return wildlife_dataset.get_subset(mask)
+
+
+class TurtlesOfSMSRC(MatchingDataset):
     def __init__(self, root, dataset_kwargs=None, subset_kwargs=None):
         dataset_kwargs = dict(dataset_kwargs or {})
         rescue_centers = dataset_kwargs.pop("rescue_centers", None)
 
-        wildlife_dataset = self._load_segmented(wd_datasets.TurtlesOfSMSRC, root, dataset_kwargs=dataset_kwargs)
+        wildlife_dataset = _load_segmented(wd_datasets.TurtlesOfSMSRC, root, dataset_kwargs=dataset_kwargs)
         if rescue_centers is not None:
             metadata = wildlife_dataset.metadata
             metadata["environment"] = metadata["encounter_id"].apply(lambda x: "abovewater" if _in_intervals(x, rescue_centers) else "underwater")
-        super().__init__(wildlife_dataset)
-        self.select_subset(**(subset_kwargs or {}))
+        super().__init__(select_detections(wildlife_dataset, **(subset_kwargs or {})), DETECTOR_PARTS)
 
     @classmethod
     def from_paths(cls, paths, dataset_kwargs=None, subset_kwargs=None):
@@ -190,18 +172,17 @@ class TurtlesOfSMSRC(TurtleDetectorSegmented):
         return cls(resolve_path(paths["root"]), dataset_kwargs=dataset_kwargs, subset_kwargs=subset_kwargs)
 
 
-class TurtlewatchEgypt_Citizen(TurtleDetectorSegmented):
+class TurtlewatchEgypt_Citizen(MatchingDataset):
     def __init__(self, root, dataset_kwargs=None, subset_kwargs=None):
-        wildlife_dataset = self._load_segmented(wd_datasets.TurtlewatchEgypt_Citizen, root, dataset_kwargs=dataset_kwargs)
-        super().__init__(wildlife_dataset)
-        self.select_subset(**(subset_kwargs or {}))
+        wildlife_dataset = _load_segmented(wd_datasets.TurtlewatchEgypt_Citizen, root, dataset_kwargs=dataset_kwargs)
+        super().__init__(select_detections(wildlife_dataset, **(subset_kwargs or {})), DETECTOR_PARTS)
 
     @classmethod
     def from_paths(cls, paths, dataset_kwargs=None, subset_kwargs=None):
         return cls(resolve_path(paths["root_citizen"]), dataset_kwargs=dataset_kwargs, subset_kwargs=subset_kwargs)
 
 
-class TurtlewatchEgypt_New(TurtleDetectorSegmented):
+class TurtlewatchEgypt_New(MatchingDataset):
     def __init__(
         self,
         root_master,
@@ -210,10 +191,9 @@ class TurtlewatchEgypt_New(TurtleDetectorSegmented):
         dataset_kwargs=None,
         subset_kwargs=None,
     ):
-        wildlife_dataset = self._load_segmented(combine_datasets_twe, root_master, roots, file_name, dataset_kwargs=dataset_kwargs)
+        wildlife_dataset = _load_segmented(combine_datasets_twe, root_master, roots, file_name, dataset_kwargs=dataset_kwargs)
         wildlife_dataset.metadata["year"] = wildlife_dataset.metadata["path"].str[:4].astype(int)
-        super().__init__(wildlife_dataset)
-        self.select_subset(**(subset_kwargs or {}))
+        super().__init__(select_detections(wildlife_dataset, **(subset_kwargs or {})), DETECTOR_PARTS)
 
     @classmethod
     def from_paths(cls, paths, dataset_kwargs=None, subset_kwargs=None):
@@ -226,7 +206,7 @@ class TurtlewatchEgypt_New(TurtleDetectorSegmented):
         )
 
 
-class SeaTurtleID2022(TurtlesFlippersMerged):
+class SeaTurtleID2022(MatchingDataset):
     def __init__(self, root, dataset_kwargs=None):
         dataset_kwargs = dict(dataset_kwargs or {})
         img_load = dataset_kwargs.pop("img_load", "bbox")
@@ -253,14 +233,14 @@ class SeaTurtleID2022(TurtlesFlippersMerged):
         metadata["encounter_id"] = metadata["identity"] + "_" + metadata["date"]
 
         wildlife_dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load=img_load, load_label=load_label)
-        super().__init__(wildlife_dataset)
+        super().__init__(wildlife_dataset, MERGED_FLIPPER_PARTS)
 
     @classmethod
     def from_paths(cls, paths, dataset_kwargs=None):
         return cls(resolve_path(paths["root"]), dataset_kwargs=dataset_kwargs)
 
 
-class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
+class TurtlewatchEgypt_Master(MatchingDataset):
     def __init__(
         self,
         root_heads,
@@ -300,7 +280,7 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
             file_name=file_name,
             **dataset_kwargs,
         )
-        super().__init__(wildlife_dataset)
+        super().__init__(wildlife_dataset, MERGED_FLIPPER_PARTS)
 
     @classmethod
     def from_paths(cls, paths, dataset_kwargs=None, score_min=SCORE_MIN):

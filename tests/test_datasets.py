@@ -8,8 +8,6 @@ from wildlife_datasets.datasets import WildlifeDataset
 import animal_re_id.datasets.datasets as datasets_module
 from animal_re_id.datasets.datasets import (
     MatchingDataset,
-    TurtleDetectorSegmented,
-    TurtlesFlippersMerged,
     TurtlesOfSMSRC,
     TurtlewatchEgypt_Citizen,
     TurtlewatchEgypt_Combined,
@@ -20,23 +18,12 @@ from animal_re_id.datasets.datasets import (
     combine_datasets_twe,
     combine_datasets_twe_from_paths,
     combine_matching_parts,
+    select_detections,
 )
 
 
 def make_wd(df: pd.DataFrame, root: str | None = None) -> WildlifeDataset:
     return WildlifeDataset(root=root, df=df, check_files=False)
-
-
-class ConcreteSegmented(TurtleDetectorSegmented):
-    @classmethod
-    def from_paths(cls, paths: dict[str, Any], *args: Any, **kwargs: Any) -> "ConcreteSegmented":
-        raise NotImplementedError
-
-
-class ConcreteFlippersMerged(TurtlesFlippersMerged):
-    @classmethod
-    def from_paths(cls, paths: dict[str, Any], *args: Any, **kwargs: Any) -> "ConcreteFlippersMerged":
-        raise NotImplementedError
 
 
 MatchingPart = dict[str, list[str]]
@@ -140,47 +127,21 @@ class TestCombineDatasets:
         assert ds1.metadata["path"].iloc[0] == original_path
 
 
-class TestMatchingDatasetRemoveKeepUnknown:
-    def _make_dataset(self) -> ConcreteFlippersMerged:
-        df = pd.DataFrame(
-            {
-                "path": ["a.jpg", "b.jpg", "c.jpg"],
-                "identity": ["x", "unknown", "y"],
-            }
-        )
-        wildlife_dataset = make_wd(df)
-        return ConcreteFlippersMerged(wildlife_dataset)
-
-    def test_remove_unknown_drops_unknown_rows(self) -> None:
-        matching_dataset = self._make_dataset()
-        matching_dataset.remove_unknown()
-        assert set(matching_dataset.wildlife_dataset.metadata["identity"]) == {"x", "y"}
-
-    def test_keep_only_unknown_keeps_only_unknown_rows(self) -> None:
-        matching_dataset = self._make_dataset()
-        matching_dataset.keep_only_unknown()
-        assert list(matching_dataset.wildlife_dataset.metadata["identity"]) == ["unknown"]
-
+class TestMatchingDataset:
     def test_from_paths_is_abstract(self) -> None:
         with pytest.raises(TypeError):
             MatchingDataset(make_wd(pd.DataFrame({"path": ["a"], "identity": ["x"]})), {})  # type: ignore[abstract]
 
 
-class TestTurtleDetectorSegmentedSelectSubset:
-    def _dataset(self, rows: list[dict[str, Any]]) -> ConcreteSegmented:
-        df = pd.DataFrame(rows)
-        wildlife_dataset = make_wd(df)
-        return ConcreteSegmented(wildlife_dataset)
-
+class TestSelectDetections:
     def test_keeps_boxes_above_threshold_when_enough(self) -> None:
         rows = [
             {"path": "1.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.9},
             {"path": "2.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.85},
             {"path": "3.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.5},
         ]
-        matching_dataset = self._dataset(rows)
-        matching_dataset.select_subset(score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=2)
-        kept_scores = sorted(matching_dataset.wildlife_dataset.metadata["score"], reverse=True)
+        wildlife_dataset = select_detections(make_wd(pd.DataFrame(rows)), score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=2)
+        kept_scores = sorted(wildlife_dataset.metadata["score"], reverse=True)
         assert kept_scores == [0.9, 0.85]
 
     def test_falls_back_to_min_per_encounter_when_not_enough_above_threshold(self) -> None:
@@ -190,9 +151,8 @@ class TestTurtleDetectorSegmentedSelectSubset:
             {"path": "3.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.35},
             {"path": "4.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.1},
         ]
-        matching_dataset = self._dataset(rows)
-        matching_dataset.select_subset(score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=2)
-        kept_scores = sorted(matching_dataset.wildlife_dataset.metadata["score"], reverse=True)
+        wildlife_dataset = select_detections(make_wd(pd.DataFrame(rows)), score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=2)
+        kept_scores = sorted(wildlife_dataset.metadata["score"], reverse=True)
         assert kept_scores == [0.5, 0.4]
 
     def test_score_min_filters_out_low_scores_before_min_per_encounter_fallback(self) -> None:
@@ -201,17 +161,15 @@ class TestTurtleDetectorSegmentedSelectSubset:
             {"path": "2.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.1},
             {"path": "3.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.05},
         ]
-        matching_dataset = self._dataset(rows)
-        matching_dataset.select_subset(score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=2)
+        wildlife_dataset = select_detections(make_wd(pd.DataFrame(rows)), score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=2)
         # only one row survives the score_min filter, so fewer than min_per_encounter remain
-        kept_scores = list(matching_dataset.wildlife_dataset.metadata["score"])
+        kept_scores = list(wildlife_dataset.metadata["score"])
         assert kept_scores == [0.5]
 
     def test_max_per_encounter_caps_candidates_before_filtering(self) -> None:
         rows = [{"path": f"{i}.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.9 - i * 0.01} for i in range(5)]
-        matching_dataset = self._dataset(rows)
-        matching_dataset.select_subset(score_threshold=0.0, score_min=0.0, max_per_encounter=2, min_per_encounter=1)
-        assert len(matching_dataset.wildlife_dataset.metadata) == 2
+        wildlife_dataset = select_detections(make_wd(pd.DataFrame(rows)), score_threshold=0.0, score_min=0.0, max_per_encounter=2, min_per_encounter=1)
+        assert len(wildlife_dataset.metadata) == 2
 
     def test_groups_are_independent_per_label_and_encounter(self) -> None:
         rows = [
@@ -219,9 +177,8 @@ class TestTurtleDetectorSegmentedSelectSubset:
             {"path": "2.jpg", "identity": "x", "label": "turtle", "encounter_id": "e1", "score": 0.9},
             {"path": "3.jpg", "identity": "y", "label": "head", "encounter_id": "e2", "score": 0.9},
         ]
-        matching_dataset = self._dataset(rows)
-        matching_dataset.select_subset(score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=1)
-        assert len(matching_dataset.wildlife_dataset.metadata) == 3
+        wildlife_dataset = select_detections(make_wd(pd.DataFrame(rows)), score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=1)
+        assert len(wildlife_dataset.metadata) == 3
 
 
 class FakeTWE:
@@ -297,7 +254,7 @@ class TestCombineDatasetsTwe:
 
 
 class TestWrapperClassesWiring:
-    def test_turtles_of_smsrc_loads_segmented_dataset_and_calls_select_subset(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_turtles_of_smsrc_loads_segmented_dataset_and_selects_detections(self, monkeypatch: pytest.MonkeyPatch) -> None:
         df = pd.DataFrame(
             {
                 "path": ["a.jpg"],
