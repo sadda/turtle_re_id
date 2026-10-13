@@ -140,6 +140,11 @@ class TurtleDetectorSegmented(MatchingDataset):
         matching_parts = _build_matching_parts(["flipper_fl", "flipper_fr"], ["flipper_hl", "flipper_hr"], database_query_matching)
         super().__init__(wildlife_dataset, matching_parts)
 
+    @staticmethod
+    def _load_segmented(loader, *args, dataset_kwargs=None) -> wd_datasets.WildlifeDataset:
+        kwargs = {"img_load": "bbox", "load_label": True, **(dataset_kwargs or {}), "load_segmentation": True}
+        return loader(*args, **kwargs)
+
     def select_subset(
         self,
         score_threshold=SCORE_THRESHOLD,
@@ -173,24 +178,14 @@ class TurtlesFlippersMerged(MatchingDataset):
 class TurtlesOfSMSRC(TurtleDetectorSegmented):
     def __init__(self, root, is_database, dataset_kwargs=None, subset_kwargs=None):
         dataset_kwargs = dict(dataset_kwargs or {})
-        subset_kwargs = dict(subset_kwargs or {})
-
-        img_load = dataset_kwargs.pop("img_load", "bbox")
-        load_label = dataset_kwargs.pop("load_label", True)
         rescue_centers = dataset_kwargs.pop("rescue_centers", None)
 
-        wildlife_dataset = wd_datasets.TurtlesOfSMSRC(
-            root,
-            img_load=img_load,
-            load_segmentation=True,
-            load_label=load_label,
-            **dataset_kwargs,
-        )
+        wildlife_dataset = self._load_segmented(wd_datasets.TurtlesOfSMSRC, root, dataset_kwargs=dataset_kwargs)
         if rescue_centers is not None:
             metadata = wildlife_dataset.metadata
             metadata["environment"] = metadata["encounter_id"].apply(lambda x: "abovewater" if _in_intervals(x, rescue_centers) else "underwater")
         super().__init__(wildlife_dataset, is_database)
-        self.select_subset(**subset_kwargs)
+        self.select_subset(**(subset_kwargs or {}))
 
     @classmethod
     def from_paths(cls, paths, is_database, dataset_kwargs=None, subset_kwargs=None):
@@ -206,21 +201,9 @@ class TurtlesOfSMSRC(TurtleDetectorSegmented):
 
 class TurtlewatchEgypt_Citizen(TurtleDetectorSegmented):
     def __init__(self, root, is_database, dataset_kwargs=None, subset_kwargs=None):
-        dataset_kwargs = dict(dataset_kwargs or {})
-        subset_kwargs = dict(subset_kwargs or {})
-
-        img_load = dataset_kwargs.pop("img_load", "bbox")
-        load_label = dataset_kwargs.pop("load_label", True)
-
-        wildlife_dataset = wd_datasets.TurtlewatchEgypt_Citizen(
-            root,
-            img_load=img_load,
-            load_segmentation=True,
-            load_label=load_label,
-            **dataset_kwargs,
-        )
+        wildlife_dataset = self._load_segmented(wd_datasets.TurtlewatchEgypt_Citizen, root, dataset_kwargs=dataset_kwargs)
         super().__init__(wildlife_dataset, is_database)
-        self.select_subset(**subset_kwargs)
+        self.select_subset(**(subset_kwargs or {}))
 
     @classmethod
     def from_paths(cls, paths, is_database, dataset_kwargs=None, subset_kwargs=None):
@@ -237,24 +220,10 @@ class TurtlewatchEgypt_New(TurtleDetectorSegmented):
         dataset_kwargs=None,
         subset_kwargs=None,
     ):
-        dataset_kwargs = dict(dataset_kwargs or {})
-        subset_kwargs = dict(subset_kwargs or {})
-
-        img_load = dataset_kwargs.pop("img_load", "bbox")
-        load_label = dataset_kwargs.pop("load_label", True)
-
-        wildlife_dataset = combine_datasets_twe(
-            root_master,
-            roots,
-            file_name,
-            img_load=img_load,
-            load_segmentation=True,
-            load_label=load_label,
-            **dataset_kwargs,
-        )
+        wildlife_dataset = self._load_segmented(combine_datasets_twe, root_master, roots, file_name, dataset_kwargs=dataset_kwargs)
         wildlife_dataset.metadata["year"] = wildlife_dataset.metadata["path"].str[:4].astype(int)
         super().__init__(wildlife_dataset, is_database)
-        self.select_subset(**subset_kwargs)
+        self.select_subset(**(subset_kwargs or {}))
 
     @classmethod
     def from_paths(cls, paths, is_database, dataset_kwargs=None, subset_kwargs=None):
