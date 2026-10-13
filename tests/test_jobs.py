@@ -19,6 +19,7 @@ def make_run_spec(matching_part: str = "heads") -> SimilarityRunSpec:
 
     splitter = MagicMock(name="splitter")
     splitter.get_split_name.return_value = "2021"
+    splitter.database_query_matching = True
 
     return SimilarityRunSpec(pipeline_spec, ignore_policy, splitter, matching_part, "bbox")
 
@@ -84,7 +85,7 @@ class TestSimilarityJob:
 
         job.run()
 
-        job.run_spec.ignore_policy.get_pair_selector.assert_called_once_with(job.matching_dataset, "heads")
+        job.run_spec.ignore_policy.get_pair_selector.assert_called_once_with(job.matching_dataset, "heads", True)
 
     def test_run_uses_matching_dataset_wildlife_dataset_for_split(self) -> None:
         job = make_job(cache_exists=False)

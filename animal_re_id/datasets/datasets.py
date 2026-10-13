@@ -68,7 +68,7 @@ def combine_datasets_twe_from_paths(paths, **kwargs) -> wd_datasets.TurtlewatchE
 def combine_matching_parts(matching_parts1, matching_parts2):
     assert matching_parts1.keys() == matching_parts2.keys()
     keys1 = matching_parts1.keys()
-    keys2 = ["labels", "cols_equal", "cols_unequal"]
+    keys2 = ["labels", "cols_unequal"]
     matching_parts = {key: {} for key in keys1}
     for key1 in keys1:
         for key2 in keys2:
@@ -117,27 +117,18 @@ class MatchingDataset(ABC):
         return narrowed
 
 
-def _build_matching_parts(front_labels, hind_labels, database_query_matching):
-    cols_equal = [] if database_query_matching else ["identity", "encounter_id"]
+def _build_matching_parts(front_labels, hind_labels):
     return {
-        "heads": {"labels": ["head"], "cols_equal": cols_equal, "cols_unequal": []},
-        "front flippers": {
-            "labels": front_labels,
-            "cols_equal": cols_equal,
-            "cols_unequal": ["label", "orientation"],
-        },
-        "hind flippers": {
-            "labels": hind_labels,
-            "cols_equal": cols_equal,
-            "cols_unequal": ["label", "orientation"],
-        },
-        "bodies": {"labels": ["turtle"], "cols_equal": cols_equal, "cols_unequal": []},
+        "heads": {"labels": ["head"], "cols_unequal": []},
+        "front flippers": {"labels": front_labels, "cols_unequal": ["label", "orientation"]},
+        "hind flippers": {"labels": hind_labels, "cols_unequal": ["label", "orientation"]},
+        "bodies": {"labels": ["turtle"], "cols_unequal": []},
     }
 
 
 class TurtleDetectorSegmented(MatchingDataset):
-    def __init__(self, wildlife_dataset, database_query_matching):
-        matching_parts = _build_matching_parts(["flipper_fl", "flipper_fr"], ["flipper_hl", "flipper_hr"], database_query_matching)
+    def __init__(self, wildlife_dataset):
+        matching_parts = _build_matching_parts(["flipper_fl", "flipper_fr"], ["flipper_hl", "flipper_hr"])
         super().__init__(wildlife_dataset, matching_parts)
 
     @staticmethod
@@ -170,13 +161,13 @@ class TurtleDetectorSegmented(MatchingDataset):
 
 
 class TurtlesFlippersMerged(MatchingDataset):
-    def __init__(self, wildlife_dataset, database_query_matching):
-        matching_parts = _build_matching_parts(["front flipper"], ["hind flipper"], database_query_matching)
+    def __init__(self, wildlife_dataset):
+        matching_parts = _build_matching_parts(["front flipper"], ["hind flipper"])
         super().__init__(wildlife_dataset, matching_parts)
 
 
 class TurtlesOfSMSRC(TurtleDetectorSegmented):
-    def __init__(self, root, is_database, dataset_kwargs=None, subset_kwargs=None):
+    def __init__(self, root, dataset_kwargs=None, subset_kwargs=None):
         dataset_kwargs = dict(dataset_kwargs or {})
         rescue_centers = dataset_kwargs.pop("rescue_centers", None)
 
@@ -184,11 +175,11 @@ class TurtlesOfSMSRC(TurtleDetectorSegmented):
         if rescue_centers is not None:
             metadata = wildlife_dataset.metadata
             metadata["environment"] = metadata["encounter_id"].apply(lambda x: "abovewater" if _in_intervals(x, rescue_centers) else "underwater")
-        super().__init__(wildlife_dataset, is_database)
+        super().__init__(wildlife_dataset)
         self.select_subset(**(subset_kwargs or {}))
 
     @classmethod
-    def from_paths(cls, paths, is_database, dataset_kwargs=None, subset_kwargs=None):
+    def from_paths(cls, paths, dataset_kwargs=None, subset_kwargs=None):
         dataset_kwargs = dict(dataset_kwargs or {})
         if "file_name_replace_identity" in paths and "replace_identity" not in dataset_kwargs:
             dataset_kwargs["replace_identity"] = _read_literal(resolve_path(paths["file_name_replace_identity"]))
@@ -196,18 +187,18 @@ class TurtlesOfSMSRC(TurtleDetectorSegmented):
             file_name = resolve_path(paths["file_name_rescue_centers"])
             if os.path.exists(file_name):
                 dataset_kwargs["rescue_centers"] = _read_literal(file_name)
-        return cls(resolve_path(paths["root"]), is_database, dataset_kwargs=dataset_kwargs, subset_kwargs=subset_kwargs)
+        return cls(resolve_path(paths["root"]), dataset_kwargs=dataset_kwargs, subset_kwargs=subset_kwargs)
 
 
 class TurtlewatchEgypt_Citizen(TurtleDetectorSegmented):
-    def __init__(self, root, is_database, dataset_kwargs=None, subset_kwargs=None):
+    def __init__(self, root, dataset_kwargs=None, subset_kwargs=None):
         wildlife_dataset = self._load_segmented(wd_datasets.TurtlewatchEgypt_Citizen, root, dataset_kwargs=dataset_kwargs)
-        super().__init__(wildlife_dataset, is_database)
+        super().__init__(wildlife_dataset)
         self.select_subset(**(subset_kwargs or {}))
 
     @classmethod
-    def from_paths(cls, paths, is_database, dataset_kwargs=None, subset_kwargs=None):
-        return cls(resolve_path(paths["root_citizen"]), is_database, dataset_kwargs=dataset_kwargs, subset_kwargs=subset_kwargs)
+    def from_paths(cls, paths, dataset_kwargs=None, subset_kwargs=None):
+        return cls(resolve_path(paths["root_citizen"]), dataset_kwargs=dataset_kwargs, subset_kwargs=subset_kwargs)
 
 
 class TurtlewatchEgypt_New(TurtleDetectorSegmented):
@@ -215,22 +206,20 @@ class TurtlewatchEgypt_New(TurtleDetectorSegmented):
         self,
         root_master,
         roots,
-        is_database,
         file_name,
         dataset_kwargs=None,
         subset_kwargs=None,
     ):
         wildlife_dataset = self._load_segmented(combine_datasets_twe, root_master, roots, file_name, dataset_kwargs=dataset_kwargs)
         wildlife_dataset.metadata["year"] = wildlife_dataset.metadata["path"].str[:4].astype(int)
-        super().__init__(wildlife_dataset, is_database)
+        super().__init__(wildlife_dataset)
         self.select_subset(**(subset_kwargs or {}))
 
     @classmethod
-    def from_paths(cls, paths, is_database, dataset_kwargs=None, subset_kwargs=None):
+    def from_paths(cls, paths, dataset_kwargs=None, subset_kwargs=None):
         return cls(
             resolve_path(paths["root_new"]),
             paths["roots_new"],
-            is_database,
             resolve_path(paths["file_name_individuals"]),
             dataset_kwargs=dataset_kwargs,
             subset_kwargs=subset_kwargs,
@@ -238,7 +227,7 @@ class TurtlewatchEgypt_New(TurtleDetectorSegmented):
 
 
 class SeaTurtleID2022(TurtlesFlippersMerged):
-    def __init__(self, root, database_query_matching, dataset_kwargs=None):
+    def __init__(self, root, dataset_kwargs=None):
         dataset_kwargs = dict(dataset_kwargs or {})
         img_load = dataset_kwargs.pop("img_load", "bbox")
         load_label = dataset_kwargs.pop("load_label", True)
@@ -264,11 +253,11 @@ class SeaTurtleID2022(TurtlesFlippersMerged):
         metadata["encounter_id"] = metadata["identity"] + "_" + metadata["date"]
 
         wildlife_dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load=img_load, load_label=load_label)
-        super().__init__(wildlife_dataset, database_query_matching)
+        super().__init__(wildlife_dataset)
 
     @classmethod
-    def from_paths(cls, paths, database_query_matching, dataset_kwargs=None):
-        return cls(resolve_path(paths["root"]), database_query_matching, dataset_kwargs=dataset_kwargs)
+    def from_paths(cls, paths, dataset_kwargs=None):
+        return cls(resolve_path(paths["root"]), dataset_kwargs=dataset_kwargs)
 
 
 class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
@@ -277,7 +266,6 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
         root_heads,
         root_flippers_front,
         root_flippers_hind,
-        database_query_matching,
         file_name,
         dataset_kwargs=None,
         score_min=SCORE_MIN,
@@ -312,15 +300,14 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
             file_name=file_name,
             **dataset_kwargs,
         )
-        super().__init__(wildlife_dataset, database_query_matching)
+        super().__init__(wildlife_dataset)
 
     @classmethod
-    def from_paths(cls, paths, database_query_matching, dataset_kwargs=None, score_min=SCORE_MIN):
+    def from_paths(cls, paths, dataset_kwargs=None, score_min=SCORE_MIN):
         return cls(
             resolve_path(paths["root_heads"]),
             resolve_path(paths["root_flippers_front"]),
             resolve_path(paths["root_flippers_hind"]),
-            database_query_matching,
             resolve_path(paths["file_name_individuals"]),
             dataset_kwargs=dataset_kwargs,
             score_min=score_min,
@@ -348,7 +335,6 @@ class TurtlewatchEgypt_Combined(MatchingDataset):
         matching_dataset1 = TurtlewatchEgypt_New(
             root_master,
             roots,
-            False,
             file_name,
             dataset_kwargs=dataset_kwargs,
             subset_kwargs=subset_kwargs,
@@ -357,7 +343,6 @@ class TurtlewatchEgypt_Combined(MatchingDataset):
             root_heads,
             root_flippers_front,
             root_flippers_hind,
-            False,
             file_name,
             dataset_kwargs=dataset_kwargs,
             score_min=score_min,
@@ -385,10 +370,10 @@ class TurtlewatchEgypt_Combined(MatchingDataset):
 
 
 class StripeSpotter(MatchingDataset):
-    def __init__(self, root, database_query_matching, dataset_kwargs=None):
+    def __init__(self, root, dataset_kwargs=None):
         matching_parts = {
-            "bodies": {"labels": ["body"], "cols_equal": [], "cols_unequal": []},
-            "flanks": {"labels": ["flank"], "cols_equal": [], "cols_unequal": []},
+            "bodies": {"labels": ["body"], "cols_unequal": []},
+            "flanks": {"labels": ["flank"], "cols_unequal": []},
         }
 
         dataset_kwargs = dict(dataset_kwargs or {})
@@ -408,5 +393,5 @@ class StripeSpotter(MatchingDataset):
         super().__init__(wildlife_dataset, matching_parts)
 
     @classmethod
-    def from_paths(cls, paths, database_query_matching, dataset_kwargs=None):
-        return cls(resolve_path(paths["root"]), database_query_matching, dataset_kwargs=dataset_kwargs)
+    def from_paths(cls, paths, dataset_kwargs=None):
+        return cls(resolve_path(paths["root"]), dataset_kwargs=dataset_kwargs)

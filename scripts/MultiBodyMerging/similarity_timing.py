@@ -70,7 +70,7 @@ for dataset_name in dataset_names:
     paths = load_paths(dataset_name, local_path=local_path)
     config = get_similarity_dataset_config(dataset_name, B=B)
 
-    detector_dataset = get_subset(get_matching_dataset(dataset_name, paths, config.database_query_matching, img_load="full"), range(n_samples), None)
+    detector_dataset = get_subset(get_matching_dataset(dataset_name, paths, img_load="full"), range(n_samples), None)
 
     with Timer("cpu") as timer:
         detector_loaded = PreloadedDataset(detector_dataset)
@@ -95,7 +95,7 @@ for dataset_name in dataset_names:
             }
         )
 
-    matching_dataset = get_matching_dataset(dataset_name, paths, config.database_query_matching, img_load=config.img_load)
+    matching_dataset = get_matching_dataset(dataset_name, paths, img_load=config.img_load)
 
     for device in devices:
         for pipeline_spec in config.pipeline_specs:

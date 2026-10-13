@@ -30,7 +30,7 @@ class SimilarityJob:
         ignore_policy = self.run_spec.ignore_policy
         matching_part = self.run_spec.matching_part
 
-        pair_selector = ignore_policy.get_pair_selector(self.matching_dataset, matching_part)
+        pair_selector = ignore_policy.get_pair_selector(self.matching_dataset, matching_part, self.run_spec.splitter.database_query_matching)
         similarity = pipeline_spec.compute(query, database, pair_selector)
 
         result = SimilarityResult(

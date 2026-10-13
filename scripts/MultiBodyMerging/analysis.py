@@ -95,7 +95,7 @@ class TurtlewatchEgypt(Analysis):
             summary[encounter_id]["identity"] = identity[0]
             summary[encounter_id]["year"] = year[0]
 
-        matching_dataset = TurtlewatchEgypt_New.from_paths(self.paths, True)
+        matching_dataset = TurtlewatchEgypt_New.from_paths(self.paths)
         metadata = matching_dataset.wildlife_dataset.metadata
         assert metadata["segmentation"].isnull().sum() == 0
 

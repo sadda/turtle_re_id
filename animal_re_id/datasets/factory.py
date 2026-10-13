@@ -1,7 +1,7 @@
 from .datasets import MatchingDataset, SeaTurtleID2022, StripeSpotter, TurtlesOfSMSRC, TurtlewatchEgypt_New
 
 
-def get_matching_dataset(dataset_name: str, paths: dict, database_query_matching: bool, img_load: str = "bbox") -> MatchingDataset:
+def get_matching_dataset(dataset_name: str, paths: dict, img_load: str = "bbox") -> MatchingDataset:
     if dataset_name == "TurtlewatchEgypt":
         matching_dataset_class = TurtlewatchEgypt_New
         dataset_kwargs = {"img_load": img_load, "remove_unknown": True}
@@ -17,4 +17,4 @@ def get_matching_dataset(dataset_name: str, paths: dict, database_query_matching
     else:
         raise ValueError(f"Dataset {dataset_name} not known")
 
-    return matching_dataset_class.from_paths(paths, database_query_matching, dataset_kwargs=dataset_kwargs)
+    return matching_dataset_class.from_paths(paths, dataset_kwargs=dataset_kwargs)

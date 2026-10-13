@@ -19,7 +19,7 @@ local_path = "config/paths.json"
 paths = load_paths(dataset_name, local_path=local_path)
 config = get_similarity_dataset_config(dataset_name, B=B)
 
-matching_dataset = get_matching_dataset(dataset_name, paths, config.database_query_matching, img_load=config.img_load)
+matching_dataset = get_matching_dataset(dataset_name, paths, img_load=config.img_load)
 
 root_features = resolve_path(paths["root_features"])
 root_similarity = resolve_path(paths["root_similarity"])
