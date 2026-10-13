@@ -74,7 +74,7 @@ def combine_matching_parts(matching_parts1, matching_parts2):
         for key2 in keys2:
             value1 = matching_parts1[key1][key2]
             value2 = matching_parts2[key1][key2]
-            value = list(set(value1).union(set(value2)))
+            value = list(dict.fromkeys(value1 + value2))
             matching_parts[key1][key2] = value
     return matching_parts
 
@@ -403,7 +403,7 @@ class StripeSpotter(MatchingDataset):
         metadata_bodies["bbox"] = None
 
         metadata = pd.concat((metadata_flanks, metadata_bodies))
-        wildlife_dataset = wd_datasets.SeaTurtleID2022(root, df=metadata, img_load="bbox", load_label=load_label)
+        wildlife_dataset = wd_datasets.StripeSpotter(root, df=metadata, img_load="bbox", load_label=load_label)
 
         super().__init__(wildlife_dataset, matching_parts)
 
