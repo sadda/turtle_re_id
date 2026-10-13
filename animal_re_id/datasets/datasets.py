@@ -403,7 +403,7 @@ class StripeSpotter(MatchingDataset):
         metadata_bodies["bbox"] = None
 
         metadata = pd.concat((metadata_flanks, metadata_bodies))
-        wildlife_dataset = wd_datasets.StripeSpotter(root, df=metadata, img_load="bbox", load_label=load_label)
+        wildlife_dataset = wd_datasets.WildlifeDataset(root, df=metadata, img_load="bbox", load_label=load_label)
 
         super().__init__(wildlife_dataset, matching_parts)
 
