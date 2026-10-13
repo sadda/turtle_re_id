@@ -280,7 +280,7 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
         database_query_matching,
         file_name,
         dataset_kwargs=None,
-        score_min=SCORE_THRESHOLD,
+        score_min=SCORE_MIN,
     ):
         dataset_kwargs = dict(dataset_kwargs or {})
         load_label = dataset_kwargs.pop("load_label", True)
@@ -315,7 +315,7 @@ class TurtlewatchEgypt_Master(TurtlesFlippersMerged):
         super().__init__(wildlife_dataset, database_query_matching)
 
     @classmethod
-    def from_paths(cls, paths, database_query_matching, dataset_kwargs=None, score_min=SCORE_THRESHOLD):
+    def from_paths(cls, paths, database_query_matching, dataset_kwargs=None, score_min=SCORE_MIN):
         return cls(
             resolve_path(paths["root_heads"]),
             resolve_path(paths["root_flippers_front"]),
