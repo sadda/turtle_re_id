@@ -172,6 +172,18 @@ class TurtlesOfSMSRC(MatchingDataset):
         return cls(resolve_path(paths["root"]), dataset_kwargs=dataset_kwargs, subset_kwargs=subset_kwargs)
 
 
+class TurtlesFromMetadata(MatchingDataset):
+    def __init__(self, root, dataset_kwargs=None, subset_kwargs=None):
+        wildlife_dataset = _load_segmented(wd_datasets.Dataset_Metadata, root, dataset_kwargs=dataset_kwargs)
+        if "encounter_id" not in wildlife_dataset.metadata.columns:
+            wildlife_dataset.metadata["encounter_id"] = wildlife_dataset.metadata["image_id"]
+        super().__init__(select_detections(wildlife_dataset, **(subset_kwargs or {})), DETECTOR_PARTS)
+
+    @classmethod
+    def from_paths(cls, paths, dataset_kwargs=None, subset_kwargs=None):
+        return cls(resolve_path(paths["root"]), dataset_kwargs=dataset_kwargs, subset_kwargs=subset_kwargs)
+
+
 class TurtlewatchEgypt_Citizen(MatchingDataset):
     def __init__(self, root, dataset_kwargs=None, subset_kwargs=None):
         wildlife_dataset = _load_segmented(wd_datasets.TurtlewatchEgypt_Citizen, root, dataset_kwargs=dataset_kwargs)
