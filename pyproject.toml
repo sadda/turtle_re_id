@@ -18,7 +18,7 @@ models = [
     "torch",
     "torchvision",
     "timm",
-    "transformers",
+    "transformers<5",
     "accelerate",
     "ultralytics",
     "huggingface_hub",
