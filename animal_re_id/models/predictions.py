@@ -100,6 +100,22 @@ class EncounterPredictions:
             raise NotImplementedError("Not yet implemented")
         return results
 
+    def get_top_predictions(self, true_identities: dict[str, str] | None = None) -> pd.DataFrame:
+        encounters = sorted(self.predictions)
+        results = pd.DataFrame(
+            {
+                "encounter": encounters,
+                "prediction": [self.predictions[encounter][0] for encounter in encounters],
+                "matching_part": [self.matching_parts[encounter][0] for encounter in encounters],
+                "similarity_score": [self.scores[encounter][0] for encounter in encounters],
+            }
+        )
+        if true_identities is not None:
+            results.insert(1, "true_identity", [true_identities[encounter] for encounter in encounters])
+            results["in_database"] = results["true_identity"].isin(set(self.database.metadata["identity"]))
+            results["correct"] = results["true_identity"] == results["prediction"]
+        return results
+
     def extract_highest_predictions(
         self,
         *,
