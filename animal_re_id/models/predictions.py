@@ -102,10 +102,13 @@ class EncounterPredictions:
 
     def extract_highest_predictions(
         self,
-        max_matches: int,
-        max_per_identity: int,
-        unlimited_unknown: bool = True,
+        *,
+        sort_by: str = "similarity",
         min_similarity: float = 0,
+        max_per_identity: int | None = None,
+        unlimited_unknown: bool = True,
+        max_per_encounter: int | None = None,
+        max_matches: int | None = None,
     ) -> pd.DataFrame:
         # Flatten scores/predictions/matching_parts/matchers/database_iloc/query_iloc (dict[encounter -> array])
         # into one row per (encounter, candidate identity).
@@ -137,7 +140,7 @@ class EncounterPredictions:
         results["similarity"] = results.groupby(["matching_part", "matcher"])["similarity_orig"].transform(lambda s: s / s.max())
 
         results = results[results["similarity"] > min_similarity]
-        results = results.sort_values("similarity", ascending=False).reset_index(drop=True)
+        results = results.sort_values(sort_by, ascending=False).reset_index(drop=True)
 
         results["identity1"] = self.query.metadata["identity"].to_numpy()[results["query_iloc"]]
         results["encounter2"] = self.database.metadata["encounter_id"].to_numpy()[results["database_iloc"]]
@@ -151,17 +154,23 @@ class EncounterPredictions:
         results = results.drop_duplicates(subset=["key", "matching_part"]).reset_index(drop=True)
 
         # Keep only at most max_per_identity matches per a pair of identities (unordered)
-        identity_pair = results[["identity1", "identity2"]]
-        identity_lo, identity_hi = identity_pair.min(axis=1), identity_pair.max(axis=1)
-        idx_remove = []
-        for (lo, hi), group in results.groupby([identity_lo, identity_hi], sort=False):
-            if unlimited_unknown and "unknown" in (lo, hi):
-                continue
-            idx_remove.extend(group.index[max_per_identity:])
-        results = results.drop(index=idx_remove)
+        if max_per_identity is not None:
+            identity_pair = results[["identity1", "identity2"]]
+            identity_lo, identity_hi = identity_pair.min(axis=1), identity_pair.max(axis=1)
+            idx_remove = []
+            for (lo, hi), group in results.groupby([identity_lo, identity_hi], sort=False):
+                if unlimited_unknown and "unknown" in (lo, hi):
+                    continue
+                idx_remove.extend(group.index[max_per_identity:])
+            results = results.drop(index=idx_remove)
+
+        # Keep only at most max_per_encounter matches per query encounter
+        if max_per_encounter is not None:
+            results = results.groupby("encounter1", sort=False).head(max_per_encounter)
 
         # Keep only at most max_matches matches overall
-        results = results.iloc[:max_matches]
+        if max_matches is not None:
+            results = results.iloc[:max_matches]
 
         columns = [
             "encounter1",

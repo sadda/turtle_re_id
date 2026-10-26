@@ -13,10 +13,10 @@ from animal_re_id.similarity.ignore_pairs_policy import (
 )
 
 
-def make_matching_dataset(cols_equal: list[str], cols_unequal: list[str], matching_part: str = "heads") -> MatchingDataset:
+def make_matching_dataset(cols_unequal: list[str], matching_part: str = "heads") -> MatchingDataset:
     return cast(
         MatchingDataset,
-        SimpleNamespace(matching_parts={matching_part: {"cols_equal": cols_equal, "cols_unequal": cols_unequal}}),
+        SimpleNamespace(matching_parts={matching_part: {"cols_unequal": cols_unequal}}),
     )
 
 
@@ -31,19 +31,19 @@ class TestAllowAllPairsPolicy:
 
     def test_get_pair_selector_returns_topk(self) -> None:
         policy = AllowAllPairsPolicy(cache_key="allow_all")
-        selector = policy.get_pair_selector(matching_dataset=cast(MatchingDataset, None), matching_part="heads")
+        selector = policy.get_pair_selector(matching_dataset=cast(MatchingDataset, None), matching_part="heads", database_query_matching=True)
         assert isinstance(selector, TopkPairSelector)
 
 
 class TestDiagonalIgnorePairsPolicy:
     def test_get_pair_selector_returns_masked_selector(self) -> None:
         policy = DiagonalIgnorePairsPolicy(cache_key="diagonal")
-        selector = policy.get_pair_selector(matching_dataset=cast(MatchingDataset, None), matching_part="heads")
+        selector = policy.get_pair_selector(matching_dataset=cast(MatchingDataset, None), matching_part="heads", database_query_matching=True)
         assert isinstance(selector, MaskedPairSelector)
 
     def test_get_ignore_mask_masks_diagonal(self) -> None:
         policy = DiagonalIgnorePairsPolicy(cache_key="diagonal")
-        selector = policy.get_pair_selector(matching_dataset=cast(MatchingDataset, None), matching_part="heads")
+        selector = policy.get_pair_selector(matching_dataset=cast(MatchingDataset, None), matching_part="heads", database_query_matching=True)
 
         query = make_wildlife_dataset_like(pd.DataFrame({"identity": ["a", "b"]}))
         database = make_wildlife_dataset_like(pd.DataFrame({"identity": ["a", "c"]}))
@@ -54,15 +54,15 @@ class TestDiagonalIgnorePairsPolicy:
 
 class TestMetadataIgnorePairsPolicy:
     def test_get_pair_selector_returns_masked_selector(self) -> None:
-        matching_dataset = make_matching_dataset(cols_equal=["identity"], cols_unequal=[])
+        matching_dataset = make_matching_dataset(cols_unequal=[])
         policy = MetadataIgnorePairsPolicy(cache_key="match_opposite")
-        selector = policy.get_pair_selector(matching_dataset, "heads")
+        selector = policy.get_pair_selector(matching_dataset, "heads", False)
         assert isinstance(selector, MaskedPairSelector)
 
-    def test_get_ignore_mask_ignores_same_identity(self) -> None:
-        matching_dataset = make_matching_dataset(cols_equal=["identity"], cols_unequal=[])
+    def test_get_ignore_mask_ignores_same_identity_for_query_query_matching(self) -> None:
+        matching_dataset = make_matching_dataset(cols_unequal=[])
         policy = MetadataIgnorePairsPolicy(cache_key="match_opposite")
-        selector = policy.get_pair_selector(matching_dataset, "heads")
+        selector = policy.get_pair_selector(matching_dataset, "heads", False)
 
         query = make_wildlife_dataset_like(pd.DataFrame({"identity": ["a", "b"]}))
         database = make_wildlife_dataset_like(pd.DataFrame({"identity": ["a", "c"]}))
@@ -76,9 +76,9 @@ class TestMetadataIgnorePairsPolicy:
         assert not mask[1, 1]
 
     def test_get_ignore_mask_ignores_different_values_in_cols_unequal(self) -> None:
-        matching_dataset = make_matching_dataset(cols_equal=[], cols_unequal=["orientation"], matching_part="front flippers")
+        matching_dataset = make_matching_dataset(cols_unequal=["orientation"], matching_part="front flippers")
         policy = MetadataIgnorePairsPolicy(cache_key="match_same")
-        selector = policy.get_pair_selector(matching_dataset, "front flippers")
+        selector = policy.get_pair_selector(matching_dataset, "front flippers", True)
 
         query = make_wildlife_dataset_like(pd.DataFrame({"orientation": ["left", "right"]}))
         database = make_wildlife_dataset_like(pd.DataFrame({"orientation": ["left", "left"]}))
@@ -92,24 +92,16 @@ class TestMetadataIgnorePairsPolicy:
         assert mask[1, 0]
         assert mask[1, 1]
 
-    def test_get_ignore_mask_uses_correct_matching_part(self) -> None:
-        matching_dataset = cast(
-            MatchingDataset,
-            SimpleNamespace(
-                matching_parts={
-                    "heads": {"cols_equal": ["identity"], "cols_unequal": []},
-                    "bodies": {"cols_equal": [], "cols_unequal": []},
-                }
-            ),
-        )
+    def test_get_ignore_mask_ignores_same_identity_only_for_query_query_matching(self) -> None:
+        matching_dataset = make_matching_dataset(cols_unequal=[])
         policy = MetadataIgnorePairsPolicy(cache_key="k")
         query = make_wildlife_dataset_like(pd.DataFrame({"identity": ["a"]}))
         database = make_wildlife_dataset_like(pd.DataFrame({"identity": ["a"]}))
 
-        mask_heads = policy.get_pair_selector(matching_dataset, "heads").get_ignore_mask(query, database)
-        mask_bodies = policy.get_pair_selector(matching_dataset, "bodies").get_ignore_mask(query, database)
-        assert mask_heads[0, 0]
-        assert not mask_bodies[0, 0]
+        mask_query_query = policy.get_pair_selector(matching_dataset, "heads", False).get_ignore_mask(query, database)
+        mask_query_database = policy.get_pair_selector(matching_dataset, "heads", True).get_ignore_mask(query, database)
+        assert mask_query_query[0, 0]
+        assert not mask_query_database[0, 0]
 
     def test_cache_key_is_stored(self) -> None:
         policy = MetadataIgnorePairsPolicy(cache_key="match_opposite")

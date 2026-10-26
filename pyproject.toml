@@ -9,16 +9,17 @@ requires-python = ">=3.11"
 dependencies = [
     "numpy",
     "pandas",
+    "networkx",
     "wildlife-datasets @ git+https://github.com/WildlifeDatasets/wildlife-datasets",
 ]
 
 [project.optional-dependencies]
 models = [
-    "wildlife-tools @ git+https://github.com/WildlifeDatasets/wildlife-tools@features",
+    "wildlife-tools @ git+https://github.com/WildlifeDatasets/wildlife-tools",
     "torch",
     "torchvision",
     "timm",
-    "transformers",
+    "transformers<5",
     "accelerate",
     "ultralytics",
     "huggingface_hub",

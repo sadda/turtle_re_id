@@ -8,8 +8,6 @@ from wildlife_datasets.datasets import WildlifeDataset
 import animal_re_id.datasets.datasets as datasets_module
 from animal_re_id.datasets.datasets import (
     MatchingDataset,
-    TurtleDetectorSegmented,
-    TurtlesFlippersMerged,
     TurtlesOfSMSRC,
     TurtlewatchEgypt_Citizen,
     TurtlewatchEgypt_Combined,
@@ -20,6 +18,7 @@ from animal_re_id.datasets.datasets import (
     combine_datasets_twe,
     combine_datasets_twe_from_paths,
     combine_matching_parts,
+    select_detections,
 )
 
 
@@ -27,42 +26,20 @@ def make_wd(df: pd.DataFrame, root: str | None = None) -> WildlifeDataset:
     return WildlifeDataset(root=root, df=df, check_files=False)
 
 
-class ConcreteSegmented(TurtleDetectorSegmented):
-    @classmethod
-    def from_paths(cls, paths: dict[str, Any], *args: Any, **kwargs: Any) -> "ConcreteSegmented":
-        raise NotImplementedError
-
-
-class ConcreteFlippersMerged(TurtlesFlippersMerged):
-    @classmethod
-    def from_paths(cls, paths: dict[str, Any], *args: Any, **kwargs: Any) -> "ConcreteFlippersMerged":
-        raise NotImplementedError
-
-
 MatchingPart = dict[str, list[str]]
 MatchingParts = dict[str, MatchingPart]
 
 
 class TestBuildMatchingParts:
-    def test_query_database_matching_true_has_no_cols_equal(self) -> None:
-        parts = _build_matching_parts(["ffl", "ffr"], ["hfl", "hfr"], database_query_matching=True)
-        for part in parts.values():
-            assert part["cols_equal"] == []
-
-    def test_query_database_matching_false_requires_identity_and_encounter_equal(self) -> None:
-        parts = _build_matching_parts(["ffl", "ffr"], ["hfl", "hfr"], database_query_matching=False)
-        for part in parts.values():
-            assert part["cols_equal"] == ["identity", "encounter_id"]
-
     def test_labels_are_wired_correctly(self) -> None:
-        parts = _build_matching_parts(["front"], ["hind"], database_query_matching=True)
+        parts = _build_matching_parts(["front"], ["hind"])
         assert parts["heads"]["labels"] == ["head"]
         assert parts["front flippers"]["labels"] == ["front"]
         assert parts["hind flippers"]["labels"] == ["hind"]
         assert parts["bodies"]["labels"] == ["turtle"]
 
     def test_flippers_have_cols_unequal_but_heads_and_bodies_do_not(self) -> None:
-        parts = _build_matching_parts(["front"], ["hind"], database_query_matching=True)
+        parts = _build_matching_parts(["front"], ["hind"])
         assert parts["front flippers"]["cols_unequal"] == ["label", "orientation"]
         assert parts["hind flippers"]["cols_unequal"] == ["label", "orientation"]
         assert parts["heads"]["cols_unequal"] == []
@@ -71,39 +48,38 @@ class TestBuildMatchingParts:
 
 class TestCombineMatchingParts:
     def test_union_of_labels(self) -> None:
-        parts1: MatchingParts = {"heads": {"labels": ["head"], "cols_equal": [], "cols_unequal": []}}
-        parts2: MatchingParts = {"heads": {"labels": ["head2"], "cols_equal": [], "cols_unequal": []}}
+        parts1: MatchingParts = {"heads": {"labels": ["head"], "cols_unequal": []}}
+        parts2: MatchingParts = {"heads": {"labels": ["head2"], "cols_unequal": []}}
         combined = combine_matching_parts(parts1, parts2)
         assert set(combined["heads"]["labels"]) == {"head", "head2"}
 
-    def test_union_of_cols_equal_and_cols_unequal(self) -> None:
-        parts1: MatchingParts = {"heads": {"labels": [], "cols_equal": ["identity"], "cols_unequal": ["label"]}}
-        parts2: MatchingParts = {"heads": {"labels": [], "cols_equal": ["encounter_id"], "cols_unequal": ["orientation"]}}
+    def test_union_of_cols_unequal(self) -> None:
+        parts1: MatchingParts = {"heads": {"labels": [], "cols_unequal": ["label"]}}
+        parts2: MatchingParts = {"heads": {"labels": [], "cols_unequal": ["orientation"]}}
         combined = combine_matching_parts(parts1, parts2)
-        assert set(combined["heads"]["cols_equal"]) == {"identity", "encounter_id"}
         assert set(combined["heads"]["cols_unequal"]) == {"label", "orientation"}
 
     def test_duplicate_values_are_deduplicated(self) -> None:
-        parts1: MatchingParts = {"heads": {"labels": ["head"], "cols_equal": ["identity"], "cols_unequal": []}}
-        parts2: MatchingParts = {"heads": {"labels": ["head"], "cols_equal": ["identity"], "cols_unequal": []}}
+        parts1: MatchingParts = {"heads": {"labels": ["head"], "cols_unequal": ["label"]}}
+        parts2: MatchingParts = {"heads": {"labels": ["head"], "cols_unequal": ["label"]}}
         combined = combine_matching_parts(parts1, parts2)
         assert combined["heads"]["labels"] == ["head"]
-        assert combined["heads"]["cols_equal"] == ["identity"]
+        assert combined["heads"]["cols_unequal"] == ["label"]
 
     def test_mismatched_keys_raise_assertion_error(self) -> None:
-        parts1: MatchingParts = {"heads": {"labels": [], "cols_equal": [], "cols_unequal": []}}
-        parts2: MatchingParts = {"bodies": {"labels": [], "cols_equal": [], "cols_unequal": []}}
+        parts1: MatchingParts = {"heads": {"labels": [], "cols_unequal": []}}
+        parts2: MatchingParts = {"bodies": {"labels": [], "cols_unequal": []}}
         with pytest.raises(AssertionError):
             combine_matching_parts(parts1, parts2)
 
     def test_all_matching_part_keys_are_preserved(self) -> None:
         parts1: MatchingParts = {
-            "heads": {"labels": ["a"], "cols_equal": [], "cols_unequal": []},
-            "bodies": {"labels": ["b"], "cols_equal": [], "cols_unequal": []},
+            "heads": {"labels": ["a"], "cols_unequal": []},
+            "bodies": {"labels": ["b"], "cols_unequal": []},
         }
         parts2: MatchingParts = {
-            "heads": {"labels": ["c"], "cols_equal": [], "cols_unequal": []},
-            "bodies": {"labels": ["d"], "cols_equal": [], "cols_unequal": []},
+            "heads": {"labels": ["c"], "cols_unequal": []},
+            "bodies": {"labels": ["d"], "cols_unequal": []},
         }
         combined = combine_matching_parts(parts1, parts2)
         assert set(combined.keys()) == {"heads", "bodies"}
@@ -151,47 +127,21 @@ class TestCombineDatasets:
         assert ds1.metadata["path"].iloc[0] == original_path
 
 
-class TestMatchingDatasetRemoveKeepUnknown:
-    def _make_dataset(self) -> ConcreteFlippersMerged:
-        df = pd.DataFrame(
-            {
-                "path": ["a.jpg", "b.jpg", "c.jpg"],
-                "identity": ["x", "unknown", "y"],
-            }
-        )
-        wildlife_dataset = make_wd(df)
-        return ConcreteFlippersMerged(wildlife_dataset, database_query_matching=True)
-
-    def test_remove_unknown_drops_unknown_rows(self) -> None:
-        matching_dataset = self._make_dataset()
-        matching_dataset.remove_unknown()
-        assert set(matching_dataset.wildlife_dataset.metadata["identity"]) == {"x", "y"}
-
-    def test_keep_only_unknown_keeps_only_unknown_rows(self) -> None:
-        matching_dataset = self._make_dataset()
-        matching_dataset.keep_only_unknown()
-        assert list(matching_dataset.wildlife_dataset.metadata["identity"]) == ["unknown"]
-
+class TestMatchingDataset:
     def test_from_paths_is_abstract(self) -> None:
         with pytest.raises(TypeError):
             MatchingDataset(make_wd(pd.DataFrame({"path": ["a"], "identity": ["x"]})), {})  # type: ignore[abstract]
 
 
-class TestTurtleDetectorSegmentedSelectSubset:
-    def _dataset(self, rows: list[dict[str, Any]]) -> ConcreteSegmented:
-        df = pd.DataFrame(rows)
-        wildlife_dataset = make_wd(df)
-        return ConcreteSegmented(wildlife_dataset, database_query_matching=True)
-
+class TestSelectDetections:
     def test_keeps_boxes_above_threshold_when_enough(self) -> None:
         rows = [
             {"path": "1.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.9},
             {"path": "2.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.85},
             {"path": "3.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.5},
         ]
-        matching_dataset = self._dataset(rows)
-        matching_dataset.select_subset(score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=2)
-        kept_scores = sorted(matching_dataset.wildlife_dataset.metadata["score"], reverse=True)
+        wildlife_dataset = select_detections(make_wd(pd.DataFrame(rows)), score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=2)
+        kept_scores = sorted(wildlife_dataset.metadata["score"], reverse=True)
         assert kept_scores == [0.9, 0.85]
 
     def test_falls_back_to_min_per_encounter_when_not_enough_above_threshold(self) -> None:
@@ -201,9 +151,8 @@ class TestTurtleDetectorSegmentedSelectSubset:
             {"path": "3.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.35},
             {"path": "4.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.1},
         ]
-        matching_dataset = self._dataset(rows)
-        matching_dataset.select_subset(score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=2)
-        kept_scores = sorted(matching_dataset.wildlife_dataset.metadata["score"], reverse=True)
+        wildlife_dataset = select_detections(make_wd(pd.DataFrame(rows)), score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=2)
+        kept_scores = sorted(wildlife_dataset.metadata["score"], reverse=True)
         assert kept_scores == [0.5, 0.4]
 
     def test_score_min_filters_out_low_scores_before_min_per_encounter_fallback(self) -> None:
@@ -212,17 +161,15 @@ class TestTurtleDetectorSegmentedSelectSubset:
             {"path": "2.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.1},
             {"path": "3.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.05},
         ]
-        matching_dataset = self._dataset(rows)
-        matching_dataset.select_subset(score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=2)
+        wildlife_dataset = select_detections(make_wd(pd.DataFrame(rows)), score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=2)
         # only one row survives the score_min filter, so fewer than min_per_encounter remain
-        kept_scores = list(matching_dataset.wildlife_dataset.metadata["score"])
+        kept_scores = list(wildlife_dataset.metadata["score"])
         assert kept_scores == [0.5]
 
     def test_max_per_encounter_caps_candidates_before_filtering(self) -> None:
         rows = [{"path": f"{i}.jpg", "identity": "x", "label": "head", "encounter_id": "e1", "score": 0.9 - i * 0.01} for i in range(5)]
-        matching_dataset = self._dataset(rows)
-        matching_dataset.select_subset(score_threshold=0.0, score_min=0.0, max_per_encounter=2, min_per_encounter=1)
-        assert len(matching_dataset.wildlife_dataset.metadata) == 2
+        wildlife_dataset = select_detections(make_wd(pd.DataFrame(rows)), score_threshold=0.0, score_min=0.0, max_per_encounter=2, min_per_encounter=1)
+        assert len(wildlife_dataset.metadata) == 2
 
     def test_groups_are_independent_per_label_and_encounter(self) -> None:
         rows = [
@@ -230,9 +177,8 @@ class TestTurtleDetectorSegmentedSelectSubset:
             {"path": "2.jpg", "identity": "x", "label": "turtle", "encounter_id": "e1", "score": 0.9},
             {"path": "3.jpg", "identity": "y", "label": "head", "encounter_id": "e2", "score": 0.9},
         ]
-        matching_dataset = self._dataset(rows)
-        matching_dataset.select_subset(score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=1)
-        assert len(matching_dataset.wildlife_dataset.metadata) == 3
+        wildlife_dataset = select_detections(make_wd(pd.DataFrame(rows)), score_threshold=0.8, score_min=0.3, max_per_encounter=10, min_per_encounter=1)
+        assert len(wildlife_dataset.metadata) == 3
 
 
 class FakeTWE:
@@ -308,7 +254,7 @@ class TestCombineDatasetsTwe:
 
 
 class TestWrapperClassesWiring:
-    def test_turtles_of_smsrc_wires_database_flag_and_calls_select_subset(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_turtles_of_smsrc_loads_segmented_dataset_and_selects_detections(self, monkeypatch: pytest.MonkeyPatch) -> None:
         df = pd.DataFrame(
             {
                 "path": ["a.jpg"],
@@ -334,33 +280,33 @@ class TestWrapperClassesWiring:
 
         monkeypatch.setattr(datasets_module.wd_datasets, "TurtlesOfSMSRC", FakeSMSRC)
 
-        matching_dataset = TurtlesOfSMSRC("/data/root", is_database=True)
+        matching_dataset = TurtlesOfSMSRC("/data/root")
 
         assert captured_kwargs["root"] == "/data/root"
         assert captured_kwargs["img_load"] == "bbox"
         assert captured_kwargs["load_segmentation"] is True
         assert captured_kwargs["load_label"] is True
-        assert matching_dataset.matching_parts["heads"]["cols_equal"] == []
+        assert len(matching_dataset.wildlife_dataset.metadata) == 1
 
     def test_turtles_of_smsrc_from_paths_uses_root_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         received: dict[str, Any] = {}
 
-        def fake_init(self: TurtlesOfSMSRC, root: str, is_database: bool, dataset_kwargs: dict[str, Any] | None = None, subset_kwargs: dict[str, Any] | None = None) -> None:
-            received.update(root=root, is_database=is_database)
+        def fake_init(self: TurtlesOfSMSRC, root: str, dataset_kwargs: dict[str, Any] | None = None, subset_kwargs: dict[str, Any] | None = None) -> None:
+            received.update(root=root)
 
         monkeypatch.setattr(TurtlesOfSMSRC, "__init__", fake_init)
-        TurtlesOfSMSRC.from_paths({"root": "/some/root"}, is_database=False)
-        assert received == {"root": "/some/root", "is_database": False}
+        TurtlesOfSMSRC.from_paths({"root": "/some/root"})
+        assert received == {"root": "/some/root"}
 
     def test_turtlewatch_egypt_citizen_from_paths_uses_root_citizen_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         received: dict[str, Any] = {}
 
-        def fake_init(self: TurtlewatchEgypt_Citizen, root: str, is_database: bool, dataset_kwargs: dict[str, Any] | None = None, subset_kwargs: dict[str, Any] | None = None) -> None:
-            received.update(root=root, is_database=is_database)
+        def fake_init(self: TurtlewatchEgypt_Citizen, root: str, dataset_kwargs: dict[str, Any] | None = None, subset_kwargs: dict[str, Any] | None = None) -> None:
+            received.update(root=root)
 
         monkeypatch.setattr(TurtlewatchEgypt_Citizen, "__init__", fake_init)
-        TurtlewatchEgypt_Citizen.from_paths({"root_citizen": "/citizen/root"}, is_database=True)
-        assert received == {"root": "/citizen/root", "is_database": True}
+        TurtlewatchEgypt_Citizen.from_paths({"root_citizen": "/citizen/root"})
+        assert received == {"root": "/citizen/root"}
 
     def test_turtlewatch_egypt_new_from_paths_uses_new_keys(self, monkeypatch: pytest.MonkeyPatch) -> None:
         received: dict[str, Any] = {}
@@ -369,12 +315,11 @@ class TestWrapperClassesWiring:
             self: TurtlewatchEgypt_New,
             root_master: str,
             roots: list[str],
-            is_database: bool,
             file_name: str,
             dataset_kwargs: dict[str, Any] | None = None,
             subset_kwargs: dict[str, Any] | None = None,
         ) -> None:
-            received.update(root_master=root_master, roots=roots, is_database=is_database, file_name=file_name)
+            received.update(root_master=root_master, roots=roots, file_name=file_name)
 
         monkeypatch.setattr(TurtlewatchEgypt_New, "__init__", fake_init)
         paths = {
@@ -382,10 +327,9 @@ class TestWrapperClassesWiring:
             "roots_new": ["2019", "2020"],
             "file_name_individuals": "/new/root/individuals.csv",
         }
-        TurtlewatchEgypt_New.from_paths(paths, is_database=False)
+        TurtlewatchEgypt_New.from_paths(paths)
         assert received["root_master"] == "/new/root"
         assert received["roots"] == ["2019", "2020"]
-        assert received["is_database"] is False
         assert received["file_name"] == "/new/root/individuals.csv"
 
     def test_turtlewatch_egypt_master_from_paths_uses_flipper_and_head_keys(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -396,7 +340,6 @@ class TestWrapperClassesWiring:
             root_heads: str,
             root_flippers_front: str,
             root_flippers_hind: str,
-            database_query_matching: bool,
             file_name: str,
             dataset_kwargs: dict[str, Any] | None = None,
             score_min: float | None = None,
@@ -405,7 +348,6 @@ class TestWrapperClassesWiring:
                 root_heads=root_heads,
                 root_flippers_front=root_flippers_front,
                 root_flippers_hind=root_flippers_hind,
-                database_query_matching=database_query_matching,
                 file_name=file_name,
             )
 
@@ -416,22 +358,21 @@ class TestWrapperClassesWiring:
             "root_flippers_hind": "/fh",
             "file_name_individuals": "/individuals.csv",
         }
-        TurtlewatchEgypt_Master.from_paths(paths, database_query_matching=True)
+        TurtlewatchEgypt_Master.from_paths(paths)
         assert received["root_heads"] == "/h"
         assert received["root_flippers_front"] == "/ff"
         assert received["root_flippers_hind"] == "/fh"
-        assert received["database_query_matching"] is True
         assert received["file_name"] == "/individuals.csv"
 
     def test_sea_turtle_id_2022_from_paths_uses_root_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         received: dict[str, Any] = {}
 
-        def fake_init(self: Any, root: str, database_query_matching: bool, dataset_kwargs: dict[str, Any] | None = None) -> None:
-            received.update(root=root, database_query_matching=database_query_matching)
+        def fake_init(self: Any, root: str, dataset_kwargs: dict[str, Any] | None = None) -> None:
+            received.update(root=root)
 
         monkeypatch.setattr(datasets_module.SeaTurtleID2022, "__init__", fake_init)
-        datasets_module.SeaTurtleID2022.from_paths({"root": "/sea/root"}, database_query_matching=False)
-        assert received == {"root": "/sea/root", "database_query_matching": False}
+        datasets_module.SeaTurtleID2022.from_paths({"root": "/sea/root"})
+        assert received == {"root": "/sea/root"}
 
     def test_turtlewatch_egypt_combined_from_paths_uses_all_new_and_master_keys(self, monkeypatch: pytest.MonkeyPatch) -> None:
         received: dict[str, Any] = {}
