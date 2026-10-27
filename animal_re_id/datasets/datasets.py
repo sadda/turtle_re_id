@@ -7,6 +7,7 @@ from typing import Any, Self
 
 import pandas as pd
 from wildlife_datasets import datasets as wd_datasets
+from wildlife_datasets.detection import load_segmentation
 
 from ..config import resolve_path
 
@@ -176,11 +177,22 @@ class TurtlesOfSMSRC(MatchingDataset):
         return cls(resolve_path(paths["root"]), dataset_kwargs=dataset_kwargs, subset_kwargs=subset_kwargs)
 
 
+class Dataset_TurtleDetector(wd_datasets.Dataset_Metadata):
+    def __init__(self, *args: Any, load_segmentation: bool = False, **kwargs: Any) -> None:
+        self.load_segmentation = load_segmentation
+        super().__init__(*args, **kwargs)
+
+    def modify_metadata(self, metadata: pd.DataFrame) -> pd.DataFrame:
+        if "encounter_id" not in metadata.columns:
+            metadata["encounter_id"] = metadata["image_id"]
+        if self.load_segmentation:
+            metadata = load_segmentation(metadata, os.path.join(self.get_root(), "segmentation.csv"))
+        return metadata
+
+
 class TurtlesFromMetadata(MatchingDataset):
     def __init__(self, root: str, dataset_kwargs: dict | None = None, subset_kwargs: dict | None = None) -> None:
-        wildlife_dataset = _load_segmented(wd_datasets.Dataset_Metadata, root, dataset_kwargs=dataset_kwargs)
-        if "encounter_id" not in wildlife_dataset.metadata.columns:
-            wildlife_dataset.metadata["encounter_id"] = wildlife_dataset.metadata["image_id"]
+        wildlife_dataset = _load_segmented(Dataset_TurtleDetector, root, dataset_kwargs=dataset_kwargs)
         super().__init__(select_detections(wildlife_dataset, **(subset_kwargs or {})), DETECTOR_PARTS)
 
     @classmethod

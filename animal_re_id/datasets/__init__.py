@@ -1,4 +1,5 @@
 from .datasets import (
+    Dataset_TurtleDetector,
     SeaTurtleID2022,
     StripeSpotter,
     TurtlesFromMetadata,
