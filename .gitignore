@@ -5,6 +5,8 @@
 /scripts/SMSRC/hidden
 verification_data_*.csv
 /runs/
+/examples/output/
+/examples/data/
 /mmdetection/
 tokens/
 nohup.out

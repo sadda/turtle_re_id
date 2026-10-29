@@ -2,6 +2,10 @@
 
 Shared library for re-identification of animals from images, built around the [wildlife-datasets](https://github.com/WildlifeDatasets/wildlife-datasets) and [wildlife-tools](https://github.com/WildlifeDatasets/wildlife-tools) ecosystem, which supports merging predictions made on multiple body parts of the same individual (e.g. head and flippers) into a single identity match. The package provides the common building blocks — dataset loaders, detection/segmentation models, and similarity computation (feature extraction, matching pipelines, caching) — that are shared across projects. Individual research projects and dataset-specific pipelines live under [scripts/](scripts/), each in its own subfolder, and reuse this shared code.
 
+## Getting started
+
+The best place to start is the notebook [examples/introduction.ipynb](examples/introduction.ipynb). It downloads a small sea turtle dataset and walks through the whole workflow: detection of body parts, re-identification of each body part, merging the predictions, exporting candidate pairs for manual verification, and assigning identities to the query from the verified answers. It runs on CPU and does not need a GPU.
+
 ## Installation
 
 After cloning the repo, install it into a virtual environment either by
@@ -23,6 +27,6 @@ If DINOv3 is used for feature extraction, you will need to log in to HuggingFace
 Dataset and output locations are configured in `animal_re_id/config/paths.json`, but can be configured manually. They are keyed by dataset name. See the individial projects in `scripts/` for examples on how to use the package.
 
 
-## Example
+## Full project
 
 For a full project built on this library, see [scripts/MultiBodyMerging](scripts/MultiBodyMerging), which computes and merges multi-body-part similarity across several real sea turtle datasets and evaluates the resulting matching accuracy.
