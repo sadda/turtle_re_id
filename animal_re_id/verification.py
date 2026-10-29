@@ -5,7 +5,7 @@ ANSWER_SAME = "same"
 ANSWER_DIFFERENT = "different"
 PREDICTION_CONFLICT = "conflict"
 PREDICTION_NEW = "new"
-PREDICTION_UNKNOWN = "unknown"
+PREDICTION_UNKNOWN = None
 
 
 def generate_answers(verification: pd.DataFrame, true_identities: dict) -> pd.DataFrame:
