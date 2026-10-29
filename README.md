@@ -1,10 +1,16 @@
+<p align="center">
+  <a href="https://github.com/sadda/turtle_re_id/actions/workflows/ci.yml"><img src="https://github.com/sadda/turtle_re_id/actions/workflows/ci.yml/badge.svg" alt="sadda/turtle_re_id CI"></a>
+  <a href="https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+  <a href="https://github.com/sadda/turtle_re_id/blob/master/LICENSE"><img src="https://img.shields.io/github/license/sadda/turtle_re_id" alt="License"></a>
+</p>
+
 # Multi-body-part animal re-identification
 
 Shared library for re-identification of animals from images, built around the [wildlife-datasets](https://github.com/WildlifeDatasets/wildlife-datasets) and [wildlife-tools](https://github.com/WildlifeDatasets/wildlife-tools) ecosystem, which supports merging predictions made on multiple body parts of the same individual (e.g. head and flippers) into a single identity match. The package provides the common building blocks — dataset loaders, detection/segmentation models, and similarity computation (feature extraction, matching pipelines, caching) — that are shared across projects. Individual research projects and dataset-specific pipelines live under [scripts/](scripts/), each in its own subfolder, and reuse this shared code.
 
 ## Getting started
 
-The best place to start is the notebook [examples/introduction.ipynb](examples/introduction.ipynb). It downloads a small sea turtle dataset and walks through the whole workflow: detection of body parts, re-identification of each body part, merging the predictions, exporting candidate pairs for manual verification, and assigning identities to the query from the verified answers. It runs on CPU and does not need a GPU.
+The best place to start is the notebook [examples/introduction.ipynb](examples/introduction.ipynb). It can be run in [Google Colab](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb) without installing anything. It downloads a small sea turtle dataset and walks through the whole workflow: detection of body parts, re-identification of each body part, merging the predictions, exporting candidate pairs for manual verification, and assigning identities to the query from the verified answers. It runs on CPU and does not need a GPU.
 
 ## Installation
 
