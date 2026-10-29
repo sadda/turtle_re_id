@@ -6,6 +6,8 @@ from ultralytics import YOLO
 from wildlife_datasets.datasets import WildlifeDataset
 from wildlife_datasets.detection import run_detection
 
+from ..datasets.utils import check_image_ids
+
 
 def turtle_detector(
     repo_id: str = "BVRA/TurtleDetector",
@@ -17,6 +19,7 @@ def turtle_detector(
 
 
 def run_detection_cached(dataset: WildlifeDataset, model: YOLO, file_name: str) -> pd.DataFrame:
+    check_image_ids(dataset.metadata)
     image_ids = dataset.metadata["image_id"]
 
     # Keep previous detections of images which are still in the dataset
