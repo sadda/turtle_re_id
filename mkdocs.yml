@@ -1,0 +1,30 @@
+site_name: Animal re-identification
+repo_url: https://github.com/sadda/turtle_re_id
+repo_name: turtle_re_id
+
+theme:
+  name: "material"
+  features:
+    - navigation.sections
+    - content.code.copy
+
+markdown_extensions:
+  - attr_list
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Introduction: index.md
+  - Quick start: quickstart.md
+  - Installation: installation.md
+  # - Your own data:
+  #   - Preparing photos: data.md
+  #   - Detection: detection.md
+  #   - Re-identification: reidentification.md
+  #   - Verification: verification.md
+  #   - Assigning identities: propagation.md
+  # - Adding new photos: updating.md
+  # - Troubleshooting: troubleshooting.md
