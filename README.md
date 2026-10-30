@@ -20,29 +20,32 @@ This repository helps ecologists recognise individual animals in new photos by c
 2. **Re-identification** (automated) – every body part of the new photos is compared with the same body part of known individuals.
 3. **Verification** (manual) – the most promising candidate pairs are checked by a human in the [Image Comparator](https://github.com/sadda/image-comparator) app.
 4. **Propagation** (automated) – the verified answers are used to assign identities to the new photos.
+
 ## Getting started
 
 See the [introduction notebook in Google Colab](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb). It is not necessary to install anything to run it.
 
 ## Installation
 
-After cloning the repo, install it into a virtual environment either by
+The simplest way is to run the [introduction notebook in Google Colab](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb), which needs no installation.
 
-```bash
-pip install .
+For a local installation, install Git and [uv](https://docs.astral.sh/uv/) as described in [Image Comparator](https://github.com/sadda/image-comparator#step-1-install-git-and-uv). Then run
+
+```
+git clone https://github.com/sadda/turtle_re_id
+cd turtle_re_id
+uv venv --python 3.14
+uv pip install -e ".[models]" jupyter
 ```
 
-when working with models (detectors, extracting features, computing similarity, ...) by
+This creates a virtual environment in the `.venv` folder and installs the package into it. Before using it, activate the environment by `source .venv/bin/activate` (Linux, Mac) or `.venv\Scripts\activate` (Windows). Then the notebook can be started by
 
-```bash
-pip install -e ".[models]"
+```
+jupyter notebook examples/introduction.ipynb
 ```
 
 If DINOv3 is used for feature extraction, you will need to log in to HuggingFace with access to DINOv3 (`huggingface-cli login`).
 
-## For developers
-
-The package provides the common building blocks — dataset loaders, detection models, and similarity computation (feature extraction, matching pipelines, caching). Research projects and dataset-specific pipelines live in [scripts/](scripts/), each in its own subfolder. For a full project, see [scripts/MultiBodyMerging](scripts/MultiBodyMerging), which merges multi-body-part similarity across several sea turtle datasets and evaluates the matching accuracy. Dataset and output locations are configured in `animal_re_id/config/paths.json`, keyed by dataset name, but can also be set manually.
 
 ## Contact
 
