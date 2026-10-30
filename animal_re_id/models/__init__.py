@@ -1,4 +1,4 @@
-from .detector import turtle_detector
+from .detector import run_detection_cached, turtle_detector
 from .pipelines import (
     Wildfusion_Similarity,
     get_pipeline_aliked,

@@ -10,6 +10,7 @@ from wildlife_datasets import datasets as wd_datasets
 from wildlife_datasets.detection import load_segmentation
 
 from ..config import resolve_path
+from .utils import check_image_ids
 
 SCORE_THRESHOLD = 0.8
 SCORE_MIN = 0.3
@@ -183,6 +184,7 @@ class Dataset_TurtleDetector(wd_datasets.Dataset_Metadata):
         super().__init__(*args, **kwargs)
 
     def modify_metadata(self, metadata: pd.DataFrame) -> pd.DataFrame:
+        check_image_ids(metadata)
         if "encounter_id" not in metadata.columns:
             metadata["encounter_id"] = metadata["image_id"]
         if self.load_segmentation:

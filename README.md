@@ -1,32 +1,52 @@
+<p align="center">
+  <a href="https://github.com/sadda/turtle_re_id/actions/workflows/ci.yml"><img src="https://github.com/sadda/turtle_re_id/actions/workflows/ci.yml/badge.svg" alt="sadda/turtle_re_id CI"></a>
+  <a href="https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+  <a href="https://github.com/sadda/turtle_re_id/blob/master/LICENSE"><img src="https://img.shields.io/github/license/sadda/turtle_re_id" alt="License"></a>
+</p>
+
+<!-- TODO: add the sketch
+<p align="center">
+<img src="docs/resources/sketch.png" alt="Workflow" width="700">
+</p>
+-->
+
 # Multi-body-part animal re-identification
 
-Shared library for re-identification of animals from images, built around the [wildlife-datasets](https://github.com/WildlifeDatasets/wildlife-datasets) and [wildlife-tools](https://github.com/WildlifeDatasets/wildlife-tools) ecosystem, which supports merging predictions made on multiple body parts of the same individual (e.g. head and flippers) into a single identity match. The package provides the common building blocks — dataset loaders, detection/segmentation models, and similarity computation (feature extraction, matching pipelines, caching) — that are shared across projects. Individual research projects and dataset-specific pipelines live under [scripts/](scripts/), each in its own subfolder, and reuse this shared code.
+This repository helps ecologists recognise individual animals in new photos by comparing them with photos of already known individuals. It was developed for sea turtles, but the approach works for any species with distinctive body parts. Instead of comparing whole images, each animal is split into body parts (such as head and flippers), which are compared separately. The computer does the time-consuming work of searching through all photos and proposes the most likely matches, while the final decision stays with a human expert. The researcher keeps full control over every identity assigned, and the results stay reliable even for difficult photos. No GPU is needed, because all computed results are stored and adding new photos only processes the new ones.
+
+## How it works
+
+1. **Detection** (automated) – the [TurtleDetector](https://huggingface.co/BVRA/TurtleDetector) finds the body parts in every photo.
+2. **Re-identification** (automated) – every body part of the new photos is compared with the same body part of known individuals.
+3. **Verification** (manual) – the most promising candidate pairs are checked by a human in the [Image Comparator](https://github.com/sadda/image-comparator) app.
+4. **Propagation** (automated) – the verified answers are used to assign identities to the new photos.
 
 ## Getting started
 
-The best place to start is the notebook [examples/introduction.ipynb](examples/introduction.ipynb). It downloads a small sea turtle dataset and walks through the whole workflow: detection of body parts, re-identification of each body part, merging the predictions, exporting candidate pairs for manual verification, and assigning identities to the query from the verified answers. It runs on CPU and does not need a GPU.
+See the [introduction notebook in Google Colab](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb). It is not necessary to install anything to run it.
 
 ## Installation
 
-After cloning the repo, install it into a virtual environment either by
+The simplest way is to run the [introduction notebook in Google Colab](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb), which needs no installation.
 
-```bash
-pip install .
+For a local installation, install Git and [uv](https://docs.astral.sh/uv/) as described in [Image Comparator](https://github.com/sadda/image-comparator#step-1-install-git-and-uv). Then run
+
+```
+git clone https://github.com/sadda/turtle_re_id
+cd turtle_re_id
+uv venv --python
+uv pip install -e ".[models]" jupyter
 ```
 
-when working with models (detectors, extracting features, computing similarity, ...) by
+This creates a virtual environment in the `.venv` folder and installs the package into it. Before using it, activate the environment by `source .venv/bin/activate` (Linux, Mac) or `.venv\Scripts\activate` (Windows). Then the notebook can be started by
 
-```bash
-pip install -e ".[models]"
+```
+jupyter notebook examples/introduction.ipynb
 ```
 
 If DINOv3 is used for feature extraction, you will need to log in to HuggingFace with access to DINOv3 (`huggingface-cli login`).
 
-## Usage
 
-Dataset and output locations are configured in `animal_re_id/config/paths.json`, but can be configured manually. They are keyed by dataset name. See the individial projects in `scripts/` for examples on how to use the package.
+## Contact
 
-
-## Full project
-
-For a full project built on this library, see [scripts/MultiBodyMerging](scripts/MultiBodyMerging), which computes and merges multi-body-part similarity across several real sea turtle datasets and evaluates the resulting matching accuracy.
+In case of problems, contact us by <a href="mailto:wilddatasets@gmail.com">:mailbox_with_mail:Email</a>.
