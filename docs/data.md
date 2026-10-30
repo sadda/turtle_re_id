@@ -91,7 +91,7 @@ If the folder structure does not fit, or the identities and encounters are store
 
 ## Setting the folders in the notebook
 
-In section 0 of the notebook, set the paths to your folders and skip the cell that downloads the example data:
+In the notebook, set the paths to your folders and skip the cell that downloads the example data:
 
 === "Identification"
 
