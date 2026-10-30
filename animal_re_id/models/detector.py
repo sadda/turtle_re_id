@@ -29,8 +29,14 @@ def run_detection_cached(dataset: WildlifeDataset, model: YOLO, file_name: str) 
     # Run detection only on images without previous detections
     mask = ~image_ids.isin(segmentation["image_id"])
     if mask.any():
-        segmentation_new = run_detection(dataset.get_subset(mask), model)
-        segmentation = pd.concat([segmentation, segmentation_new], ignore_index=True)
+        dataset_new = dataset.get_subset(mask)
+        segmentation_new = run_detection(dataset_new, model)
+
+        # Store images without detections as rows with nans so that they are not processed again
+        image_ids_new = dataset_new.metadata["image_id"]
+        image_ids_empty = image_ids_new[~image_ids_new.isin(segmentation_new["image_id"])]
+        segmentation_empty = pd.DataFrame({"image_id": image_ids_empty})
+        segmentation = pd.concat([segmentation, segmentation_new, segmentation_empty], ignore_index=True)
 
     # Sort detections by the order of images in the dataset
     position = dict(zip(image_ids, range(len(image_ids))))
