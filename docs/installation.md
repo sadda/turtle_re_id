@@ -11,7 +11,7 @@ All commands are run in a terminal. If you have not used it before, the [Image C
 ```
 git clone https://github.com/sadda/turtle_re_id
 cd turtle_re_id
-uv venv --python 3.14
+uv venv
 uv pip install -e ".[models]" jupyter
 ```
 
