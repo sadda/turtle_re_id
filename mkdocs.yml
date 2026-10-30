@@ -7,6 +7,7 @@ theme:
   features:
     - navigation.sections
     - content.code.copy
+    - content.tabs.link
 
 markdown_extensions:
   - attr_list
@@ -20,8 +21,8 @@ nav:
   - Introduction: index.md
   - Quick start: quickstart.md
   - Installation: installation.md
-  # - Your own data:
-  #   - Preparing photos: data.md
+  - Your own data:
+    - Preparing photos: data.md
   #   - Detection: detection.md
   #   - Re-identification: reidentification.md
   #   - Verification: verification.md
