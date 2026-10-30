@@ -26,11 +26,7 @@ The workflow can be used in two ways.
 
 | | **Identification** | **Discovery** |
 |---|---|---|
+| Used when | There is a database of known individuals, for example a catalogue of photo-identified turtles. | There is no such database, or the new photos contain many individuals that are not in it. |
 | Question | Which known individual is this? | Which of these photos show the same individual? |
 | Compared | Query with database | Query with itself |
 | Result | Every query encounter gets an identity from the database, or is marked as new. | Query encounters are grouped into individuals, and each group gets a new identity. |
-
-**Identification** is used when there is a database of known individuals, for example a catalogue of photo-identified turtles. **Discovery** is used when there is no such database, or when the new photos contain many individuals that are not in it. Both are verified in [Image Comparator](https://sadda.github.io/image-comparator/custom/), where the mode is set by the dataset type `Identification` or `Discovery`.
-
-The [introduction notebook](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb) shows identification.
-
