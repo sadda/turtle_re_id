@@ -58,18 +58,14 @@ In the notebook, the folder levels are set by `levels` in `Dataset_FolderStructu
 === "Identification"
 
     ```python
-    data = [
-        (root_query, False, ("date", "encounter_id")),
-        (root_database, True, ("identity",)),
-    ]
+    dataset_query = Dataset_FolderStructured(root_query, levels=("date", "encounter"))
+    dataset_database = Dataset_FolderStructured(root_database, levels=("identity",))
     ```
 
 === "Discovery"
 
     ```python
-    data = [
-        (root_query, False, ("date", "encounter_id")),
-    ]
+    dataset = Dataset_FolderStructured(root, levels=("date", "encounter"))
     ```
 
 If your folders have a different number of levels, change `levels` accordingly, while keeping these rules:
@@ -104,7 +100,7 @@ In the notebook, set the paths to your folders and skip the cell that downloads 
 === "Discovery"
 
     ```python
-    root_query = "path/to/my_project/query"
+    root = "path/to/my_project/query"
     root_cache = "output/cache_my_project"
     ```
 

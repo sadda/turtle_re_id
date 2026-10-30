@@ -1,6 +1,6 @@
 # Local installation
 
-The package can be tried without any installation in the [introduction notebook in Google Colab](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb). The first code cell installs everything that is needed.
+The package can be tried without any installation in the notebooks for [identification](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb) and [discovery](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/discovery.ipynb) in Google Colab. The first code cell installs everything that is needed.
 
 All commands are run in a terminal. If you have not used it before, the [Image Comparator installation guide](https://sadda.github.io/image-comparator/installation/) explains how to open it.
 
@@ -17,23 +17,23 @@ uv pip install -e ".[models]" jupyter
 
 This creates a virtual environment in the `.venv` folder and installs the package into it.
 
-**Step 3.** Activate the environment and start the notebook:
+**Step 3.** Activate the environment and start Jupyter:
 
 === "Linux, Mac"
 
     ```
     source .venv/bin/activate
-    jupyter notebook examples/introduction.ipynb
+    jupyter notebook examples
     ```
 
 === "Windows"
 
     ```
     .venv\Scripts\activate
-    jupyter notebook examples/introduction.ipynb
+    jupyter notebook examples
     ```
 
-The environment must be activated every time you open a new terminal.
+Then open `introduction.ipynb` for identification or `discovery.ipynb` for discovery. The environment must be activated every time you open a new terminal.
 
 ## Installing Image Comparator
 

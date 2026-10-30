@@ -24,7 +24,7 @@ This repository helps ecologists recognise individual animals in new photos by c
 
 ## Getting started
 
-See the [introduction notebook in Google Colab](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb). It is not necessary to install anything to run it. For a local installation, see the [installation guide](https://sadda.github.io/turtle_re_id/installation/).
+See the notebooks for [identification](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb) and [discovery](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/discovery.ipynb) in Google Colab. It is not necessary to install anything to run them. For a local installation, see the [installation guide](https://sadda.github.io/turtle_re_id/installation/).
 
 ## Documentation
 

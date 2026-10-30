@@ -1,6 +1,11 @@
 # Quick start
 
-The fastest way to see the whole workflow is the introduction notebook opened in [Google Colab](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb). The first run is slow, because all database photos have to be processed. After that, adding new photos only processes the new ones.
+The fastest way to see the whole workflow is to open one of the notebooks in Google Colab:
+
+- [Identification](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb): new photos are compared with a database of known individuals.
+- [Discovery](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/discovery.ipynb): photos are compared with each other to find the same individuals.
+
+The first run is slow, because all photos have to be processed. After that, adding new photos only processes the new ones.
 
 | Part | When is it downloaded/computed |
 |------|--------------------------------|
