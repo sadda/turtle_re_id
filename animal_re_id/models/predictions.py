@@ -156,7 +156,7 @@ class EncounterPredictions:
         results["similarity"] = results.groupby(["matching_part", "matcher"])["similarity_orig"].transform(lambda s: s / s.max())
 
         results = results[results["similarity"] > min_similarity]
-        results = results.sort_values(sort_by, ascending=False).reset_index(drop=True)
+        results = results.sort_values([sort_by, "encounter1", "identity2"], ascending=[False, True, True], kind="stable").reset_index(drop=True)
 
         results["identity1"] = self.query.metadata["identity"].to_numpy()[results["query_iloc"]]
         results["encounter2"] = self.database.metadata["encounter_id"].to_numpy()[results["database_iloc"]]
@@ -187,6 +187,12 @@ class EncounterPredictions:
         # Keep only at most max_matches matches overall
         if max_matches is not None:
             results = results.iloc[:max_matches]
+
+        # When the query is compared with itself, order each pair so that encounter1 < encounter2
+        if self.query.metadata.equals(self.database.metadata):
+            swap = results["encounter1"] > results["encounter2"]
+            for col1, col2 in [("encounter1", "encounter2"), ("identity1", "identity2"), ("image_id1", "image_id2")]:
+                results.loc[swap, [col1, col2]] = results.loc[swap, [col2, col1]].to_numpy()
 
         columns = [
             "encounter1",

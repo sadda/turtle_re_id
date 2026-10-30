@@ -6,7 +6,8 @@
 verification_data_*.csv
 /runs/
 /examples/output/
-/examples/data/
+/examples/data_identification/
+/examples/data_discovery/
 /mmdetection/
 tokens/
 nohup.out
