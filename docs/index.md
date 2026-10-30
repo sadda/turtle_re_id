@@ -34,8 +34,3 @@ The workflow can be used in two ways.
 
 The [introduction notebook](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb) shows identification.
 
-## Where to go next
-
-- New users: [Quick start](quickstart.md).
-- Running on your own photos: start with [Preparing photos](data.md) and follow the pages in order.
-- Already set up: [Adding new photos](updating.md).

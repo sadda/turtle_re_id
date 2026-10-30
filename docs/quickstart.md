@@ -9,5 +9,4 @@ The fastest way to see the whole workflow is the introduction notebook opened in
 | Processing database photos | once |
 | Processing query photos | only for new photos |
 
-If you are satisfied with the functionality of the package and want to try more, the next step is to [install](installation.md) the package locally and use it with your own data. This also solves the issue with Google Colab, which deletes the run results and everything needs to be computed from scratch.
- 
+If you are satisfied with the functionality of the package and want to try more, the next step is to [install](installation.md) the package locally and use it with your own data. This also avoids the limitation of Google Colab, which deletes all results when the session ends, so everything has to be computed again.
