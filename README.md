@@ -34,7 +34,7 @@ For a local installation, install Git and [uv](https://docs.astral.sh/uv/) as de
 ```
 git clone https://github.com/sadda/turtle_re_id
 cd turtle_re_id
-uv venv --python 3.14
+uv venv --python
 uv pip install -e ".[models]" jupyter
 ```
 
