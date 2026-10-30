@@ -1,6 +1,7 @@
 <p align="center">
   <a href="https://github.com/sadda/turtle_re_id/actions/workflows/ci.yml"><img src="https://github.com/sadda/turtle_re_id/actions/workflows/ci.yml/badge.svg" alt="sadda/turtle_re_id CI"></a>
   <a href="https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+  <a href="https://sadda.github.io/turtle_re_id/"><img src="https://img.shields.io/badge/docs-online-blue" alt="Documentation"></a>
   <a href="https://github.com/sadda/turtle_re_id/blob/master/LICENSE"><img src="https://img.shields.io/github/license/sadda/turtle_re_id" alt="License"></a>
 </p>
 
@@ -23,29 +24,11 @@ This repository helps ecologists recognise individual animals in new photos by c
 
 ## Getting started
 
-See the [introduction notebook in Google Colab](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb). It is not necessary to install anything to run it.
+See the [introduction notebook in Google Colab](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb). It is not necessary to install anything to run it. For a local installation, see the [installation guide](https://sadda.github.io/turtle_re_id/installation/).
 
-## Installation
+## Documentation
 
-The simplest way is to run the [introduction notebook in Google Colab](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb), which needs no installation.
-
-For a local installation, install Git and [uv](https://docs.astral.sh/uv/) as described in [Image Comparator](https://github.com/sadda/image-comparator#step-1-install-git-and-uv). Then run
-
-```
-git clone https://github.com/sadda/turtle_re_id
-cd turtle_re_id
-uv venv --python
-uv pip install -e ".[models]" jupyter
-```
-
-This creates a virtual environment in the `.venv` folder and installs the package into it. Before using it, activate the environment by `source .venv/bin/activate` (Linux, Mac) or `.venv\Scripts\activate` (Windows). Then the notebook can be started by
-
-```
-jupyter notebook examples/introduction.ipynb
-```
-
-If DINOv3 is used for feature extraction, you will need to log in to HuggingFace with access to DINOv3 (`huggingface-cli login`).
-
+The [documentation](https://sadda.github.io/turtle_re_id/) explains how to install the package, prepare your own photos and run the whole workflow.
 
 ## Contact
 
