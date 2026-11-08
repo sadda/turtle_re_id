@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-from PIL import Image
 from matplotlib.axes import Axes
+from PIL import Image
 from wildlife_datasets.datasets import WildlifeDataset
 from wildlife_tools.data import FeatureDataset
 from wildlife_tools.similarity import CollectAll, MatchLightGlue, SimilarityPipeline
