@@ -1,5 +1,4 @@
 from copy import deepcopy
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -211,7 +210,7 @@ class EncounterPredictions:
         return results[columns].reset_index(drop=True)
 
 
-def array_extend(x: np.ndarray, n: int, fill_value: Any) -> np.ndarray:
+def array_extend(x: np.ndarray, n: int, fill_value: float | int | str) -> np.ndarray:
     n_missing = n - len(x)
     if n_missing > 0:
         return np.concatenate((x, np.full(n_missing, fill_value)))
