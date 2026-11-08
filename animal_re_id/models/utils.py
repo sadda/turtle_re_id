@@ -11,10 +11,10 @@ from wildlife_tools.similarity.pairwise.utils import visualise_matches as wt_vis
 def extract_features(dataset: WildlifeDataset, pipeline: SimilarityPipeline, i: str) -> tuple[Image.Image, FeatureDataset]:
     j = get_index(dataset, i)
     dataset = dataset.get_subset([j])
-    dataset.transform = pipeline.transform.transforms[0]
-    img, _ = dataset[0]
-    dataset.transform = pipeline.transform
-    features = pipeline.extractor(dataset)
+    with dataset.temporary_attrs(transform=pipeline.transform.transforms[0]):
+        img, _ = dataset[0]
+    with dataset.temporary_attrs(transform=pipeline.transform):
+        features = pipeline.extractor(dataset)
     return img, features
 
 
