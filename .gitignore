@@ -8,6 +8,7 @@ verification_data_*.csv
 /examples/output/
 /examples/data_identification/
 /examples/data_discovery/
+/examples/data_errors/
 /mmdetection/
 tokens/
 nohup.out
