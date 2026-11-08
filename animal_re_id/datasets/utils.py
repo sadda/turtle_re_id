@@ -2,11 +2,12 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+from wildlife_datasets.datasets import WildlifeDataset
 
 MIN_IMAGE_ID_LENGTH = 10
 
 
-def add_date_exif(dataset, i, file_name):
+def add_date_exif(dataset: WildlifeDataset, i: int, file_name: str) -> None:
     date = datetime.fromisoformat(dataset.df.loc[i, "date"])
     date = date.strftime("%Y:%m:%d %H:%M:%S")
 

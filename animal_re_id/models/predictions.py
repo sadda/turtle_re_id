@@ -1,7 +1,9 @@
 from copy import deepcopy
+from typing import Any
 
 import numpy as np
 import pandas as pd
+from wildlife_datasets.datasets import WildlifeDataset
 from wildlife_tools.inference import TopkClassifier
 
 DEF_VALUES = [-np.inf, "", "", "", -1, -1]
@@ -10,8 +12,8 @@ DEF_VALUES = [-np.inf, "", "", "", -1, -1]
 class EncounterPredictions:
     def __init__(
         self,
-        query,
-        database,
+        query: WildlifeDataset,
+        database: WildlifeDataset,
         scores: dict,
         predictions: dict,
         matching_parts: str | dict,
@@ -36,8 +38,8 @@ class EncounterPredictions:
     def classify(
         cls,
         similarity: np.ndarray,
-        query,
-        database,
+        query: WildlifeDataset,
+        database: WildlifeDataset,
         matching_part: str,
         matcher: str,
         k_max: int | None = None,
@@ -68,7 +70,7 @@ class EncounterPredictions:
         query_iloc_dict = {encounter_id: query_iloc_by_encounter[i][database_iloc[i]] for i, encounter_id in enumerate(encounter_ids)}
         return cls(query, database, scores_dict, predictions_dict, matching_part, matcher, database_iloc_dict, query_iloc_dict, k_max)
 
-    def _extend_data(self, k_max):
+    def _extend_data(self, k_max: int) -> None:
         data = [self.scores, self.predictions, self.matching_parts, self.matchers, self.database_iloc, self.query_iloc]
         for var, fill_value in zip(data, DEF_VALUES):
             for encounter, value in var.items():
@@ -209,7 +211,7 @@ class EncounterPredictions:
         return results[columns].reset_index(drop=True)
 
 
-def array_extend(x, n, fill_value):
+def array_extend(x: np.ndarray, n: int, fill_value: Any) -> np.ndarray:
     n_missing = n - len(x)
     if n_missing > 0:
         return np.concatenate((x, np.full(n_missing, fill_value)))
@@ -222,7 +224,7 @@ def _offset_iloc(iloc_dict: dict, offset: int) -> dict:
     return {encounter: np.where(value == -1, -1, value + offset) for encounter, value in iloc_dict.items()}
 
 
-def _merge_wildlife_datasets(datasets: list):
+def _merge_wildlife_datasets(datasets: list[WildlifeDataset]) -> WildlifeDataset:
     first = datasets[0]
     for dataset in datasets:
         if dataset.root != first.root or dataset.img_load != first.img_load:
