@@ -4,19 +4,19 @@ The database grows with every round of verification: the identified animals are 
 
 ## Loading the answers
 
-After the verification, copy `answers.csv` from the Image Comparator folder to the `output` folder and replace the simulated answers in the notebook by
+After the verification, copy `answers.csv` from the Image Comparator folder next to the notebook, or set `file_name_answers` to its path. When this file exists, the notebook loads it instead of simulating the answers:
 
 === "Identification"
 
     ```python
-    answers = pd.read_csv("output/answers.csv")
+    answers = pd.read_csv(file_name_answers)
     predictions_verified = answers_to_predictions(answers)
     ```
 
 === "Discovery"
 
     ```python
-    answers = pd.read_csv("output/answers.csv")
+    answers = pd.read_csv(file_name_answers)
     groups = answers_to_groups(answers)
     ```
 
