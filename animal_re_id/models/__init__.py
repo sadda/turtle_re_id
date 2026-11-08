@@ -14,4 +14,4 @@ from .pipelines import (
     get_pipeline_xfeat,
 )
 from .predictions import EncounterPredictions, merge_data
-from .utils import plot_matches, visualise_match
+from .utils import plot_matches, visualise_matches

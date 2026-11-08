@@ -7,7 +7,7 @@ The notebook runs the detection, the re-identification and the export of the pai
 The notebooks are set up for the example data. For your own data, change only three things:
 
 1. **Folders:** set the paths to your photos and skip the cell that downloads the example data, see [Preparing photos](data.md#setting-the-folders-in-the-notebook).
-2. **Answers:** the cell with `true_identities` only simulates the verification for the example data. Replace it by loading your answers, see [Updating the database](updating.md#loading-the-answers).
+2. **Answers:** the cell with `true_identities` only simulates the verification for the example data. Once `answers.csv` exists, the notebook loads it instead, see [Updating the database](updating.md#loading-the-answers).
 3. **GPU (optional):** if you have an NVIDIA GPU, set `device = "cuda"`. The results are the same, only faster.
 
 ## What is stored
@@ -18,7 +18,7 @@ All computed results are stored, so the next run processes only new photos.
 |----------------|---------|-------|
 | `segmentation.csv` (next to the photos) | Detected body parts | The detection runs only for photos which are not in this file. Photos with no detection are stored too, so they are not processed again. |
 | `root_cache` | Features and keypoint matches | Use a different `root_cache` for every project. Changing `img_load` creates a new cache. |
-| `output/verification_data.csv` | Pairs for verification | Created again in every run. |
+| `verification_data.csv` | Pairs for verification | Created again in every run. |
 
 Deleting anything in the `output` folder is safe, only the next run takes longer.
 

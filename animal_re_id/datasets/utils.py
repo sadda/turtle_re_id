@@ -1,11 +1,13 @@
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
+from wildlife_datasets.datasets import WildlifeDataset
 
 MIN_IMAGE_ID_LENGTH = 10
 
 
-def add_date_exif(dataset, i, file_name):
+def add_date_exif(dataset: WildlifeDataset, i: int, file_name: str) -> None:
     date = datetime.fromisoformat(dataset.df.loc[i, "date"])
     date = date.strftime("%Y:%m:%d %H:%M:%S")
 
@@ -37,3 +39,18 @@ def check_image_ids(*metadatas: pd.DataFrame) -> None:
             shared = set(metadata1["image_id"]) & set(metadata2["image_id"])
             if len(shared) > 0:
                 raise ValueError(f"Datasets {i} and {j} share image_id, which would mix them in the cache (found e.g. {next(iter(shared))}).")
+
+
+def show_tree(path: Path, max_items: int | None = 10, indent: int = 0) -> None:
+    ignore_folders = (".DS_Store",)
+    items = []
+    for item in sorted(path.iterdir()):
+        if item.name not in ignore_folders:
+            items.append(item)
+    shown = items if max_items is None else items[:max_items]
+    for item in shown:
+        print("  " * indent + ("📁 " if item.is_dir() else "📄 ") + item.name)
+        if item.is_dir() and not item.is_symlink():
+            show_tree(item, max_items, indent + 1)
+    if len(items) > len(shown):
+        print("  " * indent + f"... ({len(items) - len(shown)} more)")

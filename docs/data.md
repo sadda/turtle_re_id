@@ -94,6 +94,8 @@ In the notebook, set the paths to your folders and skip the cell that downloads 
     ```python
     root_query = "path/to/my_project/query"
     root_database = "path/to/my_project/database"
+    file_name_verification = "verification_data.csv"
+    file_name_answers = "answers.csv"
     root_cache = "output/cache_my_project"
     ```
 
@@ -101,6 +103,8 @@ In the notebook, set the paths to your folders and skip the cell that downloads 
 
     ```python
     root = "path/to/my_project/query"
+    file_name_verification = "verification_data.csv"
+    file_name_answers = "answers.csv"
     root_cache = "output/cache_my_project"
     ```
 

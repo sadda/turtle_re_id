@@ -1,9 +1,11 @@
 import functools
+from collections.abc import Callable
 
 import numpy as np
 import timm
 import torchvision.transforms as T
 from transformers import AutoImageProcessor, AutoModel
+from wildlife_datasets.datasets import WildlifeDataset
 from wildlife_tools.features import (
     AlikedExtractor,
     DeDoDeExtractor,
@@ -12,6 +14,7 @@ from wildlife_tools.features import (
     DiskExtractor,
     DoGHardNetExtractor,
     KeyNetAffNetHardNetExtractor,
+    LocalFeatureExtractor,
     XFeatExtractor,
 )
 from wildlife_tools.similarity import CosineSimilarity, MatchLightGlue, PairSelector
@@ -20,7 +23,7 @@ from wildlife_tools.similarity.wildfusion import SimilarityPipeline, WildFusion
 
 
 class Wildfusion_Similarity:
-    def __init__(self, priority, pipeline, B, pair_selector: PairSelector | None = None):
+    def __init__(self, priority: SimilarityPipeline, pipeline: SimilarityPipeline, B: int, pair_selector: PairSelector | None = None) -> None:
         self.priority = priority
         self.pipeline = pipeline
         self.B = B
@@ -30,25 +33,25 @@ class Wildfusion_Similarity:
             pair_selector=pair_selector,
         )
 
-    def __call__(self, query, database):
+    def __call__(self, query: WildlifeDataset, database: WildlifeDataset) -> np.ndarray:
         similarity = self.wildfusion(query, database, B=self.B)
         return similarity.astype(np.float64)
 
-    def set_pair_selector(self, pair_selector: PairSelector):
+    def set_pair_selector(self, pair_selector: PairSelector) -> None:
         self.wildfusion.pair_selector = pair_selector
 
 
-def get_calibration(use_calibration) -> IsotonicCalibration | None:
+def get_calibration(use_calibration: bool) -> IsotonicCalibration | None:
     return IsotonicCalibration() if use_calibration else None
 
 
 def get_pipeline_dino(
-    model_name="facebook/dinov3-vitl16-pretrain-lvd1689m",
-    output_name="dino-vitl16",
-    device="cpu",
-    cache_prefix=None,
-    use_calibration=False,
-):
+    model_name: str = "facebook/dinov3-vitl16-pretrain-lvd1689m",
+    output_name: str = "dino-vitl16",
+    device: str = "cpu",
+    cache_prefix: str | None = None,
+    use_calibration: bool = False,
+) -> SimilarityPipeline:
 
     processor = AutoImageProcessor.from_pretrained(model_name)
 
@@ -67,7 +70,7 @@ def get_pipeline_dino(
     )
 
 
-def get_pipeline_mega(device="cpu", cache_prefix=None, use_calibration=False) -> SimilarityPipeline:
+def get_pipeline_mega(device: str = "cpu", cache_prefix: str | None = None, use_calibration: bool = False) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=CosineSimilarity(),
         extractor=DeepFeatures.lazy_load(
@@ -88,7 +91,7 @@ def get_pipeline_mega(device="cpu", cache_prefix=None, use_calibration=False) ->
     )
 
 
-def get_pipeline_miew(device="cpu", cache_prefix=None, use_calibration=False, img_size=512) -> SimilarityPipeline:
+def get_pipeline_miew(device: str = "cpu", cache_prefix: str | None = None, use_calibration: bool = False, img_size: int = 512) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=CosineSimilarity(),
         extractor=DeepFeatures.lazy_load(
@@ -109,7 +112,15 @@ def get_pipeline_miew(device="cpu", cache_prefix=None, use_calibration=False, im
     )
 
 
-def get_pipeline_lightglue(features, extractor_class, device="cpu", cache_prefix=None, use_calibration=False, img_size=512, cache_scores_only=True) -> SimilarityPipeline:
+def get_pipeline_lightglue(
+    features: str,
+    extractor_class: Callable[..., LocalFeatureExtractor],
+    device: str = "cpu",
+    cache_prefix: str | None = None,
+    use_calibration: bool = False,
+    img_size: int = 512,
+    cache_scores_only: bool = True,
+) -> SimilarityPipeline:
     return SimilarityPipeline(
         matcher=MatchLightGlue(
             features=features,

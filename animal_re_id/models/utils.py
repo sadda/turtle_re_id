@@ -1,18 +1,24 @@
-from wildlife_tools.similarity import CollectAll, MatchLightGlue
-from wildlife_tools.similarity.pairwise.utils import visualise_matches
+import matplotlib.pyplot as plt
+import pandas as pd
+from matplotlib.axes import Axes
+from PIL import Image
+from wildlife_datasets.datasets import WildlifeDataset
+from wildlife_tools.data import FeatureDataset
+from wildlife_tools.similarity import CollectAll, MatchLightGlue, SimilarityPipeline
+from wildlife_tools.similarity.pairwise.utils import visualise_matches as wt_visualise_matches
 
 
-def extract_features(dataset, pipeline, i):
+def extract_features(dataset: WildlifeDataset, pipeline: SimilarityPipeline, i: str) -> tuple[Image.Image, FeatureDataset]:
     j = get_index(dataset, i)
     dataset = dataset.get_subset([j])
-    dataset.transform = pipeline.transform.transforms[0]
-    img, _ = dataset[0]
-    dataset.transform = pipeline.transform
-    features = pipeline.extractor(dataset)
+    with dataset.temporary_attrs(transform=pipeline.transform.transforms[0]):
+        img, _ = dataset[0]
+    with dataset.temporary_attrs(transform=pipeline.transform):
+        features = pipeline.extractor(dataset)
     return img, features
 
 
-def get_index(dataset, image_id):
+def get_index(dataset: WildlifeDataset, image_id: str) -> int | None:
     idx = dataset.metadata["image_id"] == image_id
     if idx.sum() > 1:
         raise ValueError("image_id found multiple times.")
@@ -23,7 +29,7 @@ def get_index(dataset, image_id):
         return None
 
 
-def plot_matches(dataset, result):
+def plot_matches(dataset: WildlifeDataset, result: pd.Series) -> None:
     i_q = get_index(dataset, result["image_id1"])
     i_d = get_index(dataset, result["image_id2"])
     identities = result[["identity1", "identity2"]].to_numpy()
@@ -31,11 +37,17 @@ def plot_matches(dataset, result):
     dataset.plot_grid(idx=[i_q, i_d], n_cols=2, header_cols=header_cols, rotate=False)
 
 
-def visualise_match(dataset_q, dataset_d, result, pipeline, features_name, init_threshold=0.65, ax=None):
-
-    img_q, features_q = extract_features(dataset_q, pipeline, result["image_id1"])
-    img_d, features_d = extract_features(dataset_d, pipeline, result["image_id2"])
+def visualise_matches(query: WildlifeDataset, database: WildlifeDataset, row: pd.Series, pipeline: SimilarityPipeline, features_name: str, init_threshold: float = 0.5, ax: Axes | None = None, title: str | None = None) -> Axes:
+    img_q, features_q = extract_features(query, pipeline, row["image_id1"])
+    img_d, features_d = extract_features(database, pipeline, row["image_id2"])
 
     matcher = MatchLightGlue(features=features_name, collector=CollectAll(), init_threshold=init_threshold)
     results = matcher(features_q, features_d)[0]
-    visualise_matches(img_q, results["kpts0"], img_d, results["kpts1"], ax=ax)
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(10, 5))
+    wt_visualise_matches(img_q, results["kpts0"], img_d, results["kpts1"], ax=ax)
+
+    if title is not None:
+        ax.set_title(title)
+    return ax
