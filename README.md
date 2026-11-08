@@ -5,11 +5,9 @@
   <a href="https://github.com/sadda/turtle_re_id/blob/master/LICENSE"><img src="https://img.shields.io/github/license/sadda/turtle_re_id" alt="License"></a>
 </p>
 
-<!-- TODO: add the sketch
 <p align="center">
-<img src="docs/resources/sketch.png" alt="Workflow" width="700">
+<img src="docs/resources/visual_abstract.svg" alt="Workflow">
 </p>
--->
 
 # Multi-body-part animal re-identification
 
