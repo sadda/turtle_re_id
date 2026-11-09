@@ -4,6 +4,7 @@ The fastest way to see the whole workflow is to open one of the notebooks in Goo
 
 - [Identification](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/introduction.ipynb): new photos are compared with a database of known individuals.
 - [Discovery](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/discovery.ipynb): photos are compared with each other to find the same individuals.
+- [Error detection](https://colab.research.google.com/github/sadda/turtle_re_id/blob/master/examples/error_detection.ipynb): photos of a database are compared with each other to find mistakes in the identities.
 
 The first run is slow, because all photos have to be processed. After that, adding new photos only processes the new ones.
 

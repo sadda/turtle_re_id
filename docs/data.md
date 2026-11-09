@@ -4,6 +4,7 @@ The photos are sorted into folders, and the folder structure tells the pipeline 
 
 - **Identification** needs two folders: the **database** with photos of known individuals and the **query** with new photos.
 - **Discovery** needs only the **query** with new photos.
+- **Error detection** needs only the **database** with photos of known individuals.
 
 !!! info "Species"
     The body parts are found by the [TurtleDetector](https://huggingface.co/BVRA/TurtleDetector), which is trained on sea turtles. Other species need a different detector.
@@ -53,6 +54,24 @@ The photos are sorted into folders, and the folder structure tells the pipeline 
 
     - **Query**: `<date>/<encounter>/<photo>`. All photos in one encounter folder must show the same animal. The folder names can be anything, they only need to be different for different encounters on the same date.
 
+=== "Error detection"
+
+    ```
+    my_project/
+    └── database/
+        ├── t001/
+        │   └── 2024-06-12/
+        │       └── encounter_01/
+        │           ├── IMG_2001.jpg
+        │           └── IMG_2002.jpg
+        └── t002/
+            └── 2024-06-13/
+                └── encounter_01/
+                    └── IMG_2105.jpg
+    ```
+
+    - **Database**: `<identity>/<date>/<encounter>/<photo>`. The first folder name is the identity of the individual, the other levels are the same as for the query.
+
 In the notebook, the folder levels are set by `levels` in `Dataset_FolderStructured`:
 
 === "Identification"
@@ -66,6 +85,12 @@ In the notebook, the folder levels are set by `levels` in `Dataset_FolderStructu
 
     ```python
     dataset = Dataset_FolderStructured(root, levels=("date", "encounter"))
+    ```
+
+=== "Error detection"
+
+    ```python
+    dataset = Dataset_FolderStructured(root, levels=("identity", "date", "encounter"))
     ```
 
 If your folders have a different number of levels, change `levels` accordingly, while keeping these rules:
@@ -103,6 +128,15 @@ In the notebook, set the paths to your folders and skip the cell that downloads 
 
     ```python
     root = "path/to/my_project/query"
+    file_name_verification = "verification_data.csv"
+    file_name_answers = "answers.csv"
+    root_cache = "output/cache_my_project"
+    ```
+
+=== "Error detection"
+
+    ```python
+    root = "path/to/my_project/database"
     file_name_verification = "verification_data.csv"
     file_name_answers = "answers.csv"
     root_cache = "output/cache_my_project"

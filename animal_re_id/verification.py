@@ -58,6 +58,36 @@ def generate_answers_discovery(verification: pd.DataFrame, true_identities: dict
     return answers
 
 
+def generate_answers_errors(verification: pd.DataFrame, true_identities: dict) -> pd.DataFrame:
+    answers = verification.copy()
+    answers["time"] = 0.0
+    is_same = answers["image_id1"].map(true_identities) == answers["image_id2"].map(true_identities)
+    answers["answer"] = np.where(is_same, ANSWER_SAME, ANSWER_DIFFERENT)
+    return answers
+
+
+def answers_to_errors(answers: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
+    paths = metadata.set_index("image_id")["path"]
+    same = answers[answers["answer"] == ANSWER_SAME]
+
+    rows = []
+    for _, row in same.iterrows():
+        identity1 = row["identity1"]
+        identity2 = row["identity2"]
+        path1 = paths[row["image_id1"]]
+        path2 = paths[row["image_id2"]]
+        if identity1 > identity2:
+            identity1, identity2 = identity2, identity1
+            path1, path2 = path2, path1
+        rows.append({"identity1": identity1, "identity2": identity2, "path1": path1, "path2": path2})
+
+    columns = ["identity1", "identity2", "path1", "path2"]
+    errors = pd.DataFrame(rows, columns=columns)
+    errors = errors.drop_duplicates()
+    errors = errors.sort_values(columns, ignore_index=True)
+    return errors
+
+
 def answers_to_predictions(answers: pd.DataFrame, col_encounter: str = "encounter1", col_identity: str = "identity2") -> pd.DataFrame:
     rows = []
     for encounter, answers_encounter in answers.groupby(col_encounter, sort=False):
