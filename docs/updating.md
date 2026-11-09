@@ -60,7 +60,7 @@ After the verification, copy `answers.csv` from the Image Comparator folder next
 
     | Mistake | How it looks | What to do |
     |---------|--------------|------------|
-    | One individual stored under two identities | Photos from most encounters of both identities are matched. | Keep one identity and move the photos of the other one to its folder. |
+    | One individual stored under two identities | Photos from several encounters of both identities are matched. | Keep one identity and move the photos of the other one to its folder. |
     | Photo stored under a wrong identity | Only one or a few photos of an identity are matched with another identity. | Move these photos to the folder of the other identity. |
 
     Every answer is valid only for its pair of photos. A photo of one identity matched with a photo of another identity does not mean that all their photos show the same individual.
