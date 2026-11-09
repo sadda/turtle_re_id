@@ -20,6 +20,13 @@ After the verification, copy `answers.csv` from the Image Comparator folder next
     groups = answers_to_groups(answers)
     ```
 
+=== "Error detection"
+
+    ```python
+    answers = pd.read_csv(file_name_answers)
+    errors = answers_to_errors(answers, query_dataset.wildlife_dataset.metadata)
+    ```
+
 ## Results
 
 === "Identification"
@@ -46,6 +53,20 @@ After the verification, copy `answers.csv` from the Image Comparator folder next
         Two encounters of one individual end up in different groups when no pair between them was proposed or answered **Same**, for example when the photos show opposite sides of the animal. Such groups are merged later, when the individual is photographed again.
 
     Once the groups are in the database, continue with identification for the new photos.
+
+=== "Error detection"
+
+    `errors` contains one row for every pair of photos with different identities which was answered **Same**. The photos of each pair of identities show the type of the mistake:
+
+    | Mistake | How it looks | What to do |
+    |---------|--------------|------------|
+    | One individual stored under two identities | Photos from most encounters of both identities are matched. | Keep one identity and move the photos of the other one to its folder. |
+    | Photo stored under a wrong identity | Only one or a few photos of an identity are matched with another identity. | Move these photos to the folder of the other identity. |
+
+    Every answer is valid only for its pair of photos. A photo of one identity matched with a photo of another identity does not mean that all their photos show the same individual.
+
+    !!! note
+        Error detection is a check of the database, not a step of every round. Run it from time to time, for example before a larger round of identification, so that the mistakes do not spread to the new identities.
 
 ## Routine for new photos
 

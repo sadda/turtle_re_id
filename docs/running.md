@@ -63,6 +63,23 @@ The pairs for verification are checked in [Image Comparator](https://sadda.githu
         image-comparator discovery --config my_project.json
         ```
 
+=== "Error detection"
+
+    1. Create a folder for the verification and copy `verification_data.csv` there.
+    2. Create a config file `my_project.json` in that folder with the path to the folder with the photos (`root` in the notebook):
+
+        ```json
+        {
+          "root": "/path/to/my_project/database"
+        }
+        ```
+
+    3. Open a terminal in that folder and run
+
+        ```
+        image-comparator errors --config my_project.json
+        ```
+
 Answer every pair by **Same**, **Different** or **Unknown**. The answers are saved to `answers.csv` in the same folder. See the [Image Comparator documentation](https://sadda.github.io/image-comparator/custom/) for sharing the verification with other annotators.
 
 !!! warning
