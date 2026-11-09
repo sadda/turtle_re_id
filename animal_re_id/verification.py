@@ -66,28 +66,26 @@ def generate_answers_errors(verification: pd.DataFrame, true_identities: dict) -
     return answers
 
 
-def answers_to_errors(answers: pd.DataFrame, metadata: pd.DataFrame, n_images: pd.Series) -> pd.DataFrame:
+def answers_to_errors(answers: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
     paths = metadata.set_index("image_id")["path"]
     same = answers[answers["answer"] == ANSWER_SAME]
 
-    errors = {}
-    for _, row in same.iterrows():
-        pair = tuple(sorted([row["identity1"], row["identity2"]]))
-        images = errors.setdefault(pair, {pair[0]: set(), pair[1]: set()})
-        images[row["identity1"]].add(paths[row["image_id1"]])
-        images[row["identity2"]].add(paths[row["image_id2"]])
-
     rows = []
-    for (identity1, identity2), images in errors.items():
-        rows.append(
-            {
-                "identity1": identity1,
-                "identity2": identity2,
-                "images1": f"{len(images[identity1])}/{n_images[identity1]}",
-                "images2": f"{len(images[identity2])}/{n_images[identity2]}",
-            }
-        )
-    return pd.DataFrame(rows)
+    for _, row in same.iterrows():
+        identity1 = row["identity1"]
+        identity2 = row["identity2"]
+        path1 = paths[row["image_id1"]]
+        path2 = paths[row["image_id2"]]
+        if identity1 > identity2:
+            identity1, identity2 = identity2, identity1
+            path1, path2 = path2, path1
+        rows.append({"identity1": identity1, "identity2": identity2, "path1": path1, "path2": path2})
+
+    columns = ["identity1", "identity2", "path1", "path2"]
+    errors = pd.DataFrame(rows, columns=columns)
+    errors = errors.drop_duplicates()
+    errors = errors.sort_values(columns, ignore_index=True)
+    return errors
 
 
 def answers_to_predictions(answers: pd.DataFrame, col_encounter: str = "encounter1", col_identity: str = "identity2") -> pd.DataFrame:
