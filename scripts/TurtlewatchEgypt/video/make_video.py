@@ -359,10 +359,10 @@ def scene_match(scene: dict, t: float) -> Image.Image:
     match = MATCHES[scene["part"]]
     gap = WIDTH * 0.04
     max_w = (WIDTH * 0.9 - gap) / 2
-    max_h = HEIGHT * 0.5
+    max_h = HEIGHT * 0.62
     crop1, s1 = fit(CROPS[match["crop1"]], max_w, max_h)
     crop2, s2 = fit(CROPS[match["crop2"]], max_w, max_h)
-    center_y = HEIGHT * 0.45
+    center_y = HEIGHT * 0.5
     x1 = WIDTH / 2 - gap / 2 - crop1.width
     y1 = center_y - crop1.height / 2
     x2 = WIDTH / 2 + gap / 2
