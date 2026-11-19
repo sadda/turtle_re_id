@@ -1,8 +1,8 @@
 import colorsys
 import json
 import os
+import argparse
 import subprocess
-import sys
 
 import cv2
 import numpy as np
@@ -11,14 +11,13 @@ from PIL import Image, ImageDraw, ImageFont
 # ---------------------------------------------------------------------------
 # Settings
 # ---------------------------------------------------------------------------
-WIDTH = 960
-HEIGHT = 540
+WIDTH = 1920
+HEIGHT = 1080
 FPS = 24
 CRF = 32
 FADE = 0.5
-OUTPUT = "kiki_{lang}.mp4"
+OUTPUT = "kiki_{lang}_{width}x{height}.mp4"
 
-BRAND = ""
 LOGO = "logo.png"
 SUBMISSION_URL = "https://turtlewatchegypt.net/share-marine-turtles-photos/"
 SUBMISSION_LABEL = "turtlewatchegypt.net"
@@ -68,17 +67,17 @@ LANGUAGES = {
         "direction": "ltr",
         "parts": {"head": "Head", "front flipper": "Front flipper", "hind flipper": "Hind flipper"},
         "texts": {
-            "intro": {"title": "Meet Kiki", "text": "A green sea turtle from Marsa Abu Dabbab, Egypt"},
-            "fingerprint": {"title": "Every turtle is unique", "text": "The scales on its head and flippers form a pattern, like a fingerprint"},
+            "intro": {"title": "Meet Kiki", "text": "A green turtle from Abu Dabbab, Egypt"},
+            "fingerprint": {"title": "Every turtle is unique", "text": "Its scales are unique, like a fingerprint"},
             "photo1": {"text": "October 2019: a diver takes a photo of Kiki"},
             "detect1": {"text": "AI finds the head and the flippers"},
             "photo2": {"text": "February 2023: more than 3 years later..."},
             "detect2": {"text": "Is this the same turtle?"},
-            "match_head": {"title": "Comparing the patterns", "text": "Head: {n} matching points", "note": "Even a photo from above can be matched with a photo from the side."},
-            "match_front": {"title": "Comparing the patterns", "text": "Front flipper: {n} matching points", "note": "For every match, the AI also tells us how confident it is."},
+            "match_head": {"title": "Comparing the patterns", "text": "Head: {n} matching points", "note": "A top photo can match a side photo, even with little overlap."},
+            "match_front": {"title": "Comparing the patterns", "text": "Front flipper: {n} matching points", "note": "The AI also tells us how sure it is about its answer."},
             "match_hind": {"title": "Comparing the patterns", "text": "Hind flipper: {n} matching points", "note": "We are the first to identify turtles by their hind flippers."},
             "summary": {"title": "It's Kiki again!", "text": "All three body parts match"},
-            "outro": {"title": "Your photos help", "text": "We follow turtles for years, without ever touching them.\nShare your turtle photos with us!", "qr": "Scan to share your photos"},
+            "outro": {"title": "Your photos help", "text": "We follow turtles for years, without touching them.\nShare your turtle photos!", "qr": "Scan to share your photos"},
         },
     },
     "de": {
@@ -87,17 +86,17 @@ LANGUAGES = {
         "direction": "ltr",
         "parts": {"head": "Kopf", "front flipper": "Vorderflosse", "hind flipper": "Hinterflosse"},
         "texts": {
-            "intro": {"title": "Das ist Kiki", "text": "Eine Grüne Meeresschildkröte aus Marsa Abu Dabbab, Ägypten"},
-            "fingerprint": {"title": "Jede Schildkröte ist einzigartig", "text": "Die Schuppen an Kopf und Flossen bilden ein Muster, wie ein Fingerabdruck"},
+            "intro": {"title": "Das ist Kiki", "text": "Grüne Schildkröte aus Abu Dabbab, Ägypten"},
+            "fingerprint": {"title": "Jede Schildkröte ist einzigartig", "text": "Ihre Schuppen sind wie ein Fingerabdruck"},
             "photo1": {"text": "Oktober 2019: Ein Taucher fotografiert Kiki"},
             "detect1": {"text": "KI erkennt den Kopf und die Flossen"},
             "photo2": {"text": "Februar 2023: mehr als 3 Jahre später ..."},
             "detect2": {"text": "Ist das dieselbe Schildkröte?"},
-            "match_head": {"title": "Wir vergleichen die Muster", "text": "Kopf: {n} übereinstimmende Punkte", "note": "Sogar ein Foto von oben lässt sich mit einem Foto von der Seite vergleichen."},
-            "match_front": {"title": "Wir vergleichen die Muster", "text": "Vorderflosse: {n} übereinstimmende Punkte", "note": "Bei jedem Treffer gibt die KI auch an, wie sicher sie sich ist."},
-            "match_hind": {"title": "Wir vergleichen die Muster", "text": "Hinterflosse: {n} übereinstimmende Punkte", "note": "Wir sind die Ersten, die Schildkröten an ihren Hinterflossen erkennen."},
+            "match_head": {"title": "Wir vergleichen die Muster", "text": "Kopf: {n} übereinstimmende Punkte", "note": "Fotos von oben und von der Seite passen zusammen."},
+            "match_front": {"title": "Wir vergleichen die Muster", "text": "Vorderflosse: {n} übereinstimmende Punkte", "note": "Die KI sagt uns auch, wie sicher sie sich bei ihrer Antwort ist."},
+            "match_hind": {"title": "Wir vergleichen die Muster", "text": "Hinterflosse: {n} übereinstimmende Punkte", "note": "Als Erste erkennen wir Schildkröten an den Hinterflossen."},
             "summary": {"title": "Es ist wieder Kiki!", "text": "Alle drei Körperteile stimmen überein"},
-            "outro": {"title": "Ihre Fotos helfen", "text": "Wir begleiten Schildkröten über Jahre, ohne sie je zu berühren.\nTeilen Sie Ihre Schildkrötenfotos mit uns!", "qr": "Scannen und Fotos teilen"},
+            "outro": {"title": "Ihre Fotos helfen", "text": "Jahrelange Beobachtung, ganz ohne Berührung.\nTeilen Sie Ihre Fotos mit uns!", "qr": "Scannen und Fotos teilen"},
         },
     },
     "ar": {
@@ -107,13 +106,13 @@ LANGUAGES = {
         "parts": {"head": "الرأس", "front flipper": "الزعنفة الأمامية", "hind flipper": "الزعنفة الخلفية"},
         "texts": {
             "intro": {"title": "تعرّفوا على كيكي", "text": "سلحفاة بحرية خضراء من مرسى أبو دباب، مصر"},
-            "fingerprint": {"title": "كل سلحفاة فريدة من نوعها", "text": "تشكّل الحراشف على رأسها وزعانفها نمطًا مميزًا، مثل بصمة الإصبع"},
+            "fingerprint": {"title": "كل سلحفاة فريدة من نوعها", "text": "حراشف الرأس والزعانف مثل بصمة الإصبع"},
             "photo1": {"text": "أكتوبر 2019: غوّاص يلتقط صورة لكيكي"},
             "detect1": {"text": "الذكاء الاصطناعي يحدّد الرأس والزعانف"},
             "photo2": {"text": "فبراير 2023: بعد أكثر من 3 سنوات..."},
             "detect2": {"text": "هل هذه السلحفاة نفسها؟"},
-            "match_head": {"title": "مقارنة الأنماط", "text": "الرأس: عدد النقاط المتطابقة {n}", "note": "يمكن أيضًا مطابقة صورة من الأعلى مع صورة جانبية."},
-            "match_front": {"title": "مقارنة الأنماط", "text": "الزعنفة الأمامية: عدد النقاط المتطابقة {n}", "note": "مع كل مطابقة، يخبرنا الذكاء الاصطناعي أيضًا بمدى ثقته."},
+            "match_head": {"title": "مقارنة الأنماط", "text": "الرأس: عدد النقاط المتطابقة {n}", "note": "يمكن مطابقة صورة علوية بصورة جانبية، حتى مع تداخل قليل."},
+            "match_front": {"title": "مقارنة الأنماط", "text": "الزعنفة الأمامية: عدد النقاط المتطابقة {n}", "note": "ويخبرنا الذكاء الاصطناعي أيضًا بمدى ثقته في إجابته."},
             "match_hind": {"title": "مقارنة الأنماط", "text": "الزعنفة الخلفية: عدد النقاط المتطابقة {n}", "note": "نحن أول من يتعرّف على السلاحف من خلال زعانفها الخلفية."},
             "summary": {"title": "إنها كيكي مجددًا!", "text": "الأجزاء الثلاثة كلها متطابقة"},
             "outro": {"title": "صوركم تساعدنا", "text": "نتابع السلاحف لسنوات دون أن نلمسها أبدًا.\nشاركونا صوركم للسلاحف!", "qr": "امسحوا الرمز لمشاركة صوركم"},
@@ -272,14 +271,11 @@ def scene_intro(scene: dict, t: float) -> Image.Image:
     a0 = progress(t, 0.1, 0.9)
     a1 = progress(t, 1.0, 1.8)
     a2 = progress(t, 1.7, 2.5)
-    brand_y = HEIGHT * 0.22
     logo, _ = fit(LOGO_IMAGE, WIDTH * 0.4, HEIGHT * 0.22)
     logo.putalpha(logo.getchannel("A").point(lambda v: round(v * a0)))
-    img.paste(logo, (round((WIDTH - logo.width) / 2), round(HEIGHT * 0.17 - logo.height / 2)), logo)
-    brand_y = HEIGHT * 0.36
-    draw_text_block(img, BRAND, ImageFont.truetype(LANGUAGES["en"]["font_bold"], round(HEIGHT * 0.06)), brand_y, TEXT_COLOR, a0)
-    draw_text_block(img, text(scene, "title"), font(0.1), HEIGHT * 0.56, ACCENT, a1)
-    draw_text_block(img, text(scene, "text"), font(0.05, bold=False), HEIGHT * 0.74, TEXT_COLOR, a2)
+    img.paste(logo, (round((WIDTH - logo.width) / 2), round(HEIGHT * 0.22 - logo.height / 2)), logo)
+    draw_text_block(img, text(scene, "title"), font(0.1), HEIGHT * 0.48, ACCENT, a1)
+    draw_text_block(img, text(scene, "text"), font(0.05, bold=False), HEIGHT * 0.66, TEXT_COLOR, a2)
     return img
 
 
@@ -345,12 +341,13 @@ def scene_detect(scene: dict, t: float) -> Image.Image:
         polygon = [(ox + px * scale, oy + py * scale) for px, py in det["polygon"]]
         if len(polygon) >= 3:
             draw.polygon(polygon, fill=color + (round(110 * p),))
-        draw.rectangle([cx - hw, cy - hh, cx + hw, cy + hh], outline=color + (round(255 * p),), width=3)
+        draw.rectangle([cx - hw, cy - hh, cx + hw, cy + hh], outline=color + (round(255 * p),), width=max(3, round(HEIGHT / 270)))
         name = part_name(det["label"])
         tw = draw.textlength(name, font=fnt, direction=LANG["direction"])
-        tx = cx - hw
+        tag_w = tw + fnt.size * 0.6
+        tx = min(max(cx - hw, 0), WIDTH - tag_w)
         ty = cy - hh - fnt.size * 1.4
-        draw.rectangle([tx, ty, tx + tw + fnt.size * 0.6, ty + fnt.size * 1.4], fill=color + (round(230 * p),))
+        draw.rectangle([tx, ty, tx + tag_w, ty + fnt.size * 1.4], fill=color + (round(230 * p),))
         draw.text((tx + fnt.size * 0.3, ty + fnt.size * 0.1), name, font=fnt, fill=(0, 0, 0, round(255 * p)), direction=LANG["direction"])
     img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
     draw_caption(img, text(scene, "text"), 1.0)
@@ -387,6 +384,7 @@ def scene_match(scene: dict, t: float) -> Image.Image:
     start = 0.8
     end = scene["duration"] - 3.0
     r = max(2, round(HEIGHT * 0.005))
+    line_width = max(2, round(HEIGHT / 360))
     n_drawn = 0
     for rank, k in enumerate(order):
         t0 = start + (end - start) * rank / max(1, n)
@@ -400,10 +398,10 @@ def scene_match(scene: dict, t: float) -> Image.Image:
         by = y2 + kpts2[k, 1] * s2
         ex = ax + (bx - ax) * p
         ey = ay + (by - ay) * p
-        draw.line([(ax, ay), (ex, ey)], fill=colors[rank], width=2)
-        draw.ellipse([ax - r, ay - r, ax + r, ay + r], outline=colors[rank], width=2)
+        draw.line([(ax, ay), (ex, ey)], fill=colors[rank], width=line_width)
+        draw.ellipse([ax - r, ay - r, ax + r, ay + r], outline=colors[rank], width=line_width)
         if p >= 1:
-            draw.ellipse([bx - r, by - r, bx + r, by + r], outline=colors[rank], width=2)
+            draw.ellipse([bx - r, by - r, bx + r, by + r], outline=colors[rank], width=line_width)
 
     draw_title(img, text(scene, "title"), 1.0)
     note_alpha = progress(t, 1.0, 1.8)
@@ -487,7 +485,17 @@ def render(output: str) -> None:
 
 
 if __name__ == "__main__":
-    langs = sys.argv[1:] or list(LANGUAGES)
-    for lang in langs:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("langs", nargs="*", default=list(LANGUAGES))
+    parser.add_argument("--width", type=int, default=WIDTH)
+    parser.add_argument("--height", type=int, default=HEIGHT)
+    parser.add_argument("--crf", type=int, default=CRF)
+    args = parser.parse_args()
+
+    WIDTH = args.width
+    HEIGHT = args.height
+    CRF = args.crf
+    for lang in args.langs:
         LANG = LANGUAGES[lang]
-        render(os.path.join(ROOT, OUTPUT.format(lang=lang)))
+        output = OUTPUT.format(lang=lang, width=WIDTH, height=HEIGHT)
+        render(os.path.join(ROOT, output))
