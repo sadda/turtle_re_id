@@ -18,7 +18,7 @@ CRF = 32
 FADE = 0.5
 OUTPUT = "kiki_{lang}.mp4"
 
-BRAND = "Turtlewatch Egypt 2.0"
+BRAND = ""
 LOGO = "logo.png"
 SUBMISSION_URL = "https://turtlewatchegypt.net/share-marine-turtles-photos/"
 SUBMISSION_LABEL = "turtlewatchegypt.net"
@@ -134,8 +134,8 @@ PHOTOS = {key: Image.open(os.path.join(ROOT_ASSETS, name)).convert("RGB") for ke
 MATCHES = {m["part"]: m for m in ASSETS["matches"]}
 CROPS = {name: Image.open(os.path.join(ROOT_ASSETS, name)).convert("RGB") for m in ASSETS["matches"] for name in [m["crop1"], m["crop2"]]}
 YEARS = list(ASSETS["photos"])
-LOGO_PATH = os.path.join(ROOT_ASSETS, LOGO)
-LOGO_IMAGE = Image.open(LOGO_PATH).convert("RGBA") if os.path.exists(LOGO_PATH) else None
+LOGO_PATH = os.path.join(ROOT, LOGO)
+LOGO_IMAGE = Image.open(LOGO_PATH).convert("RGBA")
 
 
 def make_qr(url: str) -> Image.Image:
@@ -273,11 +273,10 @@ def scene_intro(scene: dict, t: float) -> Image.Image:
     a1 = progress(t, 1.0, 1.8)
     a2 = progress(t, 1.7, 2.5)
     brand_y = HEIGHT * 0.22
-    if LOGO_IMAGE is not None:
-        logo, _ = fit(LOGO_IMAGE, WIDTH * 0.4, HEIGHT * 0.22)
-        logo.putalpha(logo.getchannel("A").point(lambda v: round(v * a0)))
-        img.paste(logo, (round((WIDTH - logo.width) / 2), round(HEIGHT * 0.17 - logo.height / 2)), logo)
-        brand_y = HEIGHT * 0.36
+    logo, _ = fit(LOGO_IMAGE, WIDTH * 0.4, HEIGHT * 0.22)
+    logo.putalpha(logo.getchannel("A").point(lambda v: round(v * a0)))
+    img.paste(logo, (round((WIDTH - logo.width) / 2), round(HEIGHT * 0.17 - logo.height / 2)), logo)
+    brand_y = HEIGHT * 0.36
     draw_text_block(img, BRAND, ImageFont.truetype(LANGUAGES["en"]["font_bold"], round(HEIGHT * 0.06)), brand_y, TEXT_COLOR, a0)
     draw_text_block(img, text(scene, "title"), font(0.1), HEIGHT * 0.56, ACCENT, a1)
     draw_text_block(img, text(scene, "text"), font(0.05, bold=False), HEIGHT * 0.74, TEXT_COLOR, a2)
@@ -407,7 +406,7 @@ def scene_match(scene: dict, t: float) -> Image.Image:
             draw.ellipse([bx - r, by - r, bx + r, by + r], outline=colors[rank], width=2)
 
     draw_title(img, text(scene, "title"), 1.0)
-    note_alpha = progress(t, end - 0.5, end + 0.3)
+    note_alpha = progress(t, 1.0, 1.8)
     draw_caption(img, text(scene, "text").format(n=n_drawn), 1.0, note=text(scene, "note"), note_alpha=note_alpha)
     return img
 
