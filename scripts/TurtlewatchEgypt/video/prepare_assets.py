@@ -39,12 +39,13 @@ def save_photo(path: str, key: str, model) -> list[dict]:
     img.save(f"{root_assets}/photo_{key}.jpg", quality=92)
 
     detections = []
-    for box in result.boxes:
+    for box, polygon in zip(result.boxes, result.masks.xy):
         label = result.names[int(box.cls)]
         if label == "turtle":
             continue
         x0, y0, x1, y1 = (box.xyxy[0].cpu().numpy() * scale).tolist()
-        detections.append({"label": label, "score": float(box.conf), "bbox": [x0, y0, x1 - x0, y1 - y0]})
+        polygon = (np.asarray(polygon) * scale).round(1).tolist()
+        detections.append({"label": label, "score": float(box.conf), "bbox": [x0, y0, x1 - x0, y1 - y0], "polygon": polygon})
     return detections
 
 

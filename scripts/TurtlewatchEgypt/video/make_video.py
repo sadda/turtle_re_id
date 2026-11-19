@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 
+import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
@@ -16,6 +17,11 @@ FPS = 24
 CRF = 32
 FADE = 0.5
 OUTPUT = "kiki_{lang}.mp4"
+
+BRAND = "Turtlewatch Egypt 2.0"
+LOGO = "logo.png"
+SUBMISSION_URL = "https://turtlewatchegypt.net/share-marine-turtles-photos/"
+SUBMISSION_LABEL = "turtlewatchegypt.net"
 
 BACKGROUND = (12, 30, 42)
 TEXT_COLOR = (255, 255, 255)
@@ -39,17 +45,17 @@ PART_COLORS = {
 # Storyboard: edit texts, durations and order here
 # ---------------------------------------------------------------------------
 STORYBOARD = [
-    {"type": "title", "duration": 4.0, "id": "intro"},
+    {"type": "intro", "duration": 5.0, "id": "intro"},
     {"type": "fingerprint", "duration": 5.0, "id": "fingerprint"},
     {"type": "photo", "duration": 3.5, "photo": "2019", "id": "photo1", "fade_out": False},
     {"type": "detect", "duration": 4.5, "photo": "2019", "id": "detect1", "fade_in": False},
     {"type": "photo", "duration": 3.5, "photo": "2023", "id": "photo2", "fade_out": False},
     {"type": "detect", "duration": 4.0, "photo": "2023", "id": "detect2", "fade_in": False},
-    {"type": "match", "duration": 5.5, "part": "head", "id": "match_head"},
-    {"type": "match", "duration": 5.5, "part": "front flipper", "id": "match_front"},
-    {"type": "match", "duration": 5.5, "part": "hind flipper", "id": "match_hind"},
+    {"type": "match", "duration": 7.0, "part": "head", "id": "match_head"},
+    {"type": "match", "duration": 7.0, "part": "front flipper", "id": "match_front"},
+    {"type": "match", "duration": 7.0, "part": "hind flipper", "id": "match_hind"},
     {"type": "summary", "duration": 5.0, "id": "summary"},
-    {"type": "title", "duration": 5.0, "id": "outro"},
+    {"type": "outro", "duration": 7.0, "id": "outro"},
 ]
 
 # ---------------------------------------------------------------------------
@@ -68,11 +74,11 @@ LANGUAGES = {
             "detect1": {"text": "AI finds the head and the flippers"},
             "photo2": {"text": "February 2023: more than 3 years later..."},
             "detect2": {"text": "Is this the same turtle?"},
-            "match_head": {"title": "Comparing the patterns", "text": "Head: {n} matching points"},
-            "match_front": {"title": "Comparing the patterns", "text": "Front flipper: {n} matching points"},
-            "match_hind": {"title": "Comparing the patterns", "text": "Hind flipper: {n} matching points"},
+            "match_head": {"title": "Comparing the patterns", "text": "Head: {n} matching points", "note": "Even a photo from above can be matched with a photo from the side."},
+            "match_front": {"title": "Comparing the patterns", "text": "Front flipper: {n} matching points", "note": "For every match, the AI also tells us how confident it is."},
+            "match_hind": {"title": "Comparing the patterns", "text": "Hind flipper: {n} matching points", "note": "We are the first to identify turtles by their hind flippers."},
             "summary": {"title": "It's Kiki again!", "text": "All three body parts match"},
-            "outro": {"title": "Your photos help", "text": "We follow turtles for years, without ever touching them.\nShare your turtle photos with us!"},
+            "outro": {"title": "Your photos help", "text": "We follow turtles for years, without ever touching them.\nShare your turtle photos with us!", "qr": "Scan to share your photos"},
         },
     },
     "de": {
@@ -87,11 +93,11 @@ LANGUAGES = {
             "detect1": {"text": "KI erkennt den Kopf und die Flossen"},
             "photo2": {"text": "Februar 2023: mehr als 3 Jahre später ..."},
             "detect2": {"text": "Ist das dieselbe Schildkröte?"},
-            "match_head": {"title": "Wir vergleichen die Muster", "text": "Kopf: {n} übereinstimmende Punkte"},
-            "match_front": {"title": "Wir vergleichen die Muster", "text": "Vorderflosse: {n} übereinstimmende Punkte"},
-            "match_hind": {"title": "Wir vergleichen die Muster", "text": "Hinterflosse: {n} übereinstimmende Punkte"},
+            "match_head": {"title": "Wir vergleichen die Muster", "text": "Kopf: {n} übereinstimmende Punkte", "note": "Sogar ein Foto von oben lässt sich mit einem Foto von der Seite vergleichen."},
+            "match_front": {"title": "Wir vergleichen die Muster", "text": "Vorderflosse: {n} übereinstimmende Punkte", "note": "Bei jedem Treffer gibt die KI auch an, wie sicher sie sich ist."},
+            "match_hind": {"title": "Wir vergleichen die Muster", "text": "Hinterflosse: {n} übereinstimmende Punkte", "note": "Wir sind die Ersten, die Schildkröten an ihren Hinterflossen erkennen."},
             "summary": {"title": "Es ist wieder Kiki!", "text": "Alle drei Körperteile stimmen überein"},
-            "outro": {"title": "Ihre Fotos helfen", "text": "Wir begleiten Schildkröten über Jahre, ohne sie je zu berühren.\nTeilen Sie Ihre Schildkrötenfotos mit uns!"},
+            "outro": {"title": "Ihre Fotos helfen", "text": "Wir begleiten Schildkröten über Jahre, ohne sie je zu berühren.\nTeilen Sie Ihre Schildkrötenfotos mit uns!", "qr": "Scannen und Fotos teilen"},
         },
     },
     "ar": {
@@ -106,11 +112,11 @@ LANGUAGES = {
             "detect1": {"text": "الذكاء الاصطناعي يحدّد الرأس والزعانف"},
             "photo2": {"text": "فبراير 2023: بعد أكثر من 3 سنوات..."},
             "detect2": {"text": "هل هذه السلحفاة نفسها؟"},
-            "match_head": {"title": "مقارنة الأنماط", "text": "الرأس: عدد النقاط المتطابقة {n}"},
-            "match_front": {"title": "مقارنة الأنماط", "text": "الزعنفة الأمامية: عدد النقاط المتطابقة {n}"},
-            "match_hind": {"title": "مقارنة الأنماط", "text": "الزعنفة الخلفية: عدد النقاط المتطابقة {n}"},
+            "match_head": {"title": "مقارنة الأنماط", "text": "الرأس: عدد النقاط المتطابقة {n}", "note": "يمكن أيضًا مطابقة صورة من الأعلى مع صورة جانبية."},
+            "match_front": {"title": "مقارنة الأنماط", "text": "الزعنفة الأمامية: عدد النقاط المتطابقة {n}", "note": "مع كل مطابقة، يخبرنا الذكاء الاصطناعي أيضًا بمدى ثقته."},
+            "match_hind": {"title": "مقارنة الأنماط", "text": "الزعنفة الخلفية: عدد النقاط المتطابقة {n}", "note": "نحن أول من يتعرّف على السلاحف من خلال زعانفها الخلفية."},
             "summary": {"title": "إنها كيكي مجددًا!", "text": "الأجزاء الثلاثة كلها متطابقة"},
-            "outro": {"title": "صوركم تساعدنا", "text": "نتابع السلاحف لسنوات دون أن نلمسها أبدًا.\nشاركونا صوركم للسلاحف!"},
+            "outro": {"title": "صوركم تساعدنا", "text": "نتابع السلاحف لسنوات دون أن نلمسها أبدًا.\nشاركونا صوركم للسلاحف!", "qr": "امسحوا الرمز لمشاركة صوركم"},
         },
     },
 }
@@ -128,6 +134,16 @@ PHOTOS = {key: Image.open(os.path.join(ROOT_ASSETS, name)).convert("RGB") for ke
 MATCHES = {m["part"]: m for m in ASSETS["matches"]}
 CROPS = {name: Image.open(os.path.join(ROOT_ASSETS, name)).convert("RGB") for m in ASSETS["matches"] for name in [m["crop1"], m["crop2"]]}
 YEARS = list(ASSETS["photos"])
+LOGO_PATH = os.path.join(ROOT_ASSETS, LOGO)
+LOGO_IMAGE = Image.open(LOGO_PATH).convert("RGBA") if os.path.exists(LOGO_PATH) else None
+
+
+def make_qr(url: str) -> Image.Image:
+    qr = cv2.QRCodeEncoder.create().encode(url)
+    return Image.fromarray(qr).convert("RGB")
+
+
+QR_IMAGE = make_qr(SUBMISSION_URL)
 
 
 def font(size_rel: float, bold: bool = True) -> ImageFont.FreeTypeFont:
@@ -183,19 +199,20 @@ def draw_text_block(img: Image.Image, text: str, fnt: ImageFont.FreeTypeFont, ce
     img.paste(Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB"))
 
 
-def draw_caption(img: Image.Image, text: str, alpha: float = 1.0) -> None:
-    fnt = font(0.05)
+def draw_caption(img: Image.Image, text: str, alpha: float = 1.0, note: str | None = None, note_alpha: float = 1.0) -> None:
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    lines = wrap(draw, text, fnt, WIDTH * 0.85)
-    line_height = fnt.size * 1.3
-    band_height = line_height * len(lines) + HEIGHT * 0.05
+    blocks = [(font(0.05), wrap(draw, text, font(0.05), WIDTH * 0.85), alpha)]
+    if note is not None:
+        blocks.append((font(0.04, bold=False), wrap(draw, note, font(0.04, bold=False), WIDTH * 0.85), alpha * note_alpha))
+    band_height = sum(fnt.size * 1.3 * len(lines) for fnt, lines, _ in blocks) + HEIGHT * 0.05
     draw.rectangle([0, HEIGHT - band_height, WIDTH, HEIGHT], fill=(0, 0, 0, round(160 * alpha)))
     y = HEIGHT - band_height + HEIGHT * 0.025
-    for line in lines:
-        w = draw.textlength(line, font=fnt, direction=LANG["direction"])
-        draw.text(((WIDTH - w) / 2, y), line, font=fnt, fill=TEXT_COLOR + (round(255 * alpha),), direction=LANG["direction"])
-        y += line_height
+    for fnt, lines, a in blocks:
+        for line in lines:
+            w = draw.textlength(line, font=fnt, direction=LANG["direction"])
+            draw.text(((WIDTH - w) / 2, y), line, font=fnt, fill=TEXT_COLOR + (round(255 * a),), direction=LANG["direction"])
+            y += fnt.size * 1.3
     img.paste(Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB"))
 
 
@@ -250,6 +267,41 @@ def scene_title(scene: dict, t: float) -> Image.Image:
     return img
 
 
+def scene_intro(scene: dict, t: float) -> Image.Image:
+    img = new_frame()
+    a0 = progress(t, 0.1, 0.9)
+    a1 = progress(t, 1.0, 1.8)
+    a2 = progress(t, 1.7, 2.5)
+    brand_y = HEIGHT * 0.22
+    if LOGO_IMAGE is not None:
+        logo, _ = fit(LOGO_IMAGE, WIDTH * 0.4, HEIGHT * 0.22)
+        logo.putalpha(logo.getchannel("A").point(lambda v: round(v * a0)))
+        img.paste(logo, (round((WIDTH - logo.width) / 2), round(HEIGHT * 0.17 - logo.height / 2)), logo)
+        brand_y = HEIGHT * 0.36
+    draw_text_block(img, BRAND, ImageFont.truetype(LANGUAGES["en"]["font_bold"], round(HEIGHT * 0.06)), brand_y, TEXT_COLOR, a0)
+    draw_text_block(img, text(scene, "title"), font(0.1), HEIGHT * 0.56, ACCENT, a1)
+    draw_text_block(img, text(scene, "text"), font(0.05, bold=False), HEIGHT * 0.74, TEXT_COLOR, a2)
+    return img
+
+
+def scene_outro(scene: dict, t: float) -> Image.Image:
+    img = new_frame()
+    a1 = progress(t, 0.2, 1.0)
+    a2 = progress(t, 0.9, 1.7)
+    a3 = progress(t, 1.6, 2.4)
+    draw_text_block(img, text(scene, "title"), font(0.08), HEIGHT * 0.12, ACCENT, a1)
+    draw_text_block(img, text(scene, "text"), font(0.045, bold=False), HEIGHT * 0.3, TEXT_COLOR, a2)
+    size = round(HEIGHT * 0.38)
+    qr = QR_IMAGE.resize((size, size), Image.NEAREST)
+    qr = Image.blend(new_frame().crop((0, 0, size, size)), qr, a3)
+    img.paste(qr, (round((WIDTH - size) / 2), round(HEIGHT * 0.45)))
+    label_y = HEIGHT * 0.45 + size + HEIGHT * 0.05
+    draw_text_block(img, text(scene, "qr"), font(0.035), label_y, TEXT_COLOR, a3)
+    url_font = ImageFont.truetype(LANGUAGES["en"]["font_bold"], round(HEIGHT * 0.035))
+    draw_text_block(img, SUBMISSION_LABEL, url_font, label_y + HEIGHT * 0.055, ACCENT, a3)
+    return img
+
+
 def scene_fingerprint(scene: dict, t: float) -> Image.Image:
     img = new_frame()
     match = MATCHES["head"]
@@ -291,7 +343,10 @@ def scene_detect(scene: dict, t: float) -> Image.Image:
         hw = w * scale / 2 * (0.6 + 0.4 * p)
         hh = h * scale / 2 * (0.6 + 0.4 * p)
         color = PART_COLORS[det["label"]]
-        draw.rectangle([cx - hw, cy - hh, cx + hw, cy + hh], fill=color + (round(50 * p),), outline=color + (round(255 * p),), width=3)
+        polygon = [(ox + px * scale, oy + py * scale) for px, py in det["polygon"]]
+        if len(polygon) >= 3:
+            draw.polygon(polygon, fill=color + (round(110 * p),))
+        draw.rectangle([cx - hw, cy - hh, cx + hw, cy + hh], outline=color + (round(255 * p),), width=3)
         name = part_name(det["label"])
         tw = draw.textlength(name, font=fnt, direction=LANG["direction"])
         tx = cx - hw
@@ -308,10 +363,10 @@ def scene_match(scene: dict, t: float) -> Image.Image:
     match = MATCHES[scene["part"]]
     gap = WIDTH * 0.04
     max_w = (WIDTH * 0.9 - gap) / 2
-    max_h = HEIGHT * 0.6
+    max_h = HEIGHT * 0.5
     crop1, s1 = fit(CROPS[match["crop1"]], max_w, max_h)
     crop2, s2 = fit(CROPS[match["crop2"]], max_w, max_h)
-    center_y = HEIGHT * 0.5
+    center_y = HEIGHT * 0.45
     x1 = WIDTH / 2 - gap / 2 - crop1.width
     y1 = center_y - crop1.height / 2
     x2 = WIDTH / 2 + gap / 2
@@ -331,7 +386,7 @@ def scene_match(scene: dict, t: float) -> Image.Image:
     order = np.argsort(kpts1[:, 1])
     colors = match_colors(n)
     start = 0.8
-    end = scene["duration"] - 1.5
+    end = scene["duration"] - 3.0
     r = max(2, round(HEIGHT * 0.005))
     n_drawn = 0
     for rank, k in enumerate(order):
@@ -352,7 +407,8 @@ def scene_match(scene: dict, t: float) -> Image.Image:
             draw.ellipse([bx - r, by - r, bx + r, by + r], outline=colors[rank], width=2)
 
     draw_title(img, text(scene, "title"), 1.0)
-    draw_caption(img, text(scene, "text").format(n=n_drawn), 1.0)
+    note_alpha = progress(t, end - 0.5, end + 0.3)
+    draw_caption(img, text(scene, "text").format(n=n_drawn), 1.0, note=text(scene, "note"), note_alpha=note_alpha)
     return img
 
 
@@ -386,6 +442,8 @@ def scene_summary(scene: dict, t: float) -> Image.Image:
 
 
 SCENES = {
+    "intro": scene_intro,
+    "outro": scene_outro,
     "title": scene_title,
     "fingerprint": scene_fingerprint,
     "photo": scene_photo,
