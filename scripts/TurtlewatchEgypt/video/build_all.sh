@@ -2,7 +2,7 @@
 set -eu
 cd "$(dirname "$0")"
 
-LANGS="en de ar"
+LANGS="en de it ar"
 SIZES="1920x1080 1440x1080"
 JOBS=$(nproc)
 
