@@ -358,15 +358,23 @@ def scene_match(scene: dict, t: float) -> Image.Image:
     img = new_frame()
     match = MATCHES[scene["part"]]
     gap = WIDTH * 0.04
-    max_w = (WIDTH * 0.9 - gap) / 2
+    max_w = WIDTH * 0.9 - gap
     max_h = HEIGHT * 0.62
-    crop1, s1 = fit(CROPS[match["crop1"]], max_w, max_h)
-    crop2, s2 = fit(CROPS[match["crop2"]], max_w, max_h)
+    orig1 = CROPS[match["crop1"]]
+    orig2 = CROPS[match["crop2"]]
+    aspect1 = orig1.width / orig1.height
+    aspect2 = orig2.width / orig2.height
+    crop_h = min(max_h, max_w / (aspect1 + aspect2))
+    crop1 = orig1.resize((round(aspect1 * crop_h), round(crop_h)), Image.LANCZOS)
+    crop2 = orig2.resize((round(aspect2 * crop_h), round(crop_h)), Image.LANCZOS)
+    s1 = crop1.height / orig1.height
+    s2 = crop2.height / orig2.height
+    total_w = crop1.width + gap + crop2.width
     center_y = HEIGHT * 0.5
-    x1 = WIDTH / 2 - gap / 2 - crop1.width
-    y1 = center_y - crop1.height / 2
-    x2 = WIDTH / 2 + gap / 2
-    y2 = center_y - crop2.height / 2
+    x1 = (WIDTH - total_w) / 2
+    y1 = center_y - crop_h / 2
+    x2 = x1 + crop1.width + gap
+    y2 = y1
     img.paste(crop1, (round(x1), round(y1)))
     img.paste(crop2, (round(x2), round(y2)))
 
