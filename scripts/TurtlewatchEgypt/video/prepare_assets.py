@@ -89,14 +89,16 @@ detections = {key: save_photo(path, key, model) for key, path in photos.items()}
 rows = []
 for key, dets in detections.items():
     for i, det in enumerate(dets):
-        rows.append({
-            "image_id": f"{key}_{i}",
-            "identity": "kiki",
-            "path": f"photo_{key}.jpg",
-            "key": key,
-            "label": det["label"],
-            "bbox": det["bbox"],
-        })
+        rows.append(
+            {
+                "image_id": f"{key}_{i}",
+                "identity": "kiki",
+                "path": f"photo_{key}.jpg",
+                "key": key,
+                "label": det["label"],
+                "bbox": det["bbox"],
+            }
+        )
 df = pd.DataFrame(rows)
 dataset = WildlifeDataset(root=root_assets, df=df, img_load="bbox", load_label=True)
 
