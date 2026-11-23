@@ -6,7 +6,7 @@ import subprocess
 
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 # ---------------------------------------------------------------------------
 # Settings
@@ -22,9 +22,23 @@ LOGO = "logo.png"
 SUBMISSION_URL = "https://turtlewatchegypt.net/share-marine-turtles-photos/"
 SUBMISSION_LABEL = "turtlewatchegypt.net"
 
-BACKGROUND = (12, 30, 42)
+ROOT_PRESENTATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "presentation")
+SLIDE_FIRST = "slide_first.png"
+SLIDE_LAST = "slide_last.png"
+BACKGROUND_IMAGE = "image25.png"
+BACKGROUND_BLUR = 0.03
+BACKGROUND_DARKEN = 0.35
+PHOTO_BLUR = 0.04
+CORNER_LOGO = "image13.png"
+CORNER_LOGO_HEIGHT = 0.036
+BOX_ALPHA = 0.5
+BOX_MAX_WIDTH = 0.7
+TITLE_SPACING = 0.08
+QUICKSAND_BOLD = "/usr/share/fonts/truetype/quicksand/Quicksand-Bold.ttf"
+QUICKSAND_REGULAR = "/usr/share/fonts/truetype/quicksand/Quicksand-Regular.ttf"
+
 TEXT_COLOR = (255, 255, 255)
-ACCENT = (255, 196, 60)
+ACCENT = (255, 255, 255)
 LABEL_TO_PART = {
     "head": "head",
     "flipper_fl": "front flipper",
@@ -44,17 +58,19 @@ PART_COLORS = {
 # Storyboard: edit texts, durations and order here
 # ---------------------------------------------------------------------------
 STORYBOARD = [
+    {"type": "slide", "duration": 4.0, "image": SLIDE_FIRST, "fade_in": False},
     {"type": "intro", "duration": 5.0, "id": "intro"},
     {"type": "fingerprint", "duration": 5.0, "id": "fingerprint"},
     {"type": "photo", "duration": 3.5, "photo": "2019", "id": "photo1", "fade_out": False},
     {"type": "detect", "duration": 4.5, "photo": "2019", "id": "detect1", "fade_in": False},
     {"type": "photo", "duration": 3.5, "photo": "2023", "id": "photo2", "fade_out": False},
     {"type": "detect", "duration": 4.0, "photo": "2023", "id": "detect2", "fade_in": False},
-    {"type": "match", "duration": 7.0, "part": "head", "id": "match_head"},
-    {"type": "match", "duration": 7.0, "part": "front flipper", "id": "match_front"},
     {"type": "match", "duration": 7.0, "part": "hind flipper", "id": "match_hind"},
+    {"type": "match", "duration": 7.0, "part": "front flipper", "id": "match_front"},
+    {"type": "match", "duration": 7.0, "part": "head", "id": "match_head"},
     {"type": "summary", "duration": 5.0, "id": "summary"},
     {"type": "outro", "duration": 7.0, "id": "outro"},
+    {"type": "slide", "duration": 5.0, "image": SLIDE_LAST, "fade_out": False},
 ]
 
 # ---------------------------------------------------------------------------
@@ -62,8 +78,8 @@ STORYBOARD = [
 # ---------------------------------------------------------------------------
 LANGUAGES = {
     "en": {
-        "font_bold": "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
-        "font_regular": "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        "font_bold": QUICKSAND_BOLD,
+        "font_regular": QUICKSAND_REGULAR,
         "direction": "ltr",
         "parts": {"head": "Head", "front flipper": "Front flipper", "hind flipper": "Hind flipper"},
         "texts": {
@@ -73,7 +89,7 @@ LANGUAGES = {
             "detect1": {"text": "AI finds the head and the flippers"},
             "photo2": {"text": "February 2023: more than 3 years later..."},
             "detect2": {"text": "Is this the same turtle?"},
-            "match_head": {"title": "Comparing the patterns", "text": "Head: {n} matching points", "note": "A top photo can match a side photo, even with little overlap."},
+            "match_head": {"title": "Comparing the patterns", "text": "Head: {n} matching points", "note": "Top and side photos match, even with little overlap."},
             "match_front": {"title": "Comparing the patterns", "text": "Front flipper: {n} matching points", "note": "The AI also tells us how sure it is about its answer."},
             "match_hind": {"title": "Comparing the patterns", "text": "Hind flipper: {n} matching points", "note": "We are the first to identify turtles by their hind flippers."},
             "summary": {"title": "It's Kiki again!", "text": "All three body parts match"},
@@ -81,27 +97,27 @@ LANGUAGES = {
         },
     },
     "de": {
-        "font_bold": "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
-        "font_regular": "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        "font_bold": QUICKSAND_BOLD,
+        "font_regular": QUICKSAND_REGULAR,
         "direction": "ltr",
         "parts": {"head": "Kopf", "front flipper": "Vorderflosse", "hind flipper": "Hinterflosse"},
         "texts": {
             "intro": {"title": "Das ist Kiki", "text": "Grüne Schildkröte aus Abu Dabbab, Ägypten"},
-            "fingerprint": {"title": "Jede Schildkröte ist einzigartig", "text": "Ihre Schuppen sind wie ein Fingerabdruck"},
+            "fingerprint": {"title": "Jede ist einzigartig", "text": "Ihre Schuppen sind wie ein Fingerabdruck"},
             "photo1": {"text": "Oktober 2019: Ein Taucher fotografiert Kiki"},
             "detect1": {"text": "KI erkennt den Kopf und die Flossen"},
             "photo2": {"text": "Februar 2023: mehr als 3 Jahre später ..."},
             "detect2": {"text": "Ist das dieselbe Schildkröte?"},
-            "match_head": {"title": "Wir vergleichen die Muster", "text": "Kopf: {n} übereinstimmende Punkte", "note": "Fotos von oben und von der Seite passen zusammen."},
-            "match_front": {"title": "Wir vergleichen die Muster", "text": "Vorderflosse: {n} übereinstimmende Punkte", "note": "Die KI sagt uns auch, wie sicher sie sich bei ihrer Antwort ist."},
-            "match_hind": {"title": "Wir vergleichen die Muster", "text": "Hinterflosse: {n} übereinstimmende Punkte", "note": "Als Erste erkennen wir Schildkröten an den Hinterflossen."},
+            "match_head": {"title": "Wir vergleichen die Muster", "text": "Kopf: {n} Übereinstimmungen", "note": "Fotos von oben und von der Seite passen zusammen."},
+            "match_front": {"title": "Wir vergleichen die Muster", "text": "Vorderflosse: {n} Übereinstimmungen", "note": "Die KI sagt auch, wie sicher sie sich ist."},
+            "match_hind": {"title": "Wir vergleichen die Muster", "text": "Hinterflosse: {n} Übereinstimmungen", "note": "Als Erste erkennen wir sie an den Hinterflossen."},
             "summary": {"title": "Es ist wieder Kiki!", "text": "Alle drei Körperteile stimmen überein"},
             "outro": {"title": "Ihre Fotos helfen", "text": "Jahrelange Beobachtung, ganz ohne Berührung.\nTeilen Sie Ihre Fotos mit uns!", "qr": "Scannen und Fotos teilen"},
         },
     },
     "it": {
-        "font_bold": "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
-        "font_regular": "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        "font_bold": QUICKSAND_BOLD,
+        "font_regular": QUICKSAND_REGULAR,
         "direction": "ltr",
         "parts": {"head": "Testa", "front flipper": "Pinna anteriore", "hind flipper": "Pinna posteriore"},
         "texts": {
@@ -114,7 +130,7 @@ LANGUAGES = {
             "match_head": {"title": "Confrontiamo i disegni", "text": "Testa: {n} punti corrispondenti", "note": "Una foto dall'alto e una di lato possono corrispondere."},
             "match_front": {"title": "Confrontiamo i disegni", "text": "Pinna anteriore: {n} punti corrispondenti", "note": "L'IA ci dice anche quanto è sicura della sua risposta."},
             "match_hind": {"title": "Confrontiamo i disegni", "text": "Pinna posteriore: {n} punti corrispondenti", "note": "Siamo i primi a riconoscerle dalle pinne posteriori."},
-            "summary": {"title": "È di nuovo Kiki!", "text": "Tutte e tre le parti del corpo corrispondono"},
+            "summary": {"title": "È di nuovo Kiki!", "text": "Tutte e tre le parti corrispondono"},
             "outro": {"title": "Le tue foto aiutano", "text": "Seguiamo le tartarughe per anni, senza toccarle.\nCondividi le tue foto di tartarughe!", "qr": "Scansiona per condividere le foto"},
         },
     },
@@ -185,17 +201,61 @@ def progress(t: float, start: float, end: float) -> float:
     return ease((t - start) / (end - start))
 
 
+CACHE = {}
+CURRENT_BACKGROUND = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0))
+
+
+def cover(img: Image.Image) -> Image.Image:
+    scale = max(WIDTH / img.width, HEIGHT / img.height)
+    img = img.resize((round(img.width * scale), round(img.height * scale)), Image.LANCZOS)
+    x = (img.width - WIDTH) // 2
+    y = (img.height - HEIGHT) // 2
+    return img.crop((x, y, x + WIDTH, y + HEIGHT))
+
+
+def blurred_background(key: str, img: Image.Image, blur: float, darken: float) -> Image.Image:
+    cache_key = (key, WIDTH, HEIGHT)
+    if cache_key not in CACHE:
+        background = cover(img.convert("RGB")).filter(ImageFilter.GaussianBlur(HEIGHT * blur))
+        background = Image.blend(background, Image.new("RGB", background.size, (0, 0, 0)), darken)
+        CACHE[cache_key] = background
+    return CACHE[cache_key]
+
+
+def presentation_image(name: str) -> Image.Image:
+    if name not in CACHE:
+        CACHE[name] = Image.open(os.path.join(ROOT_PRESENTATION, name)).convert("RGBA")
+    return CACHE[name]
+
+
+def scene_background(scene: dict) -> Image.Image:
+    if scene["type"] in ["photo", "detect"]:
+        return blurred_background(f"photo_{scene['photo']}", PHOTOS[scene["photo"]], PHOTO_BLUR, BACKGROUND_DARKEN)
+    return blurred_background("background", presentation_image(BACKGROUND_IMAGE), BACKGROUND_BLUR, BACKGROUND_DARKEN)
+
+
 def new_frame() -> Image.Image:
-    return Image.new("RGB", (WIDTH, HEIGHT), BACKGROUND)
+    return CURRENT_BACKGROUND.copy()
 
 
-def wrap(draw: ImageDraw.ImageDraw, text: str, fnt: ImageFont.FreeTypeFont, max_width: float) -> list[str]:
+def is_rtl() -> bool:
+    return LANG["direction"] == "rtl"
+
+
+def text_width(draw: ImageDraw.ImageDraw, text: str, fnt: ImageFont.FreeTypeFont, spacing: float) -> float:
+    width = draw.textlength(text, font=fnt, direction=LANG["direction"])
+    if spacing > 0 and not is_rtl():
+        width += spacing * (len(text) - 1)
+    return width
+
+
+def wrap(draw: ImageDraw.ImageDraw, text: str, fnt: ImageFont.FreeTypeFont, max_width: float, spacing: float) -> list[str]:
     lines = []
     for paragraph in text.split("\n"):
         line = ""
         for word in paragraph.split():
             candidate = f"{line} {word}".strip()
-            if draw.textlength(candidate, font=fnt, direction=LANG["direction"]) <= max_width:
+            if text_width(draw, candidate, fnt, spacing) <= max_width or not line:
                 line = candidate
             else:
                 lines.append(line)
@@ -204,38 +264,83 @@ def wrap(draw: ImageDraw.ImageDraw, text: str, fnt: ImageFont.FreeTypeFont, max_
     return lines
 
 
-def draw_text_block(img: Image.Image, text: str, fnt: ImageFont.FreeTypeFont, center_y: float, color: tuple, alpha: float = 1.0) -> None:
-    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    draw = ImageDraw.Draw(overlay)
-    lines = wrap(draw, text, fnt, WIDTH * 0.85)
-    line_height = fnt.size * 1.3
-    y = center_y - line_height * len(lines) / 2
-    for line in lines:
-        w = draw.textlength(line, font=fnt, direction=LANG["direction"])
-        draw.text(((WIDTH - w) / 2, y), line, font=fnt, fill=color + (round(255 * alpha),), direction=LANG["direction"])
-        y += line_height
-    img.paste(Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB"))
+def draw_line(draw: ImageDraw.ImageDraw, x: float, y: float, line: str, fnt: ImageFont.FreeTypeFont, fill: tuple, spacing: float) -> None:
+    if spacing <= 0 or is_rtl():
+        draw.text((x, y), line, font=fnt, fill=fill, direction=LANG["direction"])
+        return
+    for char in line:
+        draw.text((x, y), char, font=fnt, fill=fill)
+        x += draw.textlength(char, font=fnt) + spacing
 
 
-def draw_caption(img: Image.Image, text: str, alpha: float = 1.0, note: str | None = None, note_alpha: float = 1.0) -> None:
+def draw_blocks(img: Image.Image, blocks: list[dict], center_y: float | None = None, bottom: float | None = None, box: bool = True, alpha: float = 1.0) -> None:
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    blocks = [(font(0.05), wrap(draw, text, font(0.05), WIDTH * 0.85), alpha)]
-    if note is not None:
-        blocks.append((font(0.04, bold=False), wrap(draw, note, font(0.04, bold=False), WIDTH * 0.85), alpha * note_alpha))
-    band_height = sum(fnt.size * 1.3 * len(lines) for fnt, lines, _ in blocks) + HEIGHT * 0.05
-    draw.rectangle([0, HEIGHT - band_height, WIDTH, HEIGHT], fill=(0, 0, 0, round(160 * alpha)))
-    y = HEIGHT - band_height + HEIGHT * 0.025
-    for fnt, lines, a in blocks:
+    pad = HEIGHT * 0.025
+    max_text_w = (box_max_width() if box else WIDTH * 0.85) - 2 * pad
+    laid_out = []
+    for block in blocks:
+        spacing = block.get("spacing", 0.0) * block["font"].size
+        lines = wrap(draw, block["text"], block["font"], max_text_w, spacing)
+        laid_out.append((block, lines, spacing))
+    widths = [text_width(draw, line, b["font"], s) for b, lines, s in laid_out for line in lines]
+    heights = [b["font"].size * 1.35 * len(lines) for b, lines, _ in laid_out]
+    box_w = max(widths) + 2 * pad
+    box_h = sum(heights) + 2 * pad - blocks[-1]["font"].size * 0.2
+    if center_y is None:
+        center_y = bottom - box_h / 2
+    x0 = (WIDTH - box_w) / 2
+    y0 = center_y - box_h / 2
+    if box:
+        draw.rounded_rectangle([x0, y0, x0 + box_w, y0 + box_h], radius=round(HEIGHT * 0.02), fill=(0, 0, 0, round(255 * BOX_ALPHA * alpha)))
+    y = y0 + pad
+    for block, lines, spacing in laid_out:
+        a = alpha * block.get("alpha", 1.0)
         for line in lines:
-            w = draw.textlength(line, font=fnt, direction=LANG["direction"])
-            draw.text(((WIDTH - w) / 2, y), line, font=fnt, fill=TEXT_COLOR + (round(255 * a),), direction=LANG["direction"])
-            y += fnt.size * 1.3
+            w = text_width(draw, line, block["font"], spacing)
+            x = (WIDTH - w) / 2
+            if not box:
+                draw_line(draw, x + 2, y + 2, line, block["font"], (0, 0, 0, round(150 * a)), spacing)
+            draw_line(draw, x, y, line, block["font"], block["color"] + (round(255 * a),), spacing)
+            y += block["font"].size * 1.35
     img.paste(Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB"))
+
+
+def title_text(text: str) -> str:
+    return text if is_rtl() else text.upper()
 
 
 def draw_title(img: Image.Image, text: str, alpha: float = 1.0) -> None:
-    draw_text_block(img, text, font(0.065), HEIGHT * 0.08, ACCENT, alpha)
+    block = {"text": title_text(text), "font": font(0.044), "color": TEXT_COLOR, "spacing": TITLE_SPACING}
+    draw_blocks(img, [block], center_y=HEIGHT * 0.075, alpha=alpha)
+
+
+def draw_caption(img: Image.Image, text: str, alpha: float = 1.0, note: str | None = None, note_alpha: float = 1.0) -> None:
+    blocks = [{"text": text, "font": font(0.042), "color": TEXT_COLOR}]
+    if note is not None:
+        blocks.append({"text": note, "font": font(0.034, bold=False), "color": TEXT_COLOR, "alpha": note_alpha})
+    draw_blocks(img, blocks, bottom=HEIGHT * 0.97, alpha=alpha)
+
+
+def draw_text_block(img: Image.Image, text: str, fnt: ImageFont.FreeTypeFont, center_y: float, color: tuple, alpha: float = 1.0) -> None:
+    draw_blocks(img, [{"text": text, "font": fnt, "color": TEXT_COLOR}], center_y=center_y, box=False, alpha=alpha)
+
+
+def corner_logo_image() -> Image.Image:
+    logo, _ = fit(presentation_image(CORNER_LOGO), WIDTH, HEIGHT * CORNER_LOGO_HEIGHT)
+    return logo
+
+
+def box_max_width() -> float:
+    margin = HEIGHT * 0.03
+    reserved = margin + corner_logo_image().width + margin
+    return min(WIDTH * BOX_MAX_WIDTH, WIDTH - 2 * reserved)
+
+
+def draw_corner_logo(img: Image.Image) -> None:
+    logo = corner_logo_image()
+    margin = HEIGHT * 0.03
+    img.paste(logo, (round(margin), round(HEIGHT - margin - logo.height)), logo)
 
 
 def place_photo(img: Image.Image, zoom: float) -> tuple[Image.Image, float, float, float]:
@@ -276,15 +381,6 @@ def draw_checkmark(draw: ImageDraw.ImageDraw, cx: float, cy: float, r: float, p:
 # ---------------------------------------------------------------------------
 # Scenes
 # ---------------------------------------------------------------------------
-def scene_title(scene: dict, t: float) -> Image.Image:
-    img = new_frame()
-    a1 = progress(t, 0.2, 1.0)
-    a2 = progress(t, 0.9, 1.8)
-    draw_text_block(img, text(scene, "title"), font(0.11), HEIGHT * 0.38, ACCENT, a1)
-    draw_text_block(img, text(scene, "text"), font(0.05, bold=False), HEIGHT * 0.62, TEXT_COLOR, a2)
-    return img
-
-
 def scene_intro(scene: dict, t: float) -> Image.Image:
     img = new_frame()
     a0 = progress(t, 0.1, 0.9)
@@ -465,10 +561,17 @@ def scene_summary(scene: dict, t: float) -> Image.Image:
     return img
 
 
+def scene_slide(scene: dict, t: float) -> Image.Image:
+    img = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0))
+    slide, _ = fit(presentation_image(scene["image"]), WIDTH, HEIGHT)
+    img.paste(slide, (round((WIDTH - slide.width) / 2), round((HEIGHT - slide.height) / 2)), slide)
+    return img
+
+
 SCENES = {
     "intro": scene_intro,
     "outro": scene_outro,
-    "title": scene_title,
+    "slide": scene_slide,
     "fingerprint": scene_fingerprint,
     "photo": scene_photo,
     "detect": scene_detect,
@@ -491,6 +594,19 @@ def apply_fade(img: Image.Image, scene: dict, t: float) -> Image.Image:
     return Image.blend(new_frame(), img, alpha)
 
 
+def make_frame(scene: dict, t: float) -> Image.Image:
+    global CURRENT_BACKGROUND
+    if scene["type"] == "slide":
+        CURRENT_BACKGROUND = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0))
+        return apply_fade(scene_slide(scene, t), scene, t)
+    CURRENT_BACKGROUND = scene_background(scene)
+    frame = SCENES[scene["type"]](scene, t)
+    if scene["type"] != "intro":
+        draw_corner_logo(frame)
+    CURRENT_BACKGROUND = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0))
+    return apply_fade(frame, scene, t)
+
+
 def render(output: str) -> None:
     command = [
         "ffmpeg", "-y", "-loglevel", "error",
@@ -500,15 +616,24 @@ def render(output: str) -> None:
     ]
     process = subprocess.Popen(command, stdin=subprocess.PIPE)
     for scene in STORYBOARD:
-        scene_fn = SCENES[scene["type"]]
         n_frames = round(scene["duration"] * FPS)
         for i in range(n_frames):
-            t = i / FPS
-            frame = scene_fn(scene, t)
-            frame = apply_fade(frame, scene, t)
-            process.stdin.write(frame.tobytes())
+            process.stdin.write(make_frame(scene, i / FPS).tobytes())
     process.stdin.close()
     process.wait()
+
+
+def preview(output: str) -> None:
+    n_cols = 3
+    thumb_w = WIDTH // n_cols
+    thumb_h = HEIGHT // n_cols
+    n_rows = (len(STORYBOARD) + n_cols - 1) // n_cols
+    sheet = Image.new("RGB", (thumb_w * n_cols, thumb_h * n_rows), (255, 255, 255))
+    for i, scene in enumerate(STORYBOARD):
+        t = scene["duration"] - FADE - 0.1
+        frame = make_frame(scene, t)
+        sheet.paste(frame.resize((thumb_w, thumb_h), Image.LANCZOS), ((i % n_cols) * thumb_w, (i // n_cols) * thumb_h))
+    sheet.save(output)
 
 
 if __name__ == "__main__":
@@ -517,6 +642,7 @@ if __name__ == "__main__":
     parser.add_argument("--width", type=int, default=WIDTH)
     parser.add_argument("--height", type=int, default=HEIGHT)
     parser.add_argument("--crf", type=int, default=CRF)
+    parser.add_argument("--preview", action="store_true")
     args = parser.parse_args()
 
     WIDTH = args.width
@@ -525,4 +651,7 @@ if __name__ == "__main__":
     for lang in args.langs:
         LANG = LANGUAGES[lang]
         output = OUTPUT.format(lang=lang, width=WIDTH, height=HEIGHT)
-        render(os.path.join(ROOT, output))
+        if args.preview:
+            preview(os.path.join(ROOT, output.replace(".mp4", "_preview.png")))
+        else:
+            render(os.path.join(ROOT, output))
