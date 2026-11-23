@@ -162,7 +162,7 @@ LANGUAGES = {
             "match_hind": {"title": "Confrontiamo i disegni", "text": "Pinna posteriore: {n} punti uguali", "note": "Siamo i primi a riconoscerle dalle pinne posteriori."},
             "summary": {"title": "È di nuovo Kiki!", "text": "Tutte e tre le parti corrispondono"},
             "summary_reel": {"title": "È di nuovo Kiki!", "text": "Tutte le parti corrispondono"},
-            "outro": {"title": "Le tue foto aiutano", "text": "Seguiamo le tartarughe per anni, senza toccarle.\nCondividi le tue foto!", "qr": "Scansiona per condividere le foto"},
+            "outro": {"title": "Le foto aiutano", "text": "Seguiamo le tartarughe per anni, senza toccarle.\nCondividi le tue foto!", "qr": "Scansiona per condividere le foto"},
         },
     },
     "cs": {
@@ -195,7 +195,7 @@ LANGUAGES = {
         "texts": {
             "hook": {"title": "السلحفاة نفسها؟", "text": "2019 مقابل 2023"},
             "endcard": {"title": "شكرًا!"},
-            "intro": {"title": "تعرّفوا على كيكي", "text": "سلحفاة بحرية خضراء من مرسى أبو دباب، مصر"},
+            "intro": {"title": "هذه كيكي", "text": "سلحفاة خضراء من أبو دباب، مصر"},
             "fingerprint": {"title": "كل سلحفاة فريدة من نوعها", "text": "حراشف الرأس والزعانف مثل بصمة الإصبع"},
             "photo1": {"text": "أكتوبر 2019: غوّاص يلتقط صورة لكيكي"},
             "detect1": {"text": "الذكاء الاصطناعي يحدّد الرأس والزعانف", "title": "تحديد أجزاء الجسم"},
