@@ -27,7 +27,7 @@ max_photo_size = 1920
 local_path = "config/paths.json"
 paths = load_paths("TurtlewatchEgypt", local_path=local_path)
 root_new = resolve_path(paths["root_new"])
-root_assets = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+root_assets = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "kiki")
 os.makedirs(root_assets, exist_ok=True)
 
 
