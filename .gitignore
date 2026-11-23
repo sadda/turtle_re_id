@@ -1,6 +1,7 @@
 /data/
 /scripts/LOC
 /scripts/SeaTurtleID2022
+/scripts/TurtlewatchEgypt/video/kiki_*.mp4
 
 /scripts/SMSRC/hidden
 verification_data_*.csv
