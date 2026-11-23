@@ -14,10 +14,9 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 WIDTH = 1920
 HEIGHT = 1080
 FPS = 24
-QUALITIES = {"low": 32, "hd": 20}
-QUALITY = "low"
+CRF = 20
 FADE = 0.5
-OUTPUT = "kiki_{lang}_{width}x{height}_{quality}.mp4"
+OUTPUT = "kiki_{lang}_{width}x{height}.mp4"
 
 LOGO = "logo.png"
 SUBMISSION_URL = "https://turtlewatchegypt.net/share-marine-turtles-photos/"
@@ -164,6 +163,28 @@ LANGUAGES = {
             "summary": {"title": "È di nuovo Kiki!", "text": "Tutte e tre le parti corrispondono"},
             "summary_reel": {"title": "È di nuovo Kiki!", "text": "Tutte le parti corrispondono"},
             "outro": {"title": "Le tue foto aiutano", "text": "Seguiamo le tartarughe per anni, senza toccarle.\nCondividi le tue foto di tartarughe!", "qr": "Scansiona per condividere le foto"},
+        },
+    },
+    "cs": {
+        "font_bold": QUICKSAND_BOLD,
+        "font_regular": QUICKSAND_REGULAR,
+        "direction": "ltr",
+        "parts": {"head": "Hlava", "front flipper": "Přední ploutev", "hind flipper": "Zadní ploutev"},
+        "texts": {
+            "hook": {"title": "Stejná želva?", "text": "2019 vs 2023"},
+            "endcard": {"title": "Děkujeme!"},
+            "intro": {"title": "Toto je Kiki", "text": "Kareta obrovská z Abu Dabbab, Egypt"},
+            "fingerprint": {"title": "Každá želva je jiná", "text": "Její šupiny jsou jako otisk prstu"},
+            "photo1": {"text": "Říjen 2019: potápěč fotí Kiki"},
+            "detect1": {"text": "AI najde hlavu a ploutve", "title": "Hledání částí těla"},
+            "photo2": {"text": "Únor 2023: o více než 3 roky později..."},
+            "detect2": {"text": "Je to stejná želva?", "title": "Hledání částí těla"},
+            "match_head": {"title": "Porovnání vzorů", "text": "Hlava – shodné body: {n}", "note": "Fotky shora a z boku se shodují i při malém překryvu."},
+            "match_front": {"title": "Porovnání vzorů", "text": "Přední ploutev – shodné body: {n}", "note": "AI nám také řekne, jak si je jistá."},
+            "match_hind": {"title": "Porovnání vzorů", "text": "Zadní ploutev – shodné body: {n}", "note": "Jako první poznáváme želvy podle zadních ploutví."},
+            "summary": {"title": "Je to zase Kiki!", "text": "Všechny tři části těla se shodují"},
+            "summary_reel": {"title": "Je to zase Kiki!", "text": "Všechny části těla se shodují"},
+            "outro": {"title": "Fotky pomáhají", "text": "Sledujeme želvy roky, aniž bychom se jich dotkli.\nSdílejte své fotky želv!", "qr": "Naskenujte a sdílejte fotky"},
         },
     },
     "ar": {
@@ -856,7 +877,7 @@ def render(output: str) -> None:
     command = [
         "ffmpeg", "-y", "-loglevel", "error",
         "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{WIDTH}x{HEIGHT}", "-r", str(FPS), "-i", "-",
-        "-an", "-c:v", "libx264", "-preset", "slow", "-crf", str(QUALITIES[QUALITY]), "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+        "-an", "-c:v", "libx264", "-preset", "slow", "-crf", str(CRF), "-pix_fmt", "yuv420p", "-movflags", "+faststart",
         output,
     ]
     process = subprocess.Popen(command, stdin=subprocess.PIPE)
@@ -887,16 +908,14 @@ if __name__ == "__main__":
     parser.add_argument("langs", nargs="*", default=list(LANGUAGES))
     parser.add_argument("--width", type=int, default=WIDTH)
     parser.add_argument("--height", type=int, default=HEIGHT)
-    parser.add_argument("--quality", choices=list(QUALITIES), default=QUALITY)
     parser.add_argument("--preview", action="store_true")
     args = parser.parse_args()
 
     WIDTH = args.width
     HEIGHT = args.height
-    QUALITY = args.quality
     for lang in args.langs:
         LANG = LANGUAGES[lang]
-        output = OUTPUT.format(lang=lang, width=WIDTH, height=HEIGHT, quality=QUALITY)
+        output = OUTPUT.format(lang=lang, width=WIDTH, height=HEIGHT)
         if args.preview:
             preview(os.path.join(ROOT, output.replace(".mp4", "_preview.png")))
         else:
