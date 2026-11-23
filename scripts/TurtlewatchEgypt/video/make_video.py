@@ -25,14 +25,14 @@ SUBMISSION_LABEL = "turtlewatchegypt.net"
 ROOT_PRESENTATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "presentation")
 SLIDE_FIRST = "slide_first.png"
 SLIDE_LAST = "slide_last.png"
-BACKGROUND_IMAGE = "image25.png"
-END_CARD_IMAGE = "image25.png"
+BACKGROUND_IMAGE = "background.png"
+END_CARD_IMAGE = "background.png"
 END_CARD_CREDIT = "© Micol Montagna"
 BACKGROUND_ANCHOR_X = 0.42
 BACKGROUND_BLUR = 0.03
 BACKGROUND_DARKEN = 0.35
 PHOTO_BLUR = 0.04
-CORNER_LOGO = "image13.png"
+CORNER_LOGO = "logo_white.png"
 CORNER_LOGO_HEIGHT = 0.036
 BOX_ALPHA = 0.5
 BOX_MAX_WIDTH = 0.7
@@ -216,7 +216,7 @@ LANG = LANGUAGES["en"]
 # Helpers
 # ---------------------------------------------------------------------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
-ROOT_ASSETS = os.path.join(ROOT, "assets")
+ROOT_ASSETS = os.path.join(ROOT, "assets", "kiki")
 
 with open(os.path.join(ROOT_ASSETS, "assets.json")) as file:
     ASSETS = json.load(file)
@@ -224,7 +224,7 @@ PHOTOS = {key: Image.open(os.path.join(ROOT_ASSETS, name)).convert("RGB") for ke
 MATCHES = {m["part"]: m for m in ASSETS["matches"]}
 CROPS = {name: Image.open(os.path.join(ROOT_ASSETS, name)).convert("RGB") for m in ASSETS["matches"] for name in [m["crop1"], m["crop2"]]}
 YEARS = list(ASSETS["photos"])
-LOGO_PATH = os.path.join(ROOT, LOGO)
+LOGO_PATH = os.path.join(ROOT, "assets", LOGO)
 LOGO_IMAGE = Image.open(LOGO_PATH).convert("RGBA")
 
 
